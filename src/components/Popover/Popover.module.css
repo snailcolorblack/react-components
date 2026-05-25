@@ -1,0 +1,34 @@
+.popover {
+    /* Базовые стили */
+    gap: calc(var(--base-gap) * 2);
+    padding: var(--base-size);
+    border: 1px solid var(--font-color-40);
+    border-radius: var(--base-gap);
+
+    opacity: 0;
+    scale: 0.85;
+    transform-origin: top center;
+
+    transition:
+            opacity    0.18s var(--ease-in-out),
+            scale      0.24s var(--ease-in-out),
+            display    0.24s allow-discrete,
+            overlay    0.24s allow-discrete;
+}
+
+.popover:popover-open {
+    opacity: 1;
+    scale: 1;
+}
+
+@starting-style {
+    .popover:popover-open {
+        opacity: 0;
+        scale: 0.85;
+    }
+}
+
+.popover:not(:popover-open) {
+    opacity: 0;
+    scale: 0.85;
+}

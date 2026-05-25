@@ -1,0 +1,18 @@
+.alert {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--base-gap) * 2);
+    padding: calc(var(--base-gap) * 2);
+    border-radius: var(--base-gap);
+    border: 1px solid var(--font-color-40);
+
+    &.alert {
+        /*background-color: color-mix(in oklab, lab(100% 17 100) 20%, transparent);*/
+    }
+    &.warning {
+        /*background-color: color-mix(in oklab, lab(100% 17 100) 20%, transparent);*/
+    }
+    &.success {
+        /*background-color: color-mix(in oklab, lab(100% 17 100) 20%, transparent);*/
+    }
+}

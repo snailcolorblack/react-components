@@ -1,0 +1,14 @@
+.buttons {
+    border: 1px solid var(--font-color-40);
+    border-radius: 8px;
+    overflow: hidden;
+
+    .buttonInner {
+        border: unset;
+        border-radius: unset;
+    }
+
+    .buttonInner:not(:last-child) {
+        border-inline-end: 1px solid var(--base-color-40);
+    }
+}

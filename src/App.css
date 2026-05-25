@@ -1,0 +1,47 @@
+:root {
+    --base-color: lab(2% 0 0);
+    --font-color: lab(98% 0 0);
+
+    --base-color-80: color-mix(in oklab, var(--base-color) 80%, transparent);
+    --base-color-60: color-mix(in oklab, var(--base-color) 60%, transparent);
+    --base-color-40: color-mix(in oklab, var(--base-color) 40%, transparent);
+
+    --font-color-80: color-mix(in oklab, var(--font-color) 80%, transparent);
+    --font-color-60: color-mix(in oklab, var(--font-color) 60%, transparent);
+    --font-color-40: color-mix(in oklab, var(--font-color) 40%, transparent);
+
+
+
+    --base-size: 1rem;
+    --base-gap: .25rem;
+
+    --ease-out: cubic-bezier(0, 0, .2, 1);
+    --ease-in-out: cubic-bezier(.4, 0, .2, 1);
+}
+
+#root {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-block-size: 100svh;
+    min-inline-size: 100vw;
+    background-color: var(--base-color);
+
+    .content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        flex: 1;
+        padding-inline: 16px;
+        block-size: 100%;
+        inline-size: 100%;
+    }
+
+    .block {
+        inline-size: 100%;
+        min-block-size: 120px;
+        background-color: #242424;
+        border-radius: 8px;
+    }
+}

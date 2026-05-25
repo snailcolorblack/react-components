@@ -1,0 +1,84 @@
+.accordion {
+    interpolate-size: allow-keywords;
+    position: relative;
+    display: block;
+    inline-size: 100%;
+    padding-block: calc(var(--base-gap) * 3);
+}
+
+.accordion:not(:last-child) {
+    border-bottom: 1px solid var(--font-color-40);
+}
+
+/* Заголовок */
+.accordion_header {
+    outline: none;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--base-gap);
+    text-align: left;
+    font-size: clamp(calc(var(--base-size) * 1.25), 4vw, calc(var(--base-size) * 2));
+    font-weight: 500;
+    color: var(--font-color-80);
+    transition: color 0.2s var(--ease-in-out);
+}
+
+.accordion_header::-webkit-details-marker,
+.accordion_header::marker {
+    display: none;
+}
+
+.base_svg {
+    rotate: 0deg;
+    transition: rotate 0.3s var(--ease-in-out);
+}
+
+.accordion[open] .base_svg {
+    rotate: 45deg;
+}
+
+/* Анимация раскрытия — главное */
+.accordion::details-content {
+    opacity: 0;
+    block-size: 0;
+    overflow: clip;
+    transition:
+            opacity            0.2s var(--ease-out),
+            block-size         0.3s var(--ease-in-out),
+            content-visibility 0.3s allow-discrete;
+}
+
+.accordion[open]::details-content {
+    opacity: 1;
+    block-size: auto;
+}
+
+/* Тело контента */
+.accordion_content {
+    display: flex;
+    flex-direction: column;
+    padding-block-start: var(--base-gap);
+    color: var(--font-color-60);
+}
+
+/* Фокус */
+.accordion:has(.accordion_header:focus-visible) {
+    outline: 2px solid var(--font-color-40);
+    box-shadow: 0 0 4px 4px var(--font-color-40);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .accordion_header:hover {
+        color: var(--font-color);
+    }
+}
+
+@supports not selector(:focus-visible) {
+    .accordion:has(.accordion_header:focus) {
+        outline: 2px solid var(--font-color-40);
+        box-shadow: 0 0 4px 4px var(--font-color-40);
+    }
+}

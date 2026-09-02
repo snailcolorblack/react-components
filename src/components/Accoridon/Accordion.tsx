@@ -84,12 +84,16 @@ import styles from "./Accordion.module.css";
 // );
 
 const Accordion = forwardRef<HTMLDetailsElement, AccordionProps>(
-    ({name, open, className = "", children, ...props}, ref) => (
+    ({name, onOpenChange, onToggle, open, className = '', children, ...props}, ref) => (
         <details
             ref={ref}
             className={`${styles.accordion} ${className}`.trim()}
             name={name}
             open={open}
+            onToggle={(event) => {
+                onToggle?.(event);
+                onOpenChange?.(event.currentTarget.open);
+            }}
             {...props}
         >
             {children}
@@ -98,7 +102,7 @@ const Accordion = forwardRef<HTMLDetailsElement, AccordionProps>(
 );
 
 const AccordionHeader = forwardRef<HTMLElement, AccordionHeaderProps>(
-    ({icon, className = "", children, ...props}, ref) => (
+    ({icon, className = '', children, ...props}, ref) => (
         <summary
             ref={ref}
             className={`${styles.accordion_header} ${className}`.trim()}
@@ -121,7 +125,7 @@ const AccordionHeader = forwardRef<HTMLElement, AccordionHeaderProps>(
 );
 
 const AccordionContent = forwardRef<HTMLDivElement, AccordionContentProps>(
-    ({className = "", children, ...props}, ref) => (
+    ({className = '', children, ...props}, ref) => (
         <div
             ref={ref}
             className={`${styles.accordion_content} ${className}`.trim()}

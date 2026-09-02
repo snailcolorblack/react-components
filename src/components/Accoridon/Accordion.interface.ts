@@ -1,12 +1,13 @@
 // Accordion.interface.ts
 import type {ComponentPropsWithoutRef, ReactNode} from "react";
 
-export interface AccordionContextValue {
-    id: string;
-}
+// export interface AccordionContextValue {
+//     id: string;
+// }
 
 export interface AccordionProps extends ComponentPropsWithoutRef<"details"> {
     name?: string;
+    onOpenChange?: (open: boolean) => void;
 }
 
 export interface AccordionHeaderProps extends ComponentPropsWithoutRef<"summary"> {

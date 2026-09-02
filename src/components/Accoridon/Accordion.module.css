@@ -1,3 +1,7 @@
+/* -------------------------------------------------------------------------- */
+/*  Корень                                                                    */
+/* -------------------------------------------------------------------------- */
+
 .accordion {
     interpolate-size: allow-keywords;
     position: relative;
@@ -10,7 +14,10 @@
     border-bottom: 1px solid var(--font-color-40);
 }
 
-/* Заголовок */
+/* -------------------------------------------------------------------------- */
+/*  Заголовок                                                                 */
+/* -------------------------------------------------------------------------- */
+
 .accordion_header {
     outline: none;
     cursor: pointer;
@@ -19,44 +26,62 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--base-gap);
-    text-align: left;
+    text-align: start;
     font-size: clamp(calc(var(--base-size) * 1.25), 4vw, calc(var(--base-size) * 2));
     font-weight: 500;
     color: var(--font-color-80);
     transition: color 0.2s var(--ease-in-out);
 }
 
-.accordion_header::-webkit-details-marker,
-.accordion_header::marker {
+.accordion_header::-webkit-details-marker {
     display: none;
 }
 
+.accordion_header_text {
+    min-inline-size: 0;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Иконка                                                                    */
+/* -------------------------------------------------------------------------- */
+
 .base_svg {
+    flex: 0 0 auto;
     rotate: 0deg;
     transition: rotate 0.3s var(--ease-in-out);
 }
 
-.accordion[open] .base_svg {
+.accordion[open] > .accordion_header > .base_svg {
     rotate: 45deg;
 }
 
-/* Анимация раскрытия — главное */
+/* -------------------------------------------------------------------------- */
+/*  Раскрытие                                                                 */
+/* -------------------------------------------------------------------------- */
+
 .accordion::details-content {
     opacity: 0;
     block-size: 0;
     overflow: clip;
     transition:
-            opacity            0.2s var(--ease-out),
-            block-size         0.3s var(--ease-in-out),
-            content-visibility 0.3s allow-discrete;
+            opacity            0.15s var(--ease-in-out),
+            block-size         0.3s  var(--ease-in-out),
+            content-visibility 0.3s  allow-discrete;
 }
 
 .accordion[open]::details-content {
     opacity: 1;
     block-size: auto;
+    transition:
+            opacity            0.25s var(--ease-out) 0.05s,
+            block-size         0.3s  var(--ease-out),
+            content-visibility 0.3s  allow-discrete;
 }
 
-/* Тело контента */
+/* -------------------------------------------------------------------------- */
+/*  Тело контента                                                             */
+/* -------------------------------------------------------------------------- */
+
 .accordion_content {
     display: flex;
     flex-direction: column;
@@ -64,8 +89,11 @@
     color: var(--font-color-60);
 }
 
-/* Фокус */
-.accordion:has(.accordion_header:focus-visible) {
+/* -------------------------------------------------------------------------- */
+/*  Интерактив                                                                */
+/* -------------------------------------------------------------------------- */
+
+.accordion:has(> .accordion_header:focus-visible) {
     outline: 2px solid var(--font-color-40);
     box-shadow: 0 0 4px 4px var(--font-color-40);
 }
@@ -76,9 +104,16 @@
     }
 }
 
-@supports not selector(:focus-visible) {
-    .accordion:has(.accordion_header:focus) {
-        outline: 2px solid var(--font-color-40);
-        box-shadow: 0 0 4px 4px var(--font-color-40);
+/* -------------------------------------------------------------------------- */
+/*  Reduced motion                                                            */
+/* -------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+    .accordion::details-content,
+    .accordion[open]::details-content,
+    .base_svg,
+    .accordion_header {
+        transition-duration: 0.01ms;
+        transition-delay: 0s;
     }
 }

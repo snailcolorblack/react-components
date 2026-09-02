@@ -5,7 +5,7 @@ function App() {
 
     return (
         <div className='content'>
-                <Accordion>
+                <Accordion open>
                     <AccordionHeader>Заголовок</AccordionHeader>
                     <AccordionContent>Внутренний контент</AccordionContent>
                 </Accordion>

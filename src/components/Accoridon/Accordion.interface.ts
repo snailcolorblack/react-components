@@ -5,10 +5,7 @@ import type {ComponentPropsWithoutRef, ReactNode} from "react";
 //     id: string;
 // }
 
-export interface AccordionProps extends ComponentPropsWithoutRef<"details"> {
-    name?: string;
-    onOpenChange?: (open: boolean) => void;
-}
+export type AccordionProps = ComponentPropsWithoutRef<"details">
 
 export interface AccordionHeaderProps extends ComponentPropsWithoutRef<"summary"> {
     icon?: ReactNode;

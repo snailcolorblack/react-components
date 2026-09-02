@@ -84,16 +84,10 @@ import styles from "./Accordion.module.css";
 // );
 
 const Accordion = forwardRef<HTMLDetailsElement, AccordionProps>(
-    ({name, onOpenChange, onToggle, open, className = '', children, ...props}, ref) => (
+    ({className = '', children, ...props}, ref) => (
         <details
             ref={ref}
             className={`${styles.accordion} ${className}`.trim()}
-            name={name}
-            open={open}
-            onToggle={(event) => {
-                onToggle?.(event);
-                onOpenChange?.(event.currentTarget.open);
-            }}
             {...props}
         >
             {children}
@@ -109,17 +103,18 @@ const AccordionHeader = forwardRef<HTMLElement, AccordionHeaderProps>(
             {...props}
         >
             <span>{children}</span>
-            {icon ??
-                <svg
-                    className={styles.base_svg}
-                    width="24" height="24" viewBox="0 0 24 24"
-                    fill="none" aria-hidden="true"
-                    xmlns="http://www.w3.org/2000/svg"
-                >
-                    <path d="M12 19.1037V4.89258" stroke="var(--font-color)" strokeWidth="2" strokeLinecap="round"/>
-                    <path d="M4.89432 12L19.1055 12" stroke="var(--font-color)" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-            }
+            <div className={styles.icon} aria-hidden={true}>
+                {icon ??
+                    <svg
+                        width="24" height="24" viewBox="0 0 24 24"
+                        fill="none" aria-hidden="true"
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <path d="M12 19.1037V4.89258" stroke="var(--font-color)" strokeWidth="2" strokeLinecap="round"/>
+                        <path d="M4.89432 12L19.1055 12" stroke="var(--font-color)" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                }
+            </div>
         </summary>
     ),
 );

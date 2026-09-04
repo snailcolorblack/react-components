@@ -1,18 +1,74 @@
 .alert {
+    /* Цвет варианта: одна переменная — фон и рамка выводятся из неё. */
+    --alert-accent: var(--font-color-40);
+    --alert-fill: 40%;
+
     display: flex;
     align-items: center;
     gap: calc(var(--base-gap) * 2);
     padding: calc(var(--base-gap) * 2);
     border-radius: var(--base-gap);
-    border: 1px solid var(--font-color-40);
+    border: 1px solid var(--alert-accent);
+    background-color: color-mix(in oklab, var(--alert-accent) var(--alert-fill), transparent);
+    color: var(--font-color);
+}
 
-    &.alert {
-        /*background-color: color-mix(in oklab, lab(100% 17 100) 20%, transparent);*/
+/* -------------------------------------------------------------------------- */
+/*  Варианты                                                                  */
+/* -------------------------------------------------------------------------- */
+
+.alert[data-variant="ERROR"] {
+    --alert-accent: lab(49 83.14 77.98);
+    --alert-fill: 40%;
+}
+
+.alert[data-variant="WARNING"] {
+    --alert-accent: lab(100% 17 100);
+    --alert-fill: 20%;
+}
+
+.alert[data-variant="SUCCESS"] {
+    --alert-accent: lab(80 -97.46 87.58);
+    --alert-fill: 20%;
+}
+
+/* Рамка чуть плотнее фона — читаемая граница на любом фоне. */
+.alert[data-variant] {
+    border-color: color-mix(in oklab, var(--alert-accent) 60%, transparent);
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Фолбэк для движков без lab()/color-mix()                                  */
+/* -------------------------------------------------------------------------- */
+
+@supports not (color: lab(50 0 0)) {
+    .alert[data-variant="ERROR"]   { --alert-accent: #e5484d; }
+    .alert[data-variant="WARNING"] { --alert-accent: #ffb224; }
+    .alert[data-variant="SUCCESS"] { --alert-accent: #30a46c; }
+}
+
+@supports not (background-color: color-mix(in oklab, red 40%, transparent)) {
+    .alert {
+        background-color: transparent;
+        border-color: var(--alert-accent);
     }
-    &.warning {
-        /*background-color: color-mix(in oklab, lab(100% 17 100) 20%, transparent);*/
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Высокий контраст                                                          */
+/* -------------------------------------------------------------------------- */
+
+@media (forced-colors: active) {
+    .alert {
+        background-color: Canvas;
+        border-color: CanvasText;
+        color: CanvasText;
     }
-    &.success {
-        /*background-color: color-mix(in oklab, lab(100% 17 100) 20%, transparent);*/
+}
+
+@media (prefers-contrast: more) {
+    .alert[data-variant] {
+        border-color: var(--alert-accent);
+        border-width: 2px;
     }
 }

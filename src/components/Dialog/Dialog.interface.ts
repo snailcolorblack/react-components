@@ -1,3 +1,5 @@
-import {type ComponentPropsWithoutRef} from 'react';
+// Dialog.interface.ts
+import type {ComponentPropsWithRef} from 'react';
 
-export type DialogProps = ComponentPropsWithoutRef<'dialog'>;
+/** React 19: `ref` — обычный проп, forwardRef не нужен. */
+export type DialogProps = ComponentPropsWithRef<'dialog'>;

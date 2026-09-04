@@ -29,15 +29,24 @@
     block-size: 100%;
     background-color: var(--base-color);
 
+    .section {
+        display: flex;
+        flex-direction: column;
+        gap: .5rem;
+        inline-size: 100%;
+    }
+
     .content {
         display: flex;
         align-items: center;
         justify-content: center;
         flex-direction: column;
         flex: 1;
+        gap: 3rem;
         padding-inline: 16px;
         block-size: 100%;
         inline-size: 100%;
+        max-inline-size: 980px;
     }
 
     .block {

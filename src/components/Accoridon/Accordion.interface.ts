@@ -1,14 +1,28 @@
 // Accordion.interface.ts
-import type {ComponentPropsWithoutRef, ReactNode} from "react";
+import type {ComponentPropsWithRef, ReactNode} from "react";
 
-// export interface AccordionContextValue {
-//     id: string;
-// }
+/**
+ * Корень аккордеона — нативный <details>.
+ * Наследует все атрибуты, включая `name` (эксклюзивные группы) и `open`.
+ * React 19: `ref` приходит обычным пропсом, forwardRef не нужен.
+ */
+export type AccordionProps = ComponentPropsWithRef<"details">;
 
-export type AccordionProps = ComponentPropsWithoutRef<"details">
+/**
+ * Тег, в который оборачивается текст внутри <summary>.
+ * Спецификация HTML разрешает единственный заголовок как содержимое <summary>,
+ * поэтому h1…h6 здесь валидны и дают аккордеону место в карте заголовков
+ * страницы для скринридеров (рекомендация WAI-ARIA APG).
+ */
+export type AccordionTitleTag =
+    | 'span' | 'div' | 'p'
+    | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
 
-export interface AccordionHeaderProps extends ComponentPropsWithoutRef<"summary"> {
+export interface AccordionHeaderProps extends ComponentPropsWithRef<"summary"> {
+    /** Кастомная иконка. По умолчанию — плюс, поворачивающийся в крестик. */
     icon?: ReactNode;
+    /** Полиморфный тег заголовка. По умолчанию `span`. */
+    as?: AccordionTitleTag;
 }
 
-export type AccordionContentProps = ComponentPropsWithoutRef<"div">;
+export type AccordionContentProps = ComponentPropsWithRef<"div">;

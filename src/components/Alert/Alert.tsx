@@ -2,7 +2,12 @@
 import type {AlertProps} from "./Alert.interface.ts";
 import styles from './Alert.module.css';
 
-function Alert ({variant, live = false, className = "", ...props}: AlertProps) {
+function Alert ({
+                    variant,
+                    live = false,
+                    className = "",
+                    ...props
+                }: AlertProps) {
     const role = live ? (variant === 'ERROR' ? 'alert' : 'status') : undefined;
 
     return (

@@ -51,8 +51,8 @@
 
     .block {
         inline-size: 100%;
-        min-block-size: 120px;
-        background-color: #242424;
         border-radius: 8px;
+        display: flex;
+        gap: 8px
     }
 }

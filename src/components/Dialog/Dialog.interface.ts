@@ -1,5 +1,10 @@
 // Dialog.interface.ts
-import type {ComponentPropsWithRef} from 'react';
+import type {ComponentPropsWithRef, ReactNode} from 'react';
 
-/** React 19: `ref` — обычный проп, forwardRef не нужен. */
-export type DialogProps = ComponentPropsWithRef<'dialog'>;
+export type DialogClosedBy = 'any' | 'closerequest' | 'none';
+
+export interface DialogProps extends Omit<ComponentPropsWithRef<'dialog'>, 'open'> {
+    open?: boolean
+    label?: ReactNode
+    closedBy?: DialogClosedBy
+}

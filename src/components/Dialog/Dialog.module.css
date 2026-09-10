@@ -1,16 +1,28 @@
 .dialog {
+    --dialog-duration: 0.24s;
+    --dialog-backdrop: rgb(0 0 0 / 0.5);
+
+
+    inline-size: min(32rem, 100% - var(--base-size) * 2);
+    max-block-size: min(85dvb, 100% - var(--base-size) * 2);
+    overflow: auto;
+    overscroll-behavior: contain;
+
     padding: var(--base-size);
     border: 1px solid var(--font-color-40);
     border-radius: var(--base-gap);
+    color: var(--font-color);
+    background-color: var(--base-color);
+
     opacity: 0;
     scale: 0.85;
     transform-origin: center center;
 
     transition:
             opacity 0.18s var(--ease-in-out),
-            scale   0.24s var(--ease-in-out),
-            display 0.24s allow-discrete,
-            overlay 0.24s allow-discrete;
+            scale   var(--dialog-duration) var(--ease-in-out),
+            display var(--dialog-duration) allow-discrete,
+            overlay var(--dialog-duration) allow-discrete;
 }
 
 .dialog[open] {
@@ -25,20 +37,58 @@
     }
 }
 
+/* -------------------------------------------------------------------------- */
+/*  Затемнение                                                                */
+/* -------------------------------------------------------------------------- */
+
 .dialog::backdrop {
     background-color: rgb(0 0 0 / 0);
     transition:
-            background-color 0.24s var(--ease-in-out),
-            display          0.24s allow-discrete,
-            overlay          0.24s allow-discrete;
+            background-color var(--dialog-duration) var(--ease-in-out),
+            display          var(--dialog-duration) allow-discrete,
+            overlay          var(--dialog-duration) allow-discrete;
 }
 
 .dialog[open]::backdrop {
-    background-color: rgb(0 0 0 / 0.5);
+    background-color: var(--dialog-backdrop);
 }
 
 @starting-style {
     .dialog[open]::backdrop {
         background-color: rgb(0 0 0 / 0);
+    }
+}
+
+
+html:has(.dialog:modal) {
+    overflow: hidden;
+    scrollbar-gutter: stable;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Высокий контраст                                                          */
+/* -------------------------------------------------------------------------- */
+
+@media (forced-colors: active) {
+    .dialog {
+        border: 2px solid CanvasText;
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Reduced motion                                                            */
+/* -------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+    .dialog {
+        --dialog-duration: 0.01ms;
+        scale: 1;
+        transition-duration: 0.01ms;
+    }
+
+    @starting-style {
+        .dialog[open] {
+            scale: 1;
+        }
     }
 }

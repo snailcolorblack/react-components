@@ -1,49 +1,198 @@
 .button {
-    border: none;
-    outline: none;
-    border-radius: var(--base-gap);
-    cursor: pointer;
-    background-color: transparent;
-    padding: calc(var(--base-gap) * 2) calc(var(--base-size) * 2);
+    --button-accent: lab(46% -46 40);
+    --button-accent-contrast: var(--font-color);
+    --button-accent-text: color-mix(in oklab, var(--button-accent), var(--font-color) 25%);
 
-    &[disabled] {
-        cursor: not-allowed;
-        filter: grayscale(1);
-    }
+    --button-bg: transparent;
+    --button-fg: var(--font-color);
+    --button-border: transparent;
+
+    --button-hover-shift: 14%;
+    --button-ring: var(--button-accent-text);
+
+
+    --button-press-scale: 0.98;
+    --button-press-duration: 0.16s;
+
+    --button-radius: var(--base-gap);
+    --button-padding: calc(var(--base-gap) * 2) calc(var(--base-size) * 2);
+
+
+
+    display: inline-grid;
+    grid-template-areas: "content";
+    place-items: center;
+
+    padding: var(--button-padding);
+    border: 1px solid var(--button-border);
+    border-radius: var(--button-radius);
+    cursor: pointer;
+    font: inherit;
+    color: var(--button-fg);
+    background-color: var(--button-bg);
+    transition:
+            background-color 0.2s var(--ease-in-out),
+            border-color     0.2s var(--ease-in-out),
+            color            0.2s var(--ease-in-out),
+            scale            var(--button-press-duration) var(--ease-out);
+
+
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
+
+/* -------------------------------------------------------------------------- */
+/*  Варианты                                                                  */
+/* -------------------------------------------------------------------------- */
 
 .default {
-    background-color: green;
-    color: var(--font-color);
-    transition: .2s background-color var(--ease-in-out);
-
-    @media (hover: hover) {
-        &:hover:not([disabled]) {
-            background-color: darkgreen;
-        }
-    }
+    --button-bg: var(--button-accent);
+    --button-fg: var(--button-accent-contrast);
+    --button-border: var(--button-accent);
 }
+
 .contrast {
-    background-color: var(--font-color);
-    color: var(--base-color);
-    transition: .2s background-color var(--ease-in-out);
+    --button-bg: var(--font-color);
+    --button-fg: var(--base-color);
+    --button-border: var(--font-color);
+    --button-ring: var(--font-color);
+}
 
-    @media (hover: hover) {
-        &:hover:not([disabled]) {
-            background-color: var(--font-color-80);
-        }
+.outline {
+    --button-bg: transparent;
+    --button-fg: var(--button-accent-text);
+    --button-border: currentColor;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Размеры                                                                   */
+/* -------------------------------------------------------------------------- */
+.full {
+    /*flex: 1 100%;*/
+    inline-size: 100%;
+}
+.fill {
+    /*flex: 1 fit-content;*/
+    inline-size: fit-content;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Состояния                                                                 */
+/* -------------------------------------------------------------------------- */
+
+
+.button[data-state="active"],
+.button:global(.active) {
+    --button-bg: var(--button-accent);
+    --button-fg: var(--button-accent-contrast);
+    --button-border: var(--button-accent);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .button:hover:not(:disabled):not([aria-disabled="true"]) {
+        background-color: color-mix(
+                in oklab,
+                var(--button-bg),
+                var(--button-fg) var(--button-hover-shift)
+        );
+        border-color: color-mix(
+                in oklab,
+                var(--button-border),
+                var(--button-fg) var(--button-hover-shift)
+        );
     }
 }
-.outline {
-    color: green;
-    transition: .2s background-color var(--ease-in-out),
-                .2s color var(--ease-in-out);
-    border: 1px solid green;
 
-    @media (hover: hover) {
-        &:hover:not([disabled]) {
-            border-color: darkgreen;
-            color: darkgreen;
-        }
+
+.button:active:not(:disabled):not([aria-disabled="true"]) {
+    --button-press-duration: 0.08s;
+    scale: var(--button-press-scale);
+}
+
+.button:focus-visible {
+    outline: 2px solid var(--button-ring);
+    outline-offset: 2px;
+}
+
+.button:disabled:not([aria-busy="true"]),
+.button[aria-disabled="true"]:not([aria-busy="true"]) {
+    filter: grayscale(1);
+    opacity: 0.7;
+}
+
+.button:disabled,
+.button[aria-disabled="true"] {
+    cursor: not-allowed;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Загрузка                                                                  */
+/* -------------------------------------------------------------------------- */
+
+.label {
+    grid-area: content;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--base-gap);
+}
+
+.spinner {
+    grid-area: content;
+    inline-size: 1em;
+    block-size: 1em;
+    border: 2px solid currentColor;
+    border-block-start-color: transparent;
+    border-radius: 50%;
+    animation: button-spin 0.7s linear infinite;
+}
+
+/* opacity, а не visibility: скрытый visibility текст выпадает из дерева
+   доступности, и кнопка на время загрузки теряет своё имя. */
+.button[aria-busy="true"] .label {
+    opacity: 0;
+}
+
+@keyframes button-spin {
+    to { rotate: 360deg; }
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Высокий контраст                                                          */
+/* -------------------------------------------------------------------------- */
+
+@media (forced-colors: active) {
+    .button {
+        border-color: ButtonText;
+        color: ButtonText;
+        background-color: ButtonFace;
+    }
+
+    .button[data-state="active"],
+    .button:global(.active) {
+        border-color: Highlight;
+        color: HighlightText;
+        background-color: Highlight;
+    }
+
+    .button:focus-visible {
+        outline-color: Highlight;
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Reduced motion                                                            */
+/* -------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+    .button {
+        transition-duration: 0.01ms;
+    }
+
+    .button:active:not(:disabled):not([aria-disabled="true"]) {
+        --button-press-scale: 1;
+    }
+
+    .spinner {
+        animation-duration: 2s;
     }
 }

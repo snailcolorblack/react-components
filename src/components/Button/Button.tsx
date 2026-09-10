@@ -1,43 +1,58 @@
 // Button.tsx
-import type {ButtonProps, ButtonVariant} from "./Button.interface.ts";
+import type {MouseEvent} from "react";
+import type {ButtonProps, ButtonSize, ButtonVariant} from "./Button.interface.ts";
 import styles from './Button.module.css'
 
-/**
- * Карта вариантов собирается один раз на модуль: на рендере остаётся
- * чтение по ключу вместо toLowerCase() и динамического обращения к styles.
- */
-const variantClass: Record<ButtonVariant, string> = {
-    DEFAULT: styles.default,
-    CONTRAST: styles.contrast,
-    OUTLINE: styles.outline,
-};
+const VARIANT_CLASS = {
+                    DEFAULT: styles.default,
+                    CONTRAST: styles.contrast,
+                    OUTLINE: styles.outline,
+} satisfies Record<ButtonVariant, string>;
+const SIZE_CLASS = {
+                    FIT: styles.fill,
+                    FULL: styles.full,
+} satisfies Record<ButtonSize, string>;
+
 
 function Button({
                     className = "",
+                    size = 'FIT',
                     variant = 'DEFAULT',
                     active = false,
                     loading = false,
-                    disabled,
+                    disabled = false,
+                    onClick,
+                    children,
                     ...props
                 }: ButtonProps) {
 
-    const classes = [
-        styles.button,
-        variantClass[variant],
-        active && styles.active,
-        className,
-    ].filter(Boolean).join(' ');
+    const classes = [styles.button, VARIANT_CLASS[variant], SIZE_CLASS[size], className,].filter(Boolean).join(' ');
 
     return (
         <button
             {...props}
             type={props.type ?? 'button'}
-            disabled={disabled || loading}
+            disabled={disabled}
+            aria-disabled={loading || undefined}
             aria-busy={loading || undefined}
             data-state={active ? 'active' : undefined}
             className={classes}
-        />
+            onClick={handleClick}
+        >
+            <span className={styles.label}>{children}</span>
+            {loading && <span className={styles.spinner} aria-hidden="true"/>}
+        </button>
     );
+
+
+    function handleClick(event: MouseEvent<HTMLButtonElement>) {
+        if (loading) {
+            event.preventDefault();
+
+            return;
+        }
+        onClick?.(event);
+    }
 }
 
 export {Button};

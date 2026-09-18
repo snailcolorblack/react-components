@@ -1,0 +1,123 @@
+/* -------------------------------------------------------------------------- */
+/*  Типографика                                                               */
+/*                                                                            */
+/*  Шкала объявлена здесь и только здесь. Переменные живут на самом элементе,  */
+/*  а не в :root: CSS-модуль не должен подмешивать глобальные имена — тогда    */
+/*  шкалу можно перебить на одном узле, не задевая страницу.                   */
+/*                                                                            */
+/*      <Typography style={{'--font-size-40': '3rem'}} as="h1">…</Typography>  */
+/* -------------------------------------------------------------------------- */
+
+.text {
+    /* Основная шкала: заголовки и абзац. */
+    --font-size-16: 1rem;
+    --font-size-18: 1.125rem;
+    --font-size-24: 1.5rem;
+    --font-size-28: 1.75rem;
+    --font-size-32: 2rem;
+    --font-size-40: 2.5rem;
+
+    /* Вне шкалы: мелкое служебное и чуть крупнее абзаца. */
+    --font-size-12: 0.75rem;
+    --font-size-14: 0.875rem;
+    --font-size-20: 1.25rem;
+    --font-size-22: 1.375rem;
+
+    /*
+     * Межстрочный интервал зависит от размера, а не от смысла: у крупного
+     * текста строки и так далеко друг от друга, и полуторный интервал
+     * разрывает заголовок на отдельные полосы.
+     */
+    --line-height-tight: 1.2;
+    --line-height-base: 1.5;
+
+    --typography-size: var(--font-size-16);
+    --typography-leading: var(--line-height-base);
+
+
+
+    /*
+     * Насыщенности и начертания здесь нет намеренно: их задаёт тег.
+     * Иначе variant затирал бы жирность у <strong> и наклон у <em>,
+     * то есть менял бы не размер, как обещано, а смысл.
+     */
+    font-size: var(--typography-size);
+    line-height: var(--typography-leading);
+
+    /* Длинный адрес или идентификатор не должен растягивать колонку. */
+    overflow-wrap: break-word;
+    /* Висячее слово в последней строке — самый заметный дефект абзаца. */
+    text-wrap: pretty;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Основная шкала                                                            */
+/* -------------------------------------------------------------------------- */
+
+.h1 {
+    --typography-size: var(--font-size-40);
+    --typography-leading: var(--line-height-tight);
+}
+
+.h2 {
+    --typography-size: var(--font-size-32);
+    --typography-leading: var(--line-height-tight);
+}
+
+.h3 {
+    --typography-size: var(--font-size-28);
+    --typography-leading: var(--line-height-tight);
+}
+
+.h4 {
+    --typography-size: var(--font-size-24);
+    --typography-leading: var(--line-height-tight);
+}
+
+.h5 {
+    --typography-size: var(--font-size-18);
+}
+
+.h6 {
+    --typography-size: var(--font-size-16);
+}
+
+.p {
+    --typography-size: var(--font-size-16);
+}
+
+/*
+ * Заголовок — короткая строка, и перенос по ширине колонки оставляет
+ * в последней строке одно слово. balance выравнивает строки между собой;
+ * для абзаца он не годится (браузер считает его только до нескольких строк),
+ * там остаётся pretty из базы.
+ */
+.h1,
+.h2,
+.h3,
+.h4 {
+    text-wrap: balance;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Размеры вне шкалы                                                         */
+/* -------------------------------------------------------------------------- */
+
+.caption {
+    --typography-size: var(--font-size-12);
+}
+
+.note {
+    --typography-size: var(--font-size-14);
+}
+
+.lead {
+    --typography-size: var(--font-size-20);
+}
+
+.subtitle {
+    --typography-size: var(--font-size-22);
+}
+.inheritable {
+    --typography-size: inherit;
+}

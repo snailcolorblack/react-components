@@ -1,15 +1,30 @@
+/*
+ * Плашка строится из трёх производных одного акцента:
+ *   заливка — акцент, разбавленный до подложки (16% поверх страницы),
+ *   рамка   — тот же акцент на 85%: этого хватает, чтобы граница читалась
+ *             как элемент интерфейса (3:1 к фону), а не как декор,
+ *   подпись — --alert-tint, тон, поднятый по светлоте до читаемости.
+ *
+ * Раньше цвета задавались в lab() за пределами sRGB: lab(100% 17 100)
+ * обрезался браузером до #fff100, lab(80 -97.46 87.58) — до #00ed00.
+ * Отсюда и неоновый вид: показывались не заданные цвета, а примары sRGB.
+ */
+
 .alert {
-    --alert-accent: var(--font-color-40);
-    --alert-fill: 40%;
+    --alert-accent: var(--contrast-color-400);
+    --alert-tint: var(--contrast-color-300);
+    --alert-fg: var(--contrast-color);
+    --alert-fill: 16%;
+    --alert-border: 85%;
 
     display: flex;
     align-items: center;
     gap: calc(var(--base-gap) * 2);
     padding: calc(var(--base-gap) * 2);
     border-radius: var(--base-gap);
-    border: 1px solid var(--alert-accent);
+    border: 1px solid color-mix(in oklab, var(--alert-accent) var(--alert-border), transparent);
     background-color: color-mix(in oklab, var(--alert-accent) var(--alert-fill), transparent);
-    color: var(--font-color);
+    color: var(--alert-fg);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -17,33 +32,37 @@
 /* -------------------------------------------------------------------------- */
 
 .alert[data-variant="ERROR"] {
-    --alert-accent: lab(49 83.14 77.98);
-    --alert-fill: 40%;
+    --alert-accent: var(--danger-color);
+    --alert-tint: var(--danger-color-soft);
 }
 
 .alert[data-variant="WARNING"] {
-    --alert-accent: lab(100% 17 100);
-    --alert-fill: 20%;
+    --alert-accent: var(--warning-color);
+    --alert-tint: var(--warning-color-soft);
 }
 
 .alert[data-variant="SUCCESS"] {
-    --alert-accent: lab(80 -97.46 87.58);
-    --alert-fill: 20%;
+    --alert-accent: var(--success-color);
+    --alert-tint: var(--success-color-soft);
 }
 
-.alert[data-variant] {
-    border-color: color-mix(in oklab, var(--alert-accent) 60%, transparent);
+/*
+ * Иконка и любой элемент, помеченный как акцентный, красятся тоном варианта.
+ * Тон читается на своей подложке от 5.2:1, то есть годится и для текста,
+ * а не только для декоративной иконки.
+ */
+.alert :global(.accent),
+.alert > svg {
+    color: var(--alert-tint);
+    flex: 0 0 auto;
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Фолбэк для движков без lab()/color-mix()                                  */
+/*  Фолбэк для движков без color-mix()                                        */
+/*                                                                            */
+/*  hsl() поддерживается везде, поэтому подменять сами цвета больше не нужно  */
+/*  — достаточно отказаться от разбавленной заливки в пользу сплошной рамки.  */
 /* -------------------------------------------------------------------------- */
-
-@supports not (color: lab(50 0 0)) {
-    .alert[data-variant="ERROR"]   { --alert-accent: #e5484d; }
-    .alert[data-variant="WARNING"] { --alert-accent: #ffb224; }
-    .alert[data-variant="SUCCESS"] { --alert-accent: #30a46c; }
-}
 
 @supports not (background-color: color-mix(in oklab, red 40%, transparent)) {
     .alert {

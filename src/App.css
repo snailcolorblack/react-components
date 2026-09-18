@@ -1,16 +1,112 @@
 :root {
-    --base-color: lab(2% 0 0);
-    --font-color: lab(98% 0 0);
+    color-scheme: dark;
 
-    --base-color-80: color-mix(in oklab, var(--base-color) 80%, transparent);
-    --base-color-60: color-mix(in oklab, var(--base-color) 60%, transparent);
-    --base-color-40: color-mix(in oklab, var(--base-color) 40%, transparent);
+    /* ---------------------------------------------------------------------- */
+    /*  Исходная палитра                                                      */
+    /*                                                                        */
+    /*  Ступени 100…400 — это шкала светлоты, а не контраста: какой текст на  */
+    /*  них читается, зависит от тона. Поэтому напрямую в компонентах они не  */
+    /*  используются — только через семантический слой ниже, где к каждому    */
+    /*  цвету заливки прикреплён свой цвет текста.                            */
+    /* ---------------------------------------------------------------------- */
 
-    --font-color-80: color-mix(in oklab, var(--font-color) 80%, transparent);
-    --font-color-60: color-mix(in oklab, var(--font-color) 60%, transparent);
-    --font-color-40: color-mix(in oklab, var(--font-color) 40%, transparent);
+    --white: hsl(0, 0%, 100%);
+    --black: hsl(0, 0%, 6%);
 
+    --green-color-100: hsl(150, 100%, 27%);
+    --green-color-200: hsl(150, 100%, 37%);
+    --green-color-300: hsl(150, 100%, 40%);
+    --green-color-400: hsl(148, 60%, 62%);
 
+    --blue-color-100: hsl(196, 53%, 33%);
+    --blue-color-200: hsl(196, 53%, 53%);
+    --blue-color-300: hsl(196, 53%, 66%);
+
+    --purple-color-100: hsl(239, 37%, 38%);
+    --purple-color-200: hsl(239, 37%, 58%);
+    --purple-color-300: hsl(239, 37%, 68%);
+
+    --orange-color-100: hsl(27, 52%, 47%);
+    --orange-color-200: hsl(27, 52%, 57%);
+    --orange-color-300: hsl(27, 52%, 60%);
+    --orange-color-400: hsl(33, 70%, 64%);
+
+    --red-color-100: hsl(2, 78%, 45%);
+    --red-color-200: hsl(2, 78%, 55%);
+    --red-color-300: hsl(2, 78%, 65%);
+
+    /* ---------------------------------------------------------------------- */
+    /*  Поверхности                                                           */
+    /*                                                                        */
+    /*  base-color — страница, base-color-200 — всё, что лежит поверх неё:    */
+    /*  диалог, поповер, карточка. Разница светлоты сама создаёт ощущение     */
+    /*  слоя, и всплывающему окну больше не приходится держаться на одной     */
+    /*  рамке.                                                                */
+    /* ---------------------------------------------------------------------- */
+
+    --base-color: var(--black);
+    --base-color-100: hsl(0, 0%, 0%);
+    --base-color-200: hsl(202, 9%, 15%);
+    --base-color-300: hsl(0, 0%, 28%);
+    --base-color-400: hsl(202, 9%, 42%);
+    --base-color-500: hsl(213, 10%, 20%);
+
+    /* ---------------------------------------------------------------------- */
+    /*  Текст                                                                 */
+    /*                                                                        */
+    /*  contrast-color-500 — тёмный: это текст поверх светлой заливки         */
+    /*  (белая кнопка, яркий зелёный акцент), а не поверх страницы.           */
+    /* ---------------------------------------------------------------------- */
+
+    --contrast-color: var(--white);
+    --contrast-color-100: hsl(0, 0%, 100%);
+    --contrast-color-200: hsl(204, 22%, 95%);
+    --contrast-color-300: hsl(0, 0%, 72%);
+    --contrast-color-400: hsl(202, 9%, 52%);
+    --contrast-color-500: hsl(0, 0%, 10%);
+
+    /* Полупрозрачные ступени — для рамок и подложек, которые должны         */
+    /* проступать сквозь то, что под ними.                                   */
+    --contrast-alpha-60: color-mix(in oklab, var(--contrast-color) 60%, transparent);
+    --contrast-alpha-40: color-mix(in oklab, var(--contrast-color) 40%, transparent);
+    --contrast-alpha-20: color-mix(in oklab, var(--contrast-color) 20%, transparent);
+    --contrast-alpha-10: color-mix(in oklab, var(--contrast-color) 10%, transparent);
+
+    /* ---------------------------------------------------------------------- */
+    /*  Семантика                                                             */
+    /*                                                                        */
+    /*  Цвет заливки всегда идёт парой со своим цветом текста. Иначе выходит  */
+    /*  то, что было раньше: подпись прибита к светлому --font-color, и на    */
+    /*  зелёной заливке даёт 2.5:1.                                           */
+    /*                                                                        */
+    /*  -soft — тот же тон, поднятый по светлоте: им пишут по тёмному фону,   */
+    /*  где сама заливка была бы слишком тёмной для текста.                   */
+    /* ---------------------------------------------------------------------- */
+
+    --accent-color: var(--green-color-200);
+    --accent-color-soft: var(--green-color-300);
+    --accent-contrast: var(--contrast-color-500);
+
+    --danger-color: var(--red-color-200);
+    --danger-color-soft: var(--red-color-300);
+
+    --warning-color: var(--orange-color-200);
+    --warning-color-soft: var(--orange-color-400);
+
+    --success-color: var(--green-color-200);
+    --success-color-soft: var(--green-color-300);
+
+    /* ---------------------------------------------------------------------- */
+    /*  Совместимость                                                         */
+    /*                                                                        */
+    /*  Старые имена, пока не вычищены из разметки. Удалить, когда App.tsx    */
+    /*  перестанет их использовать.                                           */
+    /* ---------------------------------------------------------------------- */
+
+    --font-color: var(--contrast-color);
+    --font-color-80: color-mix(in oklab, var(--contrast-color) 80%, transparent);
+    --font-color-60: var(--contrast-alpha-60);
+    --font-color-40: var(--contrast-alpha-40);
 
     --base-size: 1rem;
     --base-gap: .25rem;
@@ -24,9 +120,9 @@
     align-items: center;
     justify-content: center;
     min-block-size: 100svh;
-    min-inline-size: 100vw;
     inline-size: 100%;
     block-size: 100%;
+    color: var(--contrast-color);
     background-color: var(--base-color);
 
     .section {
@@ -37,6 +133,7 @@
     }
 
     .content {
+        padding-block: 4rem;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -53,6 +150,7 @@
         inline-size: 100%;
         border-radius: 8px;
         display: flex;
-        gap: 8px
+        flex-wrap: wrap;
+        gap: 8px;
     }
 }

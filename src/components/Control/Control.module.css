@@ -1,0 +1,271 @@
+/* -------------------------------------------------------------------------- */
+/*  Переключатели: общие стили Radio и Checkbox                               */
+/*                                                                            */
+/*  Один файл на два компонента — различий в оформлении ровно два: форма       */
+/*  индикатора и рисунок внутри него. Всё остальное, включая фокус, чип        */
+/*  и высокий контраст, у них общее.                                          */
+/*                                                                            */
+/*  Стилизуется сам <input>, а не подставной <span>: с appearance: none        */
+/*  ему можно задать рамку, фон и ::before, и при этом он остаётся настоящим   */
+/*  полем — с фокусом, клавиатурой, участием в форме и в дереве доступности.   */
+/* -------------------------------------------------------------------------- */
+
+.control {
+    /*
+     * Цвета объявлены здесь и только здесь. Перебить можно на элементе:
+     *   <Checkbox style={{'--control-accent': 'var(--purple-color-200)'}}/>
+     *
+     * Акцент идёт парой с цветом рисунка на нём: галочка лежит поверх
+     * заливки, и порознь их менять нельзя.
+     */
+    --control-accent: var(--accent-color);
+    --control-accent-contrast: var(--accent-contrast);
+    --control-border: var(--contrast-alpha-40);
+    --control-bg: transparent;
+    --control-ring: var(--accent-color-soft);
+
+    --control-size: 1.25rem;
+    --control-gap: calc(var(--base-gap) * 2);
+    --control-radius: var(--base-gap);
+    --control-duration: 0.16s;
+
+    display: inline-flex;
+    align-items: center;
+    gap: var(--control-gap);
+    cursor: pointer;
+
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Индикатор                                                                 */
+/* -------------------------------------------------------------------------- */
+
+.input {
+    appearance: none;
+    margin: 0;
+    /* Не сжимается: длинная подпись иначе съедает квадрат до полоски. */
+    flex: none;
+    inline-size: var(--control-size);
+    block-size: var(--control-size);
+    border: 1px solid var(--control-border);
+    background-color: var(--control-bg);
+    cursor: inherit;
+
+    display: grid;
+    place-content: center;
+
+    transition:
+            background-color var(--control-duration) var(--ease-in-out),
+            border-color var(--control-duration) var(--ease-in-out);
+}
+
+/*
+ * Рисунок внутри: галочка, точка или чёрточка. Он всегда на месте и только
+ * меняет масштаб — так появление можно анимировать, а размеры не скачут.
+ */
+.input::before {
+    content: '';
+    inline-size: calc(var(--control-size) * 0.6);
+    block-size: calc(var(--control-size) * 0.6);
+    background-color: var(--control-accent-contrast);
+    scale: 0;
+    transition: scale var(--control-duration) var(--ease-out);
+}
+
+/*
+ * :indeterminate здесь ограничен флажком, и это не придирка: по спецификации
+ * он матчит ещё и любой переключатель из группы, где не выбрано ничего.
+ * Замерено — без .checkbox перед ним пустая радиогруппа выглядела так, будто
+ * выбраны сразу все её варианты.
+ */
+.input:checked,
+.checkbox .input:indeterminate {
+    --control-bg: var(--control-accent);
+    --control-border: var(--control-accent);
+}
+
+.input:checked::before,
+.checkbox .input:indeterminate::before {
+    scale: 1;
+}
+
+.input:focus-visible {
+    outline: 2px solid var(--control-ring);
+    outline-offset: 2px;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Формы                                                                     */
+/*                                                                            */
+/*  Единственное, чем Radio и Checkbox отличаются внешне.                     */
+/* -------------------------------------------------------------------------- */
+
+/* Переключатель — круг с точкой. */
+.radio .input,
+.radio .input::before {
+    border-radius: 50%;
+}
+
+/* Флажок — квадрат с галочкой. Галочка нарисована обрезкой квадрата:
+   так она масштабируется вместе с --control-size и не зависит от шрифта. */
+.checkbox .input {
+    border-radius: calc(var(--control-radius) / 1.5);
+}
+
+.checkbox .input::before {
+    clip-path: polygon(14% 44%, 0 65%, 40% 100%, 100% 16%, 80% 0%, 43% 62%);
+}
+
+/* Промежуточное состояние — чёрточка, а не галочка. */
+.checkbox .input:indeterminate::before {
+    clip-path: none;
+    block-size: 2px;
+    border-radius: 1px;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Подпись                                                                   */
+/* -------------------------------------------------------------------------- */
+
+.label {
+    /* Подпись может быть разметкой: картинка, цена, вторая строка. */
+    display: flex;
+    flex-direction: column;
+    gap: var(--base-gap);
+    /* Длинный вариант переносится, а не растягивает строку. */
+    min-inline-size: 0;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Вариант CHIP                                                              */
+/*                                                                            */
+/*  Индикатор убран из вида, подсвечивается вся область. Убран именно из      */
+/*  вида: не display: none и не visibility: hidden — они выбросили бы поле    */
+/*  из фокуса и из дерева доступности, и переключатель перестал бы            */
+/*  существовать для клавиатуры и скринридера.                                */
+/* -------------------------------------------------------------------------- */
+
+.chip {
+    position: relative;
+    padding: calc(var(--base-gap) * 2) var(--base-size);
+    border: 1px solid var(--control-border);
+    border-radius: var(--control-radius);
+
+    transition:
+            background-color var(--control-duration) var(--ease-in-out),
+            border-color var(--control-duration) var(--ease-in-out);
+}
+
+.chip .input {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    border: 0;
+    opacity: 0;
+    /* Клик по чипу должен попасть в label, а не в невидимое поле под ним. */
+    pointer-events: none;
+}
+
+/*
+ * Состояние передаётся двумя каналами сразу — заливкой и рамкой.
+ * Одного цвета текста здесь нет намеренно: по WCAG 1.4.1 цвет не может
+ * быть единственным способом что-то сообщить.
+ */
+.chip:has(.input:checked) {
+    --control-border: var(--control-accent);
+
+    background-color: color-mix(in oklab, var(--control-accent) 22%, transparent);
+}
+
+/* Фокус рисуется на чипе: сам input невидим, и его контур показать негде. */
+.chip:has(.input:focus-visible) {
+    outline: 2px solid var(--control-ring);
+    outline-offset: 2px;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Наведение и недоступность                                                 */
+/* -------------------------------------------------------------------------- */
+
+/*
+ * Наведение подсвечивает только невыбранное. Иначе оно перебивало бы
+ * акцентную рамку выбранного — правила идут ниже по файлу и выигрывают
+ * при равной специфичности, — и наведение на выбранный вариант выглядело
+ * бы как снятие выбора. Замерено: без :not(:checked) рамка выбранного
+ * чипа под курсором становится серой.
+ */
+@media (hover: hover) and (pointer: fine) {
+    /* Переключатель и флажок перечислены порознь по той же причине, что и выше:
+       у пустой радиогруппы :indeterminate истинен, и общий селектор оставил бы
+       её вовсе без отклика на наведение. */
+    .radio:has(.input:not(:disabled, :checked)):hover,
+    .checkbox:has(.input:not(:disabled, :checked, :indeterminate)):hover {
+        --control-border: var(--contrast-alpha-60);
+    }
+
+    .chip.radio:has(.input:not(:disabled, :checked)):hover,
+    .chip.checkbox:has(.input:not(:disabled, :checked, :indeterminate)):hover {
+        background-color: var(--contrast-alpha-10);
+    }
+
+    .chip:has(.input:checked:not(:disabled)):hover {
+        background-color: color-mix(in oklab, var(--control-accent) 32%, transparent);
+    }
+}
+
+.control:has(.input:disabled) {
+    cursor: not-allowed;
+    filter: grayscale(1);
+    opacity: 0.7;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Высокий контраст                                                          */
+/*                                                                            */
+/*  Здесь система подменяет и фон, и рамку, поэтому подсветка чипа перестаёт  */
+/*  что-либо значить: выбранный и невыбранный выглядят одинаково. Индикатор   */
+/*  возвращается на место — он единственный, кто переживает этот режим.       */
+/* -------------------------------------------------------------------------- */
+
+@media (forced-colors: active) {
+    .input {
+        border: 1px solid CanvasText;
+    }
+
+    .input:checked,
+    .input:indeterminate {
+        background-color: Highlight;
+    }
+
+    .input::before {
+        background-color: HighlightText;
+    }
+
+    .chip .input {
+        position: static;
+        inline-size: var(--control-size);
+        block-size: var(--control-size);
+        border: 1px solid CanvasText;
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .input:focus-visible,
+    .chip:has(.input:focus-visible) {
+        outline-color: Highlight;
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Reduced motion                                                            */
+/* -------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+    .control,
+    .chip,
+    .input,
+    .input::before {
+        transition-duration: 0.01ms;
+    }
+}

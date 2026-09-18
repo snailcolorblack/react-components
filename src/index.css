@@ -11,14 +11,23 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+html {
+  scrollbar-gutter: stable;
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
   display: flex;
   place-items: center;
-  min-inline-size: 320px;
-  min-block-size: 100vh;
+  /*min-inline-size: 320px;*/
+  /*max-inline-size: 100svw;*/
+  /*inline-size: 100%;*/
+  /*min-block-size: 100vh;*/
 
   * {
     box-sizing: border-box;
+    margin: 0;
+    padding: 0;
   }
 }

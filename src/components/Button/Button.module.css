@@ -1,23 +1,30 @@
 .button {
-    --button-accent: lab(46% -46 40);
-    --button-accent-contrast: var(--font-color);
-    --button-accent-text: color-mix(in oklab, var(--button-accent), var(--font-color) 25%);
+    /*
+     * Акцент приходит парой: заливка и цвет текста на ней. Раньше подпись
+     * была прибита к светлому --font-color, и на любом ярком акценте
+     * (зелёный, оранжевый, жёлтый) она проваливалась до 2.5:1.
+     * Перебить акцент можно одной строкой:
+     *   <Button style={{'--button-accent': 'var(--purple-color-100)',
+     *                   '--button-accent-contrast': 'var(--contrast-color)'}} />
+     */
+    --button-accent: var(--accent-color);
+    --button-accent-contrast: var(--accent-contrast);
+    /* Тот же тон, поднятый по светлоте: им пишут по тёмному фону, где сама
+       заливка была бы слишком тёмной для текста. */
+    --button-accent-text: var(--accent-color-soft);
 
     --button-bg: transparent;
-    --button-fg: var(--font-color);
+    --button-fg: var(--contrast-color);
     --button-border: transparent;
 
     --button-hover-shift: 14%;
     --button-ring: var(--button-accent-text);
-
 
     --button-press-scale: 0.98;
     --button-press-duration: 0.16s;
 
     --button-radius: var(--base-gap);
     --button-padding: calc(var(--base-gap) * 2) calc(var(--base-size) * 2);
-
-
 
     display: inline-grid;
     grid-template-areas: "content";
@@ -36,7 +43,6 @@
             color            0.2s var(--ease-in-out),
             scale            var(--button-press-duration) var(--ease-out);
 
-
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
 }
@@ -45,17 +51,18 @@
 /*  Варианты                                                                  */
 /* -------------------------------------------------------------------------- */
 
+
 .default {
     --button-bg: var(--button-accent);
-    --button-fg: var(--button-accent-contrast);
+    --button-fg: var(--contrast-color);
     --button-border: var(--button-accent);
 }
 
 .contrast {
-    --button-bg: var(--font-color);
-    --button-fg: var(--base-color);
-    --button-border: var(--font-color);
-    --button-ring: var(--font-color);
+    --button-bg: var(--contrast-color);
+    --button-fg: var(--contrast-color-500);
+    --button-border: var(--contrast-color);
+    --button-ring: var(--contrast-color);
 }
 
 .outline {
@@ -67,12 +74,12 @@
 /* -------------------------------------------------------------------------- */
 /*  Размеры                                                                   */
 /* -------------------------------------------------------------------------- */
+
 .full {
-    /*flex: 1 100%;*/
     inline-size: 100%;
 }
+
 .fill {
-    /*flex: 1 fit-content;*/
     inline-size: fit-content;
 }
 
@@ -80,13 +87,13 @@
 /*  Состояния                                                                 */
 /* -------------------------------------------------------------------------- */
 
-
 .button[data-state="active"],
 .button:global(.active) {
     --button-bg: var(--button-accent);
     --button-fg: var(--button-accent-contrast);
     --button-border: var(--button-accent);
 }
+
 
 @media (hover: hover) and (pointer: fine) {
     .button:hover:not(:disabled):not([aria-disabled="true"]) {
@@ -101,8 +108,13 @@
                 var(--button-fg) var(--button-hover-shift)
         );
     }
-}
 
+
+    .outline:hover:not(:disabled):not([aria-disabled="true"]) {
+        background-color: var(--contrast-alpha-10);
+        color: var(--contrast-color);
+    }
+}
 
 .button:active:not(:disabled):not([aria-disabled="true"]) {
     --button-press-duration: 0.08s;

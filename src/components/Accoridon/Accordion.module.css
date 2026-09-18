@@ -3,6 +3,24 @@
 /* -------------------------------------------------------------------------- */
 
 .accordion {
+    /*
+     * Цвета компонента объявлены здесь и только здесь — ниже по файлу
+     * глобальных токенов нет. Перебить любой из них можно на самом элементе:
+     *   <Accordion style={{'--accordion-accent': 'var(--blue-color-200)'}} />
+     *
+     * Дочерние правила берут их наследованием: кастомные свойства наследуются,
+     * поэтому .accordion_header и .accordion_content видят то, что объявлено
+     * на .accordion, без повторного объявления.
+     */
+    --accordion-title: var(--contrast-color-200);
+    --accordion-content: var(--contrast-color-300);
+    --accordion-divider: var(--base-color-300);
+
+    /* Цвет раскрытого заголовка и подсветки на ховере. */
+    --accordion-accent: var(--accent-color);
+    --accordion-accent-hover: var(--accent-color-soft);
+    --accordion-ring: var(--accent-color-soft);
+
     interpolate-size: allow-keywords;
     display: block;
     inline-size: 100%;
@@ -11,7 +29,7 @@
 }
 
 .accordion:not(:last-child) {
-    border-bottom: 1px solid var(--font-color-40);
+    border-bottom: 1px solid var(--accordion-divider);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -29,7 +47,7 @@
     text-align: start;
     font-size: clamp(calc(var(--base-size) * 1.25), 4vw, calc(var(--base-size) * 2));
     font-weight: 500;
-    color: var(--font-color-80);
+    color: var(--accordion-title);
     transition: color 0.2s var(--ease-in-out);
 
     .accordion_header__title {
@@ -37,8 +55,6 @@
         padding: 0;
         font: inherit;
     }
-
-
 }
 
 .accordion_header::-webkit-details-marker {
@@ -53,6 +69,15 @@
     flex: 0 0 auto;
     rotate: 0deg;
     transition: rotate 0.3s var(--ease-in-out);
+}
+
+/*
+ * Раскрытый заголовок красится акцентом. Цвет задан через переменную
+ * заголовка, а не прямым color: тогда ховер ниже перекрывает его одним
+ * правилом, не воюя со специфичностью.
+ */
+.accordion[open] > .accordion_header {
+    --accordion-title: var(--accordion-accent);
 }
 
 .accordion[open] > .accordion_header > .icon {
@@ -91,7 +116,7 @@
     display: flex;
     flex-direction: column;
     padding-block-start: var(--base-gap);
-    color: var(--font-color-60);
+    color: var(--accordion-content);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -99,13 +124,20 @@
 /* -------------------------------------------------------------------------- */
 
 .accordion:has(> .accordion_header:focus-visible) {
-    outline: 2px solid var(--font-color-40);
+    outline: 2px solid var(--accordion-ring);
     outline-offset: -1px;
 }
 
 @media (hover: hover) and (pointer: fine) {
-    .accordion_header:hover {
-        color: var(--font-color);
+    /*
+     * Селектор с родителем намеренно: .accordion_header:hover (0,2,0)
+     * проигрывал бы правилу .accordion[open] > .accordion_header (0,3,0),
+     * и раскрытый заголовок переставал бы отзываться на ховер. Здесь
+     * специфичности равны (0,3,0), а это правило идёт ниже по файлу —
+     * значит выигрывает оно.
+     */
+    .accordion > .accordion_header:hover {
+        --accordion-title: var(--accordion-accent-hover);
     }
 }
 

@@ -1,0 +1,107 @@
+/* -------------------------------------------------------------------------- */
+/*  Подсказка                                                                 */
+/*                                                                            */
+/*  Верхний слой, закрытие по Esc и по клику мимо, отдельный слой относительно */
+/*  меню — всё это даёт popover="hint". Стилям остаётся оформление и привязка  */
+/*  к триггеру.                                                                */
+/* -------------------------------------------------------------------------- */
+
+.tooltip {
+    /*
+     * Цвета объявлены здесь и только здесь. Перебить можно на элементе:
+     *   <Tooltip style={{'--tooltip-bg': 'var(--base-color-500)'}} …/>
+     */
+    --tooltip-bg: var(--base-color-500);
+    --tooltip-fg: var(--contrast-color);
+    --tooltip-border: var(--contrast-alpha-20);
+
+    --tooltip-gap: var(--base-gap);
+    --tooltip-inset: var(--base-size);
+    --tooltip-duration: 0.14s;
+
+    padding: var(--base-gap) calc(var(--base-gap) * 2);
+    border: 1px solid var(--tooltip-border);
+    border-radius: var(--base-gap);
+    color: var(--tooltip-fg);
+    background-color: var(--tooltip-bg);
+    font-size: var(--font-size-14, 0.875rem);
+
+    /*
+     * Курсор проходит подсказку насквозь: перекрывая триггер, она иначе
+     * ловила бы pointerleave с кнопки и pointerenter на себя без конца,
+     * и подсказка мигала бы. Наведение на неё саму мы возвращаем ниже.
+     */
+    pointer-events: none;
+
+    opacity: 0;
+    transition:
+            opacity var(--tooltip-duration) var(--ease-in-out),
+            display var(--tooltip-duration) allow-discrete,
+            overlay var(--tooltip-duration) allow-discrete;
+}
+
+/*
+ * Наводимость по WCAG 1.4.13: на открытую подсказку курсор перевести можно,
+ * и она не исчезнет. Только открытую — закрытая обязана оставаться прозрачной
+ * для курсора, иначе перехватит клик по элементу под собой.
+ */
+.tooltip:popover-open {
+    pointer-events: auto;
+    opacity: 1;
+}
+
+@starting-style {
+    .tooltip:popover-open {
+        opacity: 0;
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Привязка к триггеру                                                       */
+/*                                                                            */
+/*  Имя якоря приходит из компонента: он же ставит anchor-name на сам триггер. */
+/*  Вручную, а не через position-anchor: auto, — неявный якорь появляется      */
+/*  только у поповера, открытого через popovertarget или commandfor, а         */
+/*  подсказка открывается вызовом showPopover().                               */
+/* -------------------------------------------------------------------------- */
+
+@supports (position-area: block-start) {
+    .tooltip {
+        position: absolute;
+        position-anchor: var(--tooltip-anchor);
+        position-area: var(--tooltip-area, block-start span-inline-end);
+        position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline;
+
+        margin: 0;
+        margin-block: var(--tooltip-margin-block, 0 var(--tooltip-gap));
+        margin-inline: var(--tooltip-margin-inline, 0);
+
+        /* Подсказка короткая по определению: шире 16rem это уже не подсказка.
+           Вычитание зазора и отступа не даёт ей прилипнуть к краю экрана. */
+        inline-size: max-content;
+        max-inline-size: min(16rem, calc(100% - var(--tooltip-gap) - var(--tooltip-inset)));
+
+        transform-origin: var(--tooltip-origin, bottom center);
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Высокий контраст                                                          */
+/* -------------------------------------------------------------------------- */
+
+@media (forced-colors: active) {
+    .tooltip {
+        border: 1px solid CanvasText;
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Reduced motion                                                            */
+/* -------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+    .tooltip {
+        --tooltip-duration: 0.01ms;
+        transition-duration: 0.01ms;
+    }
+}

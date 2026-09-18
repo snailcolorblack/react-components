@@ -58,7 +58,10 @@ export const hookOrder = {
         type: 'suggestion',
         docs: {description: 'Порядок инструкций в теле компонента: хуки, const, эффекты, return, function.'},
         schema: [],
-        messages: {order: '{{what}} должно идти раньше, чем {{after}}'},
+        messages: {
+            order: '{{what}} должно идти раньше, чем {{after}}',
+            afterReturn: 'Бизнес-логика через function объявляется после return, а не перед ним.',
+        },
     },
     create(context) {
         function check(node) {
@@ -74,10 +77,33 @@ export const hookOrder = {
             });
             if (!hasHooks) return;
 
+            const statements = body.body;
+
+            /*
+             * Функции разбираются отдельно от всего остального, потому что
+             * виноватой в паре «function … return» всегда оказывается функция.
+             * Общий проход пометил бы сам return — мол, он опоздал, — и
+             * подчёркивание встало бы на инструкцию, которую никто двигать
+             * не станет. Двигают функцию.
+             */
+            const returnAt = statements.findIndex(statement => statement.type === 'ReturnStatement');
+
+            if (returnAt !== -1) {
+                for (const statement of statements.slice(0, returnAt)) {
+                    if (statement.type !== 'FunctionDeclaration') continue;
+
+                    context.report({node: statement.id ?? statement, messageId: 'afterReturn'});
+                }
+            }
+
             let maxRank = -1;
             let maxRankName = '';
 
-            for (const statement of body.body) {
+            for (const statement of statements) {
+                /* Уже разобраны выше: иначе объявление функции поднимет планку
+                   до максимума, и следом за ним всё подряд станет нарушением. */
+                if (statement.type === 'FunctionDeclaration') continue;
+
                 const rank = rankOf(statement);
 
                 if (rank < maxRank) {

@@ -9,6 +9,7 @@ import {Dialog} from "./components/Dialog/Dialog.tsx";
 import {Fieldset} from "./components/Fieldset/Fieldset.tsx";
 import {Popover} from "./components/Popover/Popover.tsx";
 import {Radio} from "./components/Radio/Radio.tsx";
+import {Switch} from "./components/Switch/Switch.tsx";
 import {Tooltip} from "./components/Tooltip/Tooltip.tsx";
 import {Typography} from "./components/Typography/Typography.tsx";
 import type {AccordionProps} from "./components/Accoridon/Accordion.interface.ts";
@@ -190,6 +191,10 @@ function App() {
                                 курсор на тултип
                             </div>
                         </Tooltip>
+                        <Tooltip text="Кнопка в состоянии disabled">
+                            <Button variant={'CONTRAST'} disabled>Наведи курсор на нопку
+                            </Button>
+                        </Tooltip>
                     </div>
                 </section>
                 <section id={'CHECKBOX'} className="section">
@@ -216,6 +221,14 @@ function App() {
                         <Radio variant={'CHIP'} name="plan" value="free" defaultChecked>Бесплатный</Radio>
                         <Radio variant={'CHIP'} name="plan" value="pro">Профессиональный</Radio>
                         <Radio variant={'CHIP'} name="plan" value="team">Командный</Radio>
+                    </div>
+                </section>
+                <section id={'SWITCH'} className="section">
+                    <Typography as={'h2'}>SWITCH</Typography>
+                    <div className="block">
+                        <Switch name="notify" value="yes" defaultChecked>Уведомления по почте</Switch>
+                        <Switch name="theme" value="dark">Тёмная тема</Switch>
+                        <Switch disabled>Недоступно</Switch>
                     </div>
                 </section>
                 <section id={'FIELDSET'} className="section">

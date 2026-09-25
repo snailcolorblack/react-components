@@ -1,0 +1,178 @@
+/* -------------------------------------------------------------------------- */
+/*  Свитч                                                                     */
+/*                                                                            */
+/*  Стилизуется сам <input>, а не подставной <span>: с appearance: none        */
+/*  ему можно нарисовать дорожку и бегунок псевдоэлементом, и при этом он       */
+/*  остаётся настоящим полем — с фокусом, клавиатурой, участием в форме         */
+/*  и в дереве доступности.                                                   */
+/* -------------------------------------------------------------------------- */
+
+.switch {
+    /*
+     * Цвета объявлены здесь и только здесь. Перебить можно на элементе:
+     *   <Switch style={{'--switch-accent': 'var(--purple-color-200)'}}/>
+     *
+     * Бегунок цветом от состояния не зависит: он и так лежит на разном
+     * фоне дорожки, дублировать это ещё и его собственным цветом незачем.
+     */
+    --switch-accent: var(--accent-color);
+    --switch-track-off: var(--contrast-alpha-20);
+    --switch-track-border: var(--contrast-alpha-40);
+    --switch-thumb: var(--contrast-color);
+    --switch-ring: var(--accent-color-soft);
+
+    /*
+     * Геометрия. --switch-padding — зазор между бегунком и внутренним краем
+     * дорожки, одинаковый со всех сторон. Задаётся с единицей даже для нуля
+     * (0px, а не 0): голый 0 внутри calc — число, а не длина, и всё
+     * выражение становится невалидным.
+     */
+    --switch-track-inline: calc(var(--base-size) * 2.25);
+    --switch-track-block: calc(var(--base-size) * 1.25);
+    --switch-border: 1px;
+    --switch-padding: 2px;
+    --switch-thumb-size: calc(
+            var(--switch-track-block) - 2 * var(--switch-border) - 2 * var(--switch-padding)
+    );
+    --switch-gap: calc(var(--base-gap) * 2);
+    --switch-duration: 0.16s;
+
+    display: inline-flex;
+    align-items: center;
+    gap: var(--switch-gap);
+    cursor: pointer;
+
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Дорожка и бегунок                                                         */
+/*                                                                            */
+/*  Бегунок сдвигается через inset-inline-start, а не translate: translate     */
+/*  идёт по физическим X/Y и в RTL-раскладке не переворачивается, тогда как    */
+/*  inset-inline-start — логическое свойство и меняет сторону сам.            */
+/* -------------------------------------------------------------------------- */
+
+.input {
+    appearance: none;
+    position: relative;
+    margin: 0;
+    flex: none;
+    inline-size: var(--switch-track-inline);
+    block-size: var(--switch-track-block);
+    border: var(--switch-border) solid var(--switch-track-border);
+    border-radius: calc(var(--switch-track-block) / 2);
+    background-color: var(--switch-track-off);
+    cursor: inherit;
+
+    transition:
+            background-color var(--switch-duration) var(--ease-in-out),
+            border-color var(--switch-duration) var(--ease-in-out);
+}
+
+.input::before {
+    content: '';
+    position: absolute;
+    /*
+     * Отсчёт идёт от padding-box дорожки, то есть от внутреннего края рамки.
+     * Размер бегунка задан явно, а не через 100%: тот же размер нужен
+     * во включённом положении, чтобы прижать бегунок к противоположному краю.
+     */
+    inset-block-start: var(--switch-padding);
+    inset-inline-start: var(--switch-padding);
+    inline-size: var(--switch-thumb-size);
+    block-size: var(--switch-thumb-size);
+    border-radius: 50%;
+    background-color: var(--switch-thumb);
+
+    transition: inset-inline-start var(--switch-duration) var(--ease-out);
+}
+
+.input:checked {
+    background-color: var(--switch-accent);
+    border-color: var(--switch-accent);
+}
+
+.input:checked::before {
+    inset-inline-start: calc(100% - var(--switch-thumb-size) - var(--switch-padding));
+}
+
+.input:focus-visible {
+    outline: 2px solid var(--switch-ring);
+    outline-offset: 2px;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Подпись                                                                   */
+/* -------------------------------------------------------------------------- */
+
+.label {
+    display: flex;
+    flex-direction: column;
+    gap: var(--base-gap);
+    min-inline-size: 0;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Наведение и недоступность                                                 */
+/* -------------------------------------------------------------------------- */
+
+@media (hover: hover) and (pointer: fine) {
+    .switch:has(.input:not(:disabled, :checked)):hover {
+        --switch-track-border: var(--contrast-alpha-60);
+    }
+
+    .switch:has(.input:checked:not(:disabled)):hover {
+        background-color: var(--contrast-alpha-10);
+    }
+}
+
+.switch:has(.input:disabled) {
+    cursor: not-allowed;
+    filter: grayscale(1);
+    opacity: 0.7;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Высокий контраст                                                          */
+/*                                                                            */
+/*  Здесь система подменяет и фон, и рамку, поэтому одна лишь заливка          */
+/*  дорожки перестаёт что-либо значить — включённая и выключенная выглядят     */
+/*  одинаково. Второй канал даёт положение бегунка, оно от системных цветов    */
+/*  не зависит и остаётся видимым.                                            */
+/* -------------------------------------------------------------------------- */
+
+@media (forced-colors: active) {
+    .input {
+        border: 1px solid CanvasText;
+        background-color: Canvas;
+    }
+
+    .input:checked {
+        background-color: Highlight;
+        border-color: Highlight;
+    }
+
+    .input::before {
+        background-color: CanvasText;
+    }
+
+    .input:checked::before {
+        background-color: HighlightText;
+    }
+
+    .input:focus-visible {
+        outline-color: Highlight;
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Reduced motion                                                            */
+/* -------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+    .input,
+    .input::before {
+        transition-duration: 0.01ms;
+    }
+}

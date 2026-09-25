@@ -67,6 +67,10 @@ const BUTTONS = [
         {
             children: 'CONTRAST',
             variant: 'CONTRAST'
+        },
+        {
+            children: 'INLINE',
+            variant: 'INLINE'
         }
     ],
     [
@@ -84,6 +88,11 @@ const BUTTONS = [
             children: 'CONTRAST',
             variant: 'CONTRAST',
             loading: true
+        },
+        {
+            children: 'INLINE',
+            variant: 'INLINE',
+            loading: true
         }
     ],
     [
@@ -100,9 +109,15 @@ const BUTTONS = [
         {
             children: 'CONTRAST',
             variant: 'CONTRAST',
+            disabled: true
+        },
+        {
+            children: 'INLINE',
+            variant: 'INLINE',
             disabled: true
         }
     ]
+
 ] satisfies ButtonItem[][]
 
 

@@ -35,6 +35,10 @@
     border-radius: var(--button-radius);
     cursor: pointer;
     font: inherit;
+    /* Для as="a": у ссылки своё подчёркивание и свой цвет по умолчанию,
+       и в кнопочном оформлении они лишние. */
+    text-decoration: none;
+    text-align: center;
     color: var(--button-fg);
     background-color: var(--button-bg);
     transition:
@@ -51,13 +55,14 @@
 /*  Варианты                                                                  */
 /* -------------------------------------------------------------------------- */
 
-
+/* Заливка акцентом, подпись тёмная: 7.01:1. */
 .default {
     --button-bg: var(--button-accent);
     --button-fg: var(--contrast-color);
     --button-border: var(--button-accent);
 }
 
+/* Белая заливка, тёмная подпись: 17.49:1. */
 .contrast {
     --button-bg: var(--contrast-color);
     --button-fg: var(--contrast-color-500);
@@ -65,10 +70,46 @@
     --button-ring: var(--contrast-color);
 }
 
+/* Подпись акцентом по странице: 8.95:1. Рамка currentColor — тот же цвет,
+   значит граница кнопки видна ровно настолько же, насколько её текст. */
 .outline {
     --button-bg: transparent;
     --button-fg: var(--button-accent-text);
     --button-border: currentColor;
+}
+
+/*
+ * Кнопка как текст: ни заливки, ни рамки, ни отступов — только подпись,
+ * которая встаёт в строку наравне с соседними словами. Подпись акцентом
+ * по странице: 7.70:1.
+ *
+ * Здесь везде явные значения, а не unset, и это не вкусовщина. Пользовательские
+ * свойства наследуются, поэтому unset для них означает inherit; наследовать
+ * нечего, значение становится «гарантированно невалидным», и var() без
+ * запасного варианта роняет всё объявление целиком — свойство берёт
+ * начальное значение.
+ *
+ * Для фона, рамки и отступов это случайно совпало с задуманным: transparent,
+ * none и 0. А для --button-ring совпало с катастрофой: объявление
+ * outline: 2px solid var(--button-ring) отваливалось вместе с outline-style,
+ * и фокусное кольцо пропадало насовсем. Замерено — outline-style: none,
+ * outline-width: 0px, тогда как у OUTLINE в том же состоянии solid 2px.
+ * Клавиатурный пользователь переставал видеть, где находится.
+ *
+ * Поэтому кольцо здесь не переопределяется вовсе и достаётся от .button.
+ */
+.inline {
+    --button-bg: transparent;
+    --button-fg: var(--button-accent-text);
+    --button-border: transparent;
+    --button-padding: 0;
+
+    /*
+     * Ширину рамки приходится снимать отдельно: прозрачная рамка невидима,
+     * но место занимает. Замерено — с ней строка абзаца распухала с 19px
+     * до 21px, то есть кнопка раздвигала текст, в который её поставили.
+     */
+    border: 0;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -94,7 +135,11 @@
     --button-border: var(--button-accent);
 }
 
-
+/*
+ * Ховер смешивает заливку с цветом её собственной подписи. Направление
+ * сдвига поэтому всегда верное: тёмная заливка светлеет, светлая темнеет,
+ * и ни один вариант не нужно описывать отдельно.
+ */
 @media (hover: hover) and (pointer: fine) {
     .button:hover:not(:disabled):not([aria-disabled="true"]) {
         background-color: color-mix(
@@ -109,10 +154,17 @@
         );
     }
 
-
+    /* У outline смешивать нечего: transparent + 14% текста остаётся почти
+       невидимым. Ему нужна собственная подложка. */
     .outline:hover:not(:disabled):not([aria-disabled="true"]) {
         background-color: var(--contrast-alpha-10);
         color: var(--contrast-color);
+    }
+
+    /* У inline подложки нет вовсе, и подмешивать не во что: единственный
+       способ отозваться на курсор — сама подпись. */
+    .inline:hover:not(:disabled):not([aria-disabled="true"]) {
+        --button-fg: var(--contrast-color);
     }
 }
 

@@ -1,8 +1,8 @@
-import {render, screen} from '@testing-library/react';
+import {act, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import axe from 'axe-core';
-import {createRef, type FormEvent, type MouseEvent} from 'react';
-import {describe, expect, it, vi} from 'vitest';
+import {createRef, type FormEvent, type MouseEvent, type ReactNode} from 'react';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {Button} from './Button';
 import styles from './Button.module.css';
 
@@ -29,6 +29,14 @@ describe('Button', () => {
         expect(screen.getByRole('button')).toHaveClass('my-own');
     });
 
+    it('свой data-state не затирается, а active его перебивает', () => {
+        const {rerender} = render(<Button data-state="loading">Кнопка</Button>);
+        // ставится после {...rest}, поэтому раньше пропадал молча
+        expect(screen.getByRole('button')).toHaveAttribute('data-state', 'loading');
+        rerender(<Button data-state="loading" active>Кнопка</Button>);
+        expect(screen.getByRole('button')).toHaveAttribute('data-state', 'active');
+    });
+
     it('active выставляет data-state', () => {
         const {rerender} = render(<Button>Кнопка</Button>);
         expect(screen.getByRole('button')).not.toHaveAttribute('data-state');
@@ -43,6 +51,26 @@ describe('Button', () => {
         expect(button).toHaveAttribute('aria-disabled', 'true');
         // disabled выбросил бы кнопку из таба и увёл фокус в начало документа
         expect(button).not.toBeDisabled();
+    });
+
+    it('свои aria-disabled и aria-busy не затираются', () => {
+        render(<Button aria-disabled aria-busy role="menuitem">Архив</Button>);
+        const button = screen.getByRole('menuitem');
+        expect(button).toHaveAttribute('aria-disabled', 'true');
+        expect(button).toHaveAttribute('aria-busy', 'true');
+    });
+
+    it('loading не отменяет свой aria-disabled, а без loading он остаётся', () => {
+        const {rerender} = render(<Button aria-disabled loading>Архив</Button>);
+        expect(screen.getByRole('button')).toHaveAttribute('aria-disabled', 'true');
+        rerender(<Button aria-disabled>Архив</Button>);
+        expect(screen.getByRole('button')).toHaveAttribute('aria-disabled', 'true');
+        expect(screen.getByRole('button')).not.toHaveAttribute('aria-busy');
+    });
+
+    it('aria-disabled="false" передаётся как есть', () => {
+        render(<Button aria-disabled="false">Кнопка</Button>);
+        expect(screen.getByRole('button')).toHaveAttribute('aria-disabled', 'false');
     });
 
     it('loading оставляет кнопку в порядке табуляции', async () => {
@@ -272,5 +300,73 @@ describe('Button as="a"', () => {
         render(<Button as="a" href="/x" variant="CONTRAST" loading>Отчёт</Button>);
         expect(error).not.toHaveBeenCalled();
         error.mockRestore();
+    });
+});
+
+describe('Button в форме', () => {
+    /** Форма, действие которой держится до ручного resolve. */
+    function Form({children}: {children: ReactNode}) {
+        return <form action={() => hold.promise}>{children}</form>;
+    }
+
+    let hold: {promise: Promise<void>, done: () => void};
+
+    beforeEach(function prepare() {
+        let done: () => void = () => undefined;
+        const promise = new Promise<void>(resolve => (done = resolve));
+
+        hold = {promise, done};
+    });
+
+    it('кнопка отправки показывает загрузку, пока работает действие формы', async () => {
+        render(<Form><Button type="submit">Сохранить</Button></Form>);
+        const button = screen.getByRole('button', {name: 'Сохранить'});
+
+        expect(button).not.toHaveAttribute('aria-busy');
+
+        await userEvent.click(button);
+        expect(button).toHaveAttribute('aria-busy', 'true');
+        expect(button).toHaveAttribute('aria-disabled', 'true');
+
+        await act(async () => {
+            hold.done();
+            await hold.promise;
+        });
+        expect(button).not.toHaveAttribute('aria-busy');
+    });
+
+    it('обычная кнопка в той же форме не крутится', async () => {
+        render(
+            <Form>
+                <Button type="submit">Сохранить</Button>
+                <Button>Сбросить</Button>
+            </Form>,
+        );
+
+        await userEvent.click(screen.getByRole('button', {name: 'Сохранить'}));
+        expect(screen.getByRole('button', {name: 'Сбросить'})).not.toHaveAttribute('aria-busy');
+
+        await act(async () => {
+            hold.done();
+            await hold.promise;
+        });
+    });
+
+    it('явный loading={false} отменяет связь с формой', async () => {
+        render(<Form><Button type="submit" loading={false}>Сохранить</Button></Form>);
+        const button = screen.getByRole('button', {name: 'Сохранить'});
+
+        await userEvent.click(button);
+        expect(button).not.toHaveAttribute('aria-busy');
+
+        await act(async () => {
+            hold.done();
+            await hold.promise;
+        });
+    });
+
+    it('вне формы ничего не меняется', () => {
+        render(<Button type="submit">Сохранить</Button>);
+        expect(screen.getByRole('button')).not.toHaveAttribute('aria-busy');
     });
 });

@@ -1,0 +1,398 @@
+/* -------------------------------------------------------------------------- */
+/*  Выбор из списка                                                           */
+/*                                                                            */
+/*  Коробку — рамку, фон, отступы, скругления — рисует обёртка .field.        */
+/*  Внутри сетка в две строки: подпись сверху, содержимое снизу. Оба          */
+/*  варианта, single и multi, устроены одинаково: нативного <select>          */
+/*  здесь больше нет, а вместе с ним ушли ::picker(select), ::picker-icon     */
+/*  и @supports (appearance: base-select) — стилизовать эти вещи можно было   */
+/*  только в Chromium, и то не до конца.                                      */
+/*                                                                            */
+/*  Из потока вынесено ровно две вещи: стрелка и сам список. Всё остальное    */
+/*  складывается сеткой, поэтому высота поля берётся из содержимого:          */
+/*  поменяется размер шрифта подписи или чипса — поле подстроится само.       */
+/* -------------------------------------------------------------------------- */
+
+.field {
+    --select-bg: var(--base-color-200);
+    --select-fg: var(--contrast-color);
+    --select-border: var(--contrast-alpha-20);
+    --select-border-active: var(--accent-color-soft);
+    --select-label: var(--contrast-alpha-60);
+    --select-label-active: var(--accent-color-soft);
+    --select-ring: var(--accent-color-soft);
+
+    --select-radius: calc(var(--base-gap) * 2);
+    --select-padding-block: calc(var(--base-gap) * 2);
+    --select-padding-inline: var(--base-size);
+    /* Высота строки значения и зазор между ней и подписью: из них
+       считается, на сколько подпись опускается в центр пустого поля. */
+    --select-line: 1.5rem;
+    --select-gap: var(--base-gap);
+    /* Размер подписи и во сколько раз она вырастает, встав на место
+       подсказки: 0.75rem × 1.3333 это ровно 1rem основного текста. */
+    --select-label-size: var(--font-size-12, 0.75rem);
+    --select-label-scale: 1.3333;
+    --select-arrow-size: 1.25rem;
+
+    /*
+     * Ручки для начинки. Внутренние классы захешированы модулем и снаружи
+     * недоступны, поэтому вид чипса и пункта списка меняется отсюда:
+     *
+     *     .myField {
+     *         --select-chip-padding: 2px 8px;
+     *         --select-chip-radius: 4px;
+     *     }
+     *
+     * Всё, что ниже, — значения по умолчанию, а не жёсткая раскладка.
+     */
+    --select-chip-gap: var(--base-gap);
+    --select-chip-padding: 0 calc(var(--base-gap) * 2);
+    --select-chip-radius: var(--select-radius);
+    --select-chip-border: 1px solid var(--select-border-active);
+    --select-chip-bg: transparent;
+    --select-chip-bg-hover: var(--contrast-alpha-10);
+    --select-chip-size: var(--font-size-14, 0.875rem);
+
+    --select-list-padding: var(--base-gap);
+    --select-option-gap: calc(var(--base-gap) * 2);
+    --select-option-padding: calc(var(--base-gap) * 2) calc(var(--base-gap) * 3);
+    --select-option-radius: var(--base-gap);
+    --select-option-bg-hover: var(--contrast-alpha-10);
+    --select-duration: 0.14s;
+
+    box-sizing: border-box;
+    position: relative;
+    display: grid;
+    grid-template-rows: auto auto;
+    align-content: center;
+    gap: var(--select-gap);
+    inline-size: 100%;
+    padding: var(--select-padding-block) var(--select-padding-inline);
+    /* Место справа под стрелку. */
+    padding-inline-end: calc(var(--base-size) * 2.5);
+
+    border: 1px solid var(--select-border);
+    border-radius: var(--select-radius);
+    color: var(--select-fg);
+    background-color: var(--select-bg);
+    cursor: pointer;
+    transition: border-color var(--select-duration) var(--ease-in-out);
+}
+
+.field:has(.control:focus-visible) {
+    outline: 2px solid var(--select-ring);
+    outline-offset: 2px;
+}
+
+.field:has(.control:focus-visible),
+.field:has(.control[aria-expanded="true"]) {
+    --select-border: var(--select-border-active);
+}
+
+.field:has(.control:disabled) {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Плавающая подпись                                                         */
+/*                                                                            */
+/*  Подпись — обычный элемент потока, первая строка сетки. Абсолютной она     */
+/*  места не занимала, и высоту поля приходилось задавать руками: замерено,   */
+/*  57px против 62px, которые складываются сами.                             */
+/*                                                                            */
+/*  Пока ничего не выбрано, она съезжает вниз и встаёт по центру вместо       */
+/*  подсказки. Это подпись, а не placeholder: после выбора она остаётся       */
+/*  видимой, и поле не теряет имени — то, чем placeholder нарушает           */
+/*  WCAG 3.3.2.                                                              */
+/*                                                                            */
+/*  Смещение считается из высоты второй строки и зазора, а не подбирается     */
+/*  на глаз: половина того, что подпись перекрывает.                          */
+/* -------------------------------------------------------------------------- */
+
+.label {
+    grid-row: 1;
+    justify-self: start;
+    font-size: var(--select-label-size);
+    line-height: 1;
+    color: var(--select-label);
+    pointer-events: none;
+    transform-origin: left center;
+    transition:
+            translate var(--select-duration) var(--ease-out),
+            scale var(--select-duration) var(--ease-out),
+            color var(--select-duration) var(--ease-in-out);
+}
+
+/*
+ * Крупный размер даётся масштабом, а не font-size: строка сетки всегда
+ * высотой мелкой подписи, поэтому поле не дёргается при выборе —
+ * замерено, 58px в обоих состояниях против 62px и 58px на font-size.
+ */
+.field:not([data-filled]) .label {
+    translate: 0 calc((var(--select-line) + var(--select-gap)) / 2);
+    scale: var(--select-label-scale);
+}
+
+/*
+ * Акцентный цвет — признак активности поля, а не заполненности: подпись
+ * подсвечивается вместе с рамкой, пока поле в фокусе или список открыт,
+ * и гаснет, как только фокус ушёл.
+ */
+.field:has(.control:focus-visible) .label,
+.field:has(.control[aria-expanded="true"]) .label {
+    color: var(--select-label-active);
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Строка значения: чипсы и триггер                                          */
+/* -------------------------------------------------------------------------- */
+
+.row {
+    grid-row: 2;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--base-gap);
+    min-inline-size: 0;
+}
+
+.control {
+    box-sizing: border-box;
+    flex: 1 0 4rem;
+    min-inline-size: 0;
+    min-block-size: var(--select-line);
+    padding: 0;
+
+    border: 0;
+    font: inherit;
+    text-align: start;
+    color: inherit;
+    background-color: transparent;
+    cursor: pointer;
+}
+
+/*
+ * Зона нажатия — вся коробка, а не одна кнопка. Растянутый псевдоэлемент
+ * кнопки накрывает поле целиком, поэтому клик по подписи, по пустому
+ * месту и по стрелке приходит в саму кнопку: цель нажатия одна,
+ * фокус один, лишних обработчиков нет.
+ *
+ * Обёртку не сделать <label>: чипсы внутри — сами кнопки, а интерактивное
+ * внутри label вкладывать нельзя, и содержимое label стало бы именем
+ * кнопки целиком, вместе с чипсами.
+ */
+.control::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+}
+
+/* Кольцо рисуется на коробке: триггер внутри неё и своего контура не имеет. */
+.control:focus-visible {
+    outline: none;
+}
+
+.value {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Имя кнопки для скринридера, которого не видно: у multi это «выбрано N». */
+.srOnly {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Стрелка                                                                   */
+/*                                                                            */
+/*  Контур из icon.tsx, а не квадрат из бордюров: у шеврона визуальный центр  */
+/*  совпадает с геометрическим, поэтому «открыто» — это один rotate: 180deg   */
+/*  без компенсирующего сдвига, а размер задаётся одной переменной.           */
+/*                                                                            */
+/*  Иконка помечена aria-hidden в самой разметке: состояние читается          */
+/*  из aria-expanded у кнопки, рисунок здесь ни при чём.                      */
+/* -------------------------------------------------------------------------- */
+
+.arrow {
+    position: absolute;
+    inset-inline-end: var(--base-size);
+    inset-block-start: 50%;
+    translate: 0 -50%;
+
+    display: grid;
+    place-items: center;
+    inline-size: var(--select-arrow-size);
+    block-size: var(--select-arrow-size);
+    color: var(--select-label);
+    pointer-events: none;
+
+    transition: rotate var(--select-duration) var(--ease-out);
+}
+
+.arrow > svg {
+    inline-size: 100%;
+    block-size: 100%;
+}
+
+.field:has(.control[aria-expanded="true"]) .arrow {
+    rotate: 180deg;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Список                                                                    */
+/*                                                                            */
+/*  Ширина берётся от обёртки, а не от кнопки: кнопку ужимают чипсы,          */
+/*  и список ужимался вместе с ней — замерено, поле 948px,                    */
+/*  список 890 → 772 → 671 → 514.                                             */
+/* -------------------------------------------------------------------------- */
+
+.list[popover] {
+    padding: var(--select-list-padding);
+}
+
+.list[popover]:focus {
+    outline: none;
+}
+
+@supports (inline-size: anchor-size(inline)) {
+    .list[popover] {
+        min-inline-size: anchor-size(inline);
+    }
+}
+
+.option {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: var(--select-option-gap);
+    inline-size: 100%;
+    /* WCAG 2.5.8: цель нажатия не меньше 24×24. */
+    min-block-size: 2.25rem;
+    padding: var(--select-option-padding);
+
+    border-radius: var(--select-option-radius);
+    cursor: pointer;
+    transition: background-color 0.12s var(--ease-in-out);
+}
+
+.option:where(:focus, :hover) {
+    outline: none;
+    background-color: var(--select-option-bg-hover);
+}
+
+.option:where(:focus-visible) {
+    outline: 2px solid var(--select-ring);
+    outline-offset: -2px;
+}
+
+/*
+ * Выбранное помечено не только цветом: по WCAG 1.4.1 цвет не может быть
+ * единственным каналом. Галочка рисуется псевдоэлементом и в высоком
+ * контрасте переживает подмену палитры.
+ */
+.option[aria-selected="true"] {
+    color: var(--select-label-active);
+}
+
+.option[aria-selected="true"]::after {
+    content: '';
+    margin-inline-start: auto;
+    inline-size: 0.35em;
+    block-size: 0.7em;
+    border-inline-end: 2px solid currentColor;
+    border-block-end: 2px solid currentColor;
+    rotate: 45deg;
+}
+
+.option[aria-disabled="true"] {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Чипсы                                                                     */
+/* -------------------------------------------------------------------------- */
+
+.chip {
+    box-sizing: border-box;
+    /* Поверх растянутой зоны нажатия: крестик должен оставаться нажимаемым. */
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--select-chip-gap);
+    min-block-size: var(--select-line);
+    padding: var(--select-chip-padding);
+
+    border: var(--select-chip-border);
+    border-radius: var(--select-chip-radius);
+    font: inherit;
+    font-size: var(--select-chip-size);
+    color: var(--select-fg);
+    background-color: var(--select-chip-bg);
+    cursor: pointer;
+
+    transition: background-color var(--select-duration) var(--ease-in-out);
+}
+
+.chip:hover {
+    background-color: var(--select-chip-bg-hover);
+}
+
+.chip:focus-visible {
+    outline: 2px solid var(--select-ring);
+    outline-offset: 2px;
+}
+
+.chipRemove {
+    font-size: 1.1em;
+    line-height: 1;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Высокий контраст                                                          */
+/* -------------------------------------------------------------------------- */
+
+@media (forced-colors: active) {
+    .field,
+    .chip {
+        border: 1px solid CanvasText;
+    }
+
+    .option:where(:focus, :hover) {
+        color: HighlightText;
+        background-color: Highlight;
+        forced-color-adjust: none;
+    }
+
+    .option[aria-disabled="true"] {
+        color: GrayText;
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Reduced motion                                                            */
+/* -------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+    .field,
+    .label,
+    .arrow,
+    .option,
+    .chip {
+        transition: none;
+    }
+}

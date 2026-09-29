@@ -16,6 +16,13 @@
     --alert-fg: var(--contrast-color);
     --alert-fill: 16%;
     --alert-border: 85%;
+    /*
+     * Чем разбавлен акцент в заливке. По умолчанию ничем — плашка
+     * прозрачная и берёт фон страницы. Непрозрачной она нужна там, где
+     * под ней чужое содержимое: так делает Toast, подставляя сюда цвет
+     * подложки.
+     */
+    --alert-base: transparent;
 
     display: flex;
     align-items: center;
@@ -23,7 +30,7 @@
     padding: calc(var(--base-gap) * 2);
     border-radius: var(--base-gap);
     border: 1px solid color-mix(in oklab, var(--alert-accent) var(--alert-border), transparent);
-    background-color: color-mix(in oklab, var(--alert-accent) var(--alert-fill), transparent);
+    background-color: color-mix(in oklab, var(--alert-accent) var(--alert-fill), var(--alert-base));
     color: var(--alert-fg);
 }
 

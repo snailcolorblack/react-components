@@ -1,0 +1,201 @@
+/* -------------------------------------------------------------------------- */
+/*  Всплывающее сообщение                                                     */
+/*                                                                            */
+/*  Область — поповер, поэтому браузер кладёт её в верхний слой: никаких      */
+/*  z-index и никакой оглядки на overflow у предков. UA-стили [popover]       */
+/*  приходится перебивать целиком: там своя рамка, свой фон, inset: 0         */
+/*  и margin: auto, то есть по умолчанию поповер стоит посреди экрана.        */
+/* -------------------------------------------------------------------------- */
+
+.region {
+    --toast-inset: var(--base-size);
+    --toast-gap: calc(var(--base-gap) * 2);
+    --toast-width: 24rem;
+    --toast-duration: 0.16s;
+    --toast-shift: calc(var(--base-gap) * 2);
+
+    position: fixed;
+    inset: auto;
+    margin: 0;
+    padding: var(--toast-inset);
+    border: 0;
+    overflow: visible;
+    background: none;
+    color: inherit;
+
+    display: grid;
+    gap: var(--toast-gap);
+    inline-size: min(calc(var(--toast-width) + var(--toast-inset) * 2), 100%);
+    max-block-size: 100dvb;
+
+    /*
+     * Пустое место области кликам не мешает: она занимает целый угол
+     * экрана, а нажимать в ней можно только сами сообщения.
+     */
+    pointer-events: none;
+}
+
+.toast {
+    pointer-events: auto;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Углы                                                                      */
+/*                                                                            */
+/*  Логические стороны: START и END переворачиваются вместе с направлением    */
+/*  письма, поэтому отдельной раскладки для RTL не нужно.                     */
+/* -------------------------------------------------------------------------- */
+
+.region[data-position^="TOP"] {
+    inset-block-start: 0;
+    --toast-from: calc(var(--toast-shift) * -1);
+}
+
+.region[data-position^="BOTTOM"] {
+    inset-block-end: 0;
+    --toast-from: var(--toast-shift);
+}
+
+.region[data-position$="START"] {
+    inset-inline-start: 0;
+    justify-items: start;
+}
+
+.region[data-position$="END"] {
+    inset-inline-end: 0;
+    justify-items: end;
+}
+
+.region[data-position$="CENTER"] {
+    inset-inline: 0;
+    margin-inline: auto;
+    justify-items: center;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Плашка                                                                    */
+/*                                                                            */
+/*  Всё, кроме тени и ширины, приходит из Alert: варианты, покраска иконки,   */
+/*  поведение в высоком контрасте. Здесь только то, чем сообщение в углу      */
+/*  отличается от плашки в потоке.                                            */
+/* -------------------------------------------------------------------------- */
+
+.toast {
+    /*
+     * Под сообщением чужое содержимое, поэтому заливка Alert разбавляется
+     * не прозрачностью, а подложкой: иначе сквозь плашку читался бы текст
+     * страницы.
+     */
+    --alert-base: var(--base-color-200);
+
+    box-sizing: border-box;
+    inline-size: 100%;
+    max-inline-size: var(--toast-width);
+    padding: calc(var(--base-gap) * 3);
+    box-shadow: 0 4px 16px var(--contrast-alpha-20);
+}
+
+.icon {
+    display: flex;
+    flex: 0 0 auto;
+    color: var(--alert-tint);
+}
+
+.text {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    text-wrap: pretty;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Крестик                                                                   */
+/* -------------------------------------------------------------------------- */
+
+.close {
+    box-sizing: border-box;
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    /* WCAG 2.5.8: цель нажатия не меньше 24×24. */
+    inline-size: 1.5rem;
+    block-size: 1.5rem;
+    margin-inline-start: calc(var(--base-gap) * -1);
+
+    padding: 0;
+    border: 0;
+    border-radius: var(--base-gap);
+    font: inherit;
+    font-size: 1.25rem;
+    line-height: 1;
+    color: inherit;
+    background-color: transparent;
+    cursor: pointer;
+
+    transition: background-color var(--toast-duration) var(--ease-in-out);
+}
+
+.close:hover {
+    background-color: var(--contrast-alpha-10);
+}
+
+.close:focus-visible {
+    outline: 2px solid var(--alert-tint);
+    outline-offset: 2px;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Появление и уход                                                          */
+/*                                                                            */
+/*  Целиком на CSS, без единой строчки JS. @starting-style задаёт состояние,  */
+/*  из которого плашка въезжает, data-state="closed" — то, в которое она      */
+/*  уходит, а display в списке переходов с allow-discrete держит её на месте  */
+/*  до конца ухода и только потом снимает с раскладки. Без allow-discrete     */
+/*  display: none применился бы мгновенно и уход был бы не виден.             */
+/* -------------------------------------------------------------------------- */
+
+.toast {
+    transition:
+            opacity var(--toast-duration) var(--ease-out),
+            translate var(--toast-duration) var(--ease-out),
+            display var(--toast-duration) allow-discrete;
+}
+
+@starting-style {
+    .toast[data-state="open"] {
+        opacity: 0;
+        translate: 0 var(--toast-from, 0);
+    }
+}
+
+/*
+ * Закрытая плашка не просто прозрачная, а снята с раскладки: иначе она
+ * держала бы место в столбике и ловила курсор.
+ */
+.toast[data-state="closed"] {
+    display: none;
+    opacity: 0;
+    translate: 0 var(--toast-from, 0);
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Высокий контраст и покой                                                  */
+/* -------------------------------------------------------------------------- */
+
+@media (forced-colors: active) {
+    .toast {
+        border: 1px solid CanvasText;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .toast {
+        transition-property: opacity, display;
+        translate: none;
+    }
+
+    @starting-style {
+        .toast[data-state="open"] {
+            translate: none;
+        }
+    }
+}

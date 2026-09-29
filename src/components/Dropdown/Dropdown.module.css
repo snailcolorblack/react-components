@@ -1,0 +1,186 @@
+/* -------------------------------------------------------------------------- */
+/*  Меню                                                                      */
+/*                                                                            */
+/*  Раскладку, появление и переворот у края экрана даёт Popover. Здесь —      */
+/*  только сами пункты и ширина меню относительно кнопки.                     */
+/* -------------------------------------------------------------------------- */
+
+/*
+ * [popover] в селекторе — ради специфичности: у Popover свой padding на том
+ * же элементе, и без него победа зависела бы от порядка загрузки модулей.
+ */
+.menu[popover] {
+    /*
+     * Перебить можно на самом меню:
+     *   <Dropdown style={{'--dropdown-item-hover': 'var(--accent-color)'}} />
+     *
+     * Цвет подписи пунктов. Опасные берут --dropdown-danger — чтобы
+     * покрасить всё в один цвет, задайте оба одинаковыми.
+     *
+     * Не inherit: у пользовательского свойства это значит «унаследовать
+     * саму переменную», а не цвет, — та же ловушка, что описана в Button.
+     */
+    --dropdown-item-color: var(--popover-fg);
+    --dropdown-item-hover: var(--contrast-alpha-10);
+    --dropdown-item-radius: var(--base-gap);
+    --dropdown-item-padding: calc(var(--base-gap) * 2) calc(var(--base-gap) * 3);
+    --dropdown-danger: var(--danger-color-soft);
+    --dropdown-separator: var(--contrast-alpha-20);
+    --dropdown-ring: var(--accent-color-soft);
+
+    padding: var(--base-gap);
+}
+
+/* Фокус на самом меню бывает только после открытия мышью — кольцо
+   вокруг всего окна там было бы шумом, а не подсказкой. */
+.menu[popover]:focus {
+    outline: none;
+}
+
+/*
+ * Не уже кнопки: меню под широким триггером, которое короче него,
+ * выглядит оторванным. anchor-size() работает только при привязке
+ * к якорю — там, где её нет, меню просто остаётся по содержимому.
+ */
+@supports (inline-size: anchor-size(inline)) {
+    .menu[popover] {
+        min-inline-size: anchor-size(inline);
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Пункт                                                                     */
+/*                                                                            */
+/*  У каждого правила ниже специфичность ровно (0,1,0) — один класс.          */
+/*  Состояния (:hover, :focus, aria-disabled) завёрнуты в :where() и веса     */
+/*  не добавляют. Поэтому правило снаружи вида «класс меню + роль»            */
+/*  (0,2,0) побеждает во всех состояниях сразу, без !important.               */
+/*                                                                            */
+/*  Целиком в :where() класс не уходит намеренно: глобальный сброс            */
+/*  body * { padding: 0 } весит (0,0,1) и снёс бы отступы пунктов.            */
+/*                                                                            */
+/*  display: flex делает пункт блочным, поэтому пункты встают столбцом        */
+/*  без display на самом меню. Трогать display у [popover] нельзя: UA         */
+/*  прячет закрытый поповер именно через display: none.                       */
+/* -------------------------------------------------------------------------- */
+
+.item {
+    /*
+     * Явно, а не из глобального сброса: <button> получает border-box
+     * из UA-стилей браузера, а <a> — нет. Без этой строки пункты-ссылки
+     * шире пунктов-кнопок ровно на свои горизонтальные отступы, и меню
+     * начинает прокручиваться вбок. Проверено на пробе без index.css.
+     */
+    box-sizing: border-box;
+
+    display: flex;
+    align-items: center;
+    gap: calc(var(--base-gap) * 2);
+    inline-size: 100%;
+    /* WCAG 2.5.8: цель нажатия не меньше 24×24, с запасом под палец. */
+    min-block-size: 2.25rem;
+    padding: var(--dropdown-item-padding);
+
+    border: 0;
+    border-radius: var(--dropdown-item-radius);
+    font: inherit;
+    text-align: start;
+    text-decoration: none;
+    color: var(--dropdown-item-color);
+    background-color: transparent;
+    cursor: pointer;
+
+    transition: background-color 0.12s var(--ease-in-out);
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/*
+ * Подсветка по :focus, а не только по :focus-visible: в меню фокус и есть
+ * «текущий пункт». На пункт он попадает только с клавиатуры — при открытии
+ * мышью фокус стоит на самом меню, и подсвечен лишь пункт под курсором.
+ * Кольцо — только клавиатуре.
+ */
+.item:where(:focus, :hover) {
+    outline: none;
+    background-color: var(--dropdown-item-hover);
+}
+
+.item:where(:focus-visible) {
+    outline: 2px solid var(--dropdown-ring);
+    outline-offset: -2px;
+}
+
+.danger {
+    --dropdown-item-color: var(--dropdown-danger);
+}
+
+.item:where([aria-disabled="true"]) {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.item:where([aria-disabled="true"]:hover) {
+    background-color: transparent;
+}
+
+/*
+ * Иконки берут размер и цвет от подписи: svg с width="1em"
+ * и fill="currentColor" сам совпадёт с текстом и перекрасится вместе
+ * с --dropdown-item-color. Подпись растягивается (flex: 1), поэтому
+ * iconEnd всегда прижат к дальнему краю, а не к концу текста.
+ */
+.icon {
+    display: inline-flex;
+    flex-shrink: 0;
+    color: var(--dropdown-icon-color, currentColor);
+}
+
+.label {
+    flex: 1;
+    min-inline-size: 0;
+}
+
+.separator {
+    block-size: 1px;
+    margin-block: var(--base-gap);
+    background-color: var(--dropdown-separator);
+}
+
+/*
+ * Разделитель у края меню или рядом с другим разделителем ничего не
+ * разделяет — остаётся лишняя полоса. Так бывает, когда список собирается
+ * по условиям: последнюю группу убрали, а её разделитель остался.
+ */
+.separator:where(:first-child, :last-child, .separator + *) {
+    display: none;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Высокий контраст                                                          */
+/*                                                                            */
+/*  Фон подсветки система выбрасывает, и текущий пункт перестаёт отличаться.  */
+/*  Возвращаем его системной парой Highlight / HighlightText.                 */
+/* -------------------------------------------------------------------------- */
+
+@media (forced-colors: active) {
+    .item:where(:focus, :hover) {
+        color: HighlightText;
+        background-color: Highlight;
+        forced-color-adjust: none;
+    }
+
+    .item:where([aria-disabled="true"]) {
+        color: GrayText;
+    }
+
+    .separator {
+        background-color: CanvasText;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .item {
+        transition: none;
+    }
+}

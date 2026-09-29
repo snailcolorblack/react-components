@@ -46,21 +46,31 @@ describe('Fieldset', () => {
     /*  Скрытая легенда                                                 */
     /* ---------------------------------------------------------------- */
 
-    it('hideLegend оставляет имя группы', () => {
+    it('по умолчанию легенда скрыта, но остаётся именем группы', () => {
         render(
-            <Fieldset legend="Способ оплаты" hideLegend>
+            <Fieldset legend="Способ оплаты">
                 <Radio name="pay" value="card">Картой</Radio>
             </Fieldset>,
         );
         // имя на месте, значит легенда не выброшена из дерева доступности
         expect(screen.getByRole('group', {name: 'Способ оплаты'})).toBeInTheDocument();
+        expect(screen.getByText('Способ оплаты')).toHaveClass(styles.hiddenLegend);
     });
 
-    it('hideLegend меняет класс, а не прячет через display', () => {
-        render(<Fieldset legend="Оплата" hideLegend><Button>Кнопка</Button></Fieldset>);
+    it('скрытая легенда прячется классом, а не display: none', () => {
+        render(<Fieldset legend="Оплата"><Button>Кнопка</Button></Fieldset>);
         const legend = screen.getByText('Оплата');
         expect(legend).toHaveClass(styles.hiddenLegend);
         expect(legend).not.toHaveClass(styles.legend);
+    });
+
+    it('showLegend показывает легенду', () => {
+        render(<Fieldset legend="Оплата" showLegend><Button>Кнопка</Button></Fieldset>);
+        const legend = screen.getByText('Оплата');
+        expect(legend).toHaveClass(styles.legend);
+        expect(legend).not.toHaveClass(styles.hiddenLegend);
+        // имя группы от этого не зависит
+        expect(screen.getByRole('group', {name: 'Оплата'})).toBeInTheDocument();
     });
 
     /* ---------------------------------------------------------------- */
@@ -194,7 +204,7 @@ describe('Fieldset', () => {
                     <Radio name="plan" value="free">Бесплатный</Radio>
                     <Radio name="plan" value="pro">Профессиональный</Radio>
                 </Fieldset>
-                <Fieldset legend="Оплата" hideLegend orientation="inline">
+                <Fieldset legend="Оплата" orientation="inline">
                     <Button>Картой</Button>
                     <Button>Наличными</Button>
                 </Fieldset>
@@ -207,7 +217,7 @@ describe('Fieldset', () => {
     it('не шумит предупреждениями React', () => {
         const error = vi.spyOn(console, 'error').mockImplementation(() => {});
         render(
-            <Fieldset legend="Тариф" hideLegend orientation="inline" disabled>
+            <Fieldset legend="Тариф" showLegend orientation="inline" disabled>
                 <Radio name="plan" value="free">Бесплатный</Radio>
             </Fieldset>,
         );

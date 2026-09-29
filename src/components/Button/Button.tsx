@@ -90,6 +90,12 @@
 /* --- 5. Загрузка ---------------------------------------------------------- */
 /*
  *  <Button loading>Сохранить</Button>
+ *
+ *  Внутри формы с action проп не нужен вовсе: кнопка отправки берёт
+ *  pending у своей формы через useFormStatus и сама гасит повторные
+ *  нажатия.
+ *
+ *  <form action={save}><Button type="submit">Сохранить</Button></form>
  *  <Button as="a" href="/report" loading>Отчёт</Button>
  *
  *  Клик гасится, но элемент НЕ получает disabled. Это намеренно: disabled
@@ -107,6 +113,11 @@
  *  удалением из разметки: скрытый текст выпал бы из дерева доступности,
  *  и элемент остался бы без имени. Замерено — имя сохраняется. Заодно
  *  ширина не скачет.
+ *
+ *  Свои aria-disabled, aria-busy и data-state не затираются: loading
+ *  и active только добавляют своё, но не убирают переданное. Раньше они стирались молча — атрибуты
+ *  ставились после {...rest}, и <Button aria-disabled> без loading
+ *  рендерился вовсе без атрибута.
  *
  *  Настоящий disabled тоже работает и означает другое: действие недоступно,
  *  а не выполняется. У ссылки его нет — и в типах он запрещён. Выключить
@@ -148,6 +159,7 @@
  */
 /* -------------------------------------------------------------------------- */
 
+import {useFormStatus} from "react-dom";
 import type {ElementType, MouseEvent} from "react";
 import type {ButtonProps, ButtonSize, ButtonTag, ButtonVariant} from "./Button.interface.ts";
 import styles from './Button.module.css'
@@ -165,40 +177,54 @@ const SIZE_CLASS = {
 
 
 function Button<T extends ButtonTag = 'button'>(props: ButtonProps<T>) {
+    /*
+     * Состояние ближайшей формы. Вне формы хук отдаёт pending: false,
+     * поэтому вызывать его можно всегда — условных хуков не появляется.
+     */
+    const form = useFormStatus();
+
     const {
         as = 'button',
         className = "",
         size = 'FIT',
         variant = 'DEFAULT',
         active = false,
-        loading = false,
+        loading,
         onClick,
         children,
         ...rest
-    } = props as Omit<ButtonProps<'button'>, 'as'> & {as?: ButtonTag};
+            /* data-state объявлен здесь, потому что в типах React data-атрибуты
+           разрешены в JSX, но индексировать по ним объект пропсов нельзя. */
+    } = props as Omit<ButtonProps<'button'>, 'as'> & {as?: ButtonTag, 'data-state'?: string};
 
     const Component = as as ElementType;
-    const classes = [styles.button, VARIANT_CLASS[variant], SIZE_CLASS[size], className,].filter(Boolean).join(' ');
+    const classes = [styles.button, VARIANT_CLASS[variant], SIZE_CLASS[size], className].filter(Boolean).join(' ');
     const type = as === 'a' ? undefined : (rest.type ?? 'button');
+    /*
+     * Загрузка берётся из формы только у кнопки отправки: type="button"
+     * рядом в той же форме делает что-то своё и крутиться не должна.
+     * Явный loading (в том числе loading={false}) всегда главнее.
+     */
+    const busy = loading ?? (type === 'submit' && form.pending);
 
 
     return (
         <Component
             {...rest}
             type={type}
-            aria-disabled={loading || undefined}
-            aria-busy={loading || undefined}
-            data-state={active ? 'active' : undefined}
+            aria-disabled={busy || rest['aria-disabled'] || undefined}
+            aria-busy={busy || rest['aria-busy'] || undefined}
+            data-state={active ? 'active' : rest['data-state']}
             className={classes}
             onClick={handleClick}
         >
             <span className={styles.label}>{children}</span>
-            {loading && <span className={styles.spinner} aria-hidden="true"/>}
+            {busy && <span className={styles.spinner} aria-hidden="true"/>}
         </Component>
     );
 
     function handleClick(event: MouseEvent<HTMLElement>) {
-        if (loading) {
+        if (busy) {
             event.preventDefault();
 
             return;

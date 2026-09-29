@@ -1,5 +1,5 @@
 // Dialog.interface.ts
-import type {ComponentPropsWithRef, ReactNode} from 'react';
+import type {ComponentPropsWithRef} from 'react';
 
 export type DialogClosedBy = 'any' | 'closerequest' | 'none';
 
@@ -23,6 +23,18 @@ export interface DialogProps extends Omit<ComponentPropsWithRef<'dialog'>, 'open
      * Не передан — React диалогом не управляет.
      */
     open?: boolean
-    label?: ReactNode
+    /**
+     * Имя окна для скринридера: уходит в `aria-label`. Только строка —
+     * разметку здесь показать негде, имя в ARIA это текст. Нужен видимый
+     * заголовок — поставьте его внутрь и свяжите через `aria-labelledby`.
+     */
+    label?: string
+    /**
+     * Чем окно закрывается. Делает это атрибут `closedby`, а не наш код.
+     *
+     * В движке без его поддержки компонент подменяет только клик мимо
+     * при `any`; `none` и `closerequest` там не удержат Esc — закрытие
+     * останется браузерным по умолчанию.
+     */
     closedBy?: DialogClosedBy
 }

@@ -31,7 +31,13 @@
     --popover-duration: 0.24s;
     --popover-scale: 0.85;
 
-    gap: var(--popover-gap);
+    /*
+     * gap здесь не работает и оставлен нарочно не был: у .popover нет ни
+     * flex, ни grid — UA даёт display: block, и на это опирается Dropdown
+     * («пункты встают столбцом без display на самом меню»). Переменная
+     * --popover-gap нужна только для отступа до кнопки, его считает
+     * margin в блоке позиционирования ниже.
+     */
     padding: var(--base-size);
     border: 1px solid var(--popover-border);
     border-radius: var(--base-gap);

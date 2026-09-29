@@ -27,6 +27,11 @@
     --dropdown-danger: var(--danger-color-soft);
     --dropdown-separator: var(--contrast-alpha-20);
     --dropdown-ring: var(--accent-color-soft);
+    /*
+     * Цвет иконок пункта. Объявлен со значением по умолчанию прямо в месте
+     * использования (.icon), поэтому здесь его можно только перебить:
+     *   <Dropdown style={{'--dropdown-icon-color': 'var(--accent-color-soft)'}}/>
+     */
 
     padding: var(--base-gap);
 }

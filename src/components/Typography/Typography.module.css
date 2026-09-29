@@ -34,8 +34,6 @@
     --typography-size: var(--font-size-16);
     --typography-leading: var(--line-height-base);
 
-
-
     /*
      * Насыщенности и начертания здесь нет намеренно: их задаёт тег.
      * Иначе variant затирал бы жирность у <strong> и наклон у <em>,
@@ -118,6 +116,16 @@
 .subtitle {
     --typography-size: var(--font-size-22);
 }
+
+/*
+ * Размер берётся у родителя. Раньше этого класса не было вовсе: вариант
+ * inheritable существовал в типах, styles.inheritable отдавал undefined,
+ * его убирал filter(Boolean) — и оставался .text с его 16px. То есть
+ * «наследуемый» размер был обычным базовым.
+ *
+ * inherit здесь применяется к --typography-size, а не к font-size:
+ * .text читает переменную, и перебить нужно именно её.
+ */
 .inheritable {
     --typography-size: inherit;
 }

@@ -22,7 +22,8 @@ export type TypographyTagVariant = 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'p'
  * `note` — 14px: вторичный текст, помощь под полем, мелкий интерфейс.
  * `lead` — 20px: вводный абзац, чуть крупнее основного текста.
  * `subtitle` — 22px: подзаголовок под крупным заголовком.
- * `inheritable` — n-px: наследуется от родителя.
+ * `inheritable` — размер наследуется от родителя: своего не задаёт вовсе.
+ * Тег по умолчанию `span`, а не `p`.
  */
 export type TypographyExtraVariant = 'caption' | 'note' | 'lead' | 'subtitle' | 'inheritable';
 

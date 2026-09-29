@@ -3,8 +3,10 @@
 /* -------------------------------------------------------------------------- */
 /*  РАБОТА С ПОДСКАЗКОЙ                                                       */
 /*                                                                            */
-/*  Подсказка оборачивает свой триггер — в отличие от Popover, которому       */
-/*  хватает атрибута popovertarget на чужой кнопке. Причина в том, что        */
+/*  Подсказка сама навешивает обработчики на свой триггер: он клонируется     */
+/*  с добавленными пропсами, лишней обёртки в разметке не появляется.         */
+/*  Это в отличие от Popover, которому хватает атрибута popovertarget         */
+/*  на чужой кнопке. Причина в том, что                                       */
 /*  декларативного триггера по наведению в платформе пока нет: атрибут        */
 /*  interesttarget и события interest в Chromium 141 отсутствуют, и           */
 /*  наведение приходится отслеживать самим.                                    */
@@ -40,8 +42,8 @@
  *      а подсказка открытое меню не трогает. Всё замерено в Chromium 141.
  *
  *  Мы:
- *      наведение и фокус с задержкой, удержание подсказки при наведении
- *      на неё саму, привязка к триггеру.
+ *      наведение с задержкой (по фокусу — сразу, без неё), удержание
+ *      подсказки при наведении на неё саму, привязка к триггеру.
  *
  *  Привязку пришлось делать вручную: неявный якорь появляется только
  *  у поповера, открытого через popovertarget или commandfor. Замерено —
@@ -79,7 +81,11 @@ import {cloneElement, useEffect, useId, useRef, type PointerEvent, type FocusEve
 import type {TooltipPlacement, TooltipProps} from './Tooltip.interface.ts';
 import styles from './Tooltip.module.css';
 
-
+/*
+ * area — куда встать относительно триггера, origin — от какого края растёт
+ * появление, block/inline — на какой оси лежит зазор до триггера. Отступ
+ * на чужой оси не отделял бы подсказку от кнопки, а просто сдвигал её вбок.
+ */
 const PLACEMENT = {
     'block-start': {
         area: 'block-start span-inline-end', origin: 'bottom center',
@@ -99,6 +105,8 @@ const PLACEMENT = {
     },
 } satisfies Record<TooltipPlacement, {area: string, origin: string, block: string, inline: string}>;
 
+/* Пауза перед скрытием: за неё курсор успевает перейти с триггера на саму
+   подсказку, не потеряв её. Требование WCAG 1.4.13 о наводимости. */
 const HIDE_DELAY = 150;
 
 function Tooltip({
@@ -138,7 +146,8 @@ function Tooltip({
         '--tooltip-margin-inline': PLACEMENT[placement].inline,
     } as CSSProperties;
 
-
+    /* Таймеры переживают размонтирование, если их не снять: поповера уже
+       нет, а отложенный show дёрнет showPopover() на оторванном узле. */
     useEffect(() => () => {
         clearTimeout(showTimer.current);
         clearTimeout(hideTimer.current);
@@ -184,6 +193,8 @@ function Tooltip({
 
     function handleTriggerEnter(event: PointerEvent<HTMLElement>) {
         children.props.onPointerEnter?.(event);
+        /* Касание — не наведение: на телефоне подсказка вспыхивала бы
+           на каждом тапе и закрывала то, по чему нажали. */
         if (event.pointerType === 'touch') return;
 
         clearTimeout(hideTimer.current);
@@ -199,6 +210,8 @@ function Tooltip({
 
     function handleTriggerFocus(event: FocusEvent<HTMLElement>) {
         children.props.onFocus?.(event);
+        /* Фокус мышью подсказку не показывает: ей уже занимается наведение,
+           а после клика по кнопке подсказка поверх неё только мешает. */
         if (!event.target.matches(':focus-visible')) return;
 
         show();

@@ -47,6 +47,13 @@
  *  Поиска по первым буквам нет намеренно: по APG он необязателен.
  */
 
+/* --- Выключенное поле ------------------------------------------------------ */
+/*
+ *  disabled уходит на кнопку, на чипсы и на скрытые поля. Последнее не мелочь:
+ *  выключенное поле не участвует в форме, и без disabled у скрытых полей
+ *  значение всё равно уходило бы на сервер.
+ */
+
 /* --- Клавиатура ----------------------------------------------------------- */
 /*
  *  На кнопке: Enter и пробел открывают, фокус уходит на выбранный пункт
@@ -56,10 +63,21 @@
  */
 /* -------------------------------------------------------------------------- */
 
-import {useId, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode, type ToggleEvent} from 'react';
+import {
+    useId,
+    useRef,
+    useState,
+    type CSSProperties,
+    type FormEvent,
+    type KeyboardEvent,
+    type ReactNode,
+    type ToggleEvent,
+} from 'react';
 import {arrowIcon} from '../../assets/icons/icon.tsx';
+import {useValidity} from '../Field/Field.validity.ts';
 import {Popover} from '../Popover/Popover.tsx';
 import type {SelectAccessor, SelectMultiProps, SelectProps, SelectSingleProps} from './Select.interface.ts';
+import field from '../Field/Field.module.css';
 import styles from './Select.module.css';
 
 const OPTION_SELECTOR = '[role="option"]';
@@ -75,6 +93,9 @@ function Select<T>({
                        itemDisabled,
                        chipRender,
                        name,
+                       disabled = false,
+                       required = false,
+                       error,
                        value,
                        defaultValue,
                        onChange,
@@ -92,11 +113,16 @@ function Select<T>({
      */
     const [open, setOpen] = useState(false);
     const listRef = useRef<HTMLDivElement>(null);
+    const buttonRef = useRef<HTMLButtonElement>(null);
+    const proxyRef = useRef<HTMLInputElement>(null);
 
     const id = useId();
+    const validity = useValidity(error);
+
     const listId = `${id}-list`;
     const labelId = `${id}-label`;
     const valueId = `${id}-value`;
+    const errorId = `${id}-error`;
     /* Якорь на обёртке, а не на кнопке: кнопку ужимают чипсы. */
     const anchor = `--select-${id.replace(/[^\w-]/g, '-')}` as const;
 
@@ -105,90 +131,118 @@ function Select<T>({
     const chosen = items.filter((item, index) => selected.includes(key(item, index)));
 
     return (
-        <div
-            {...props}
-            data-variant={variant}
-            data-filled={selected.length > 0 || undefined}
-            className={[styles.field, className].filter(Boolean).join(' ')}
-            style={{...style, anchorName: anchor} as CSSProperties}
-        >
-            <span id={labelId} className={styles.label}>{label}</span>
-
-            <div className={styles.row}>
-                {multi && chosen.map((item, index) => (
-                    <button
-                        key={key(item, index)}
-                        type="button"
-                        className={styles.chip}
-                        aria-label={`Убрать ${textOf(item, index)}`}
-                        onClick={() => toggle(key(item, index))}
-                    >
-                        <span aria-hidden="true">{chipRender ? chipRender(item) : labelOf(item)}</span>
-                        <span className={styles.chipRemove} aria-hidden="true">×</span>
-                    </button>
-                ))}
-
-                <button
-                    type="button"
-                    id={id}
-                    role="combobox"
-                    aria-haspopup="listbox"
-                    aria-expanded={open}
-                    aria-controls={listId}
-                    aria-labelledby={`${labelId} ${valueId}`}
-                    popoverTarget={listId}
-                    className={styles.control}
-                >
-                    {/* Имя кнопки — подпись плюс это. У single здесь выбранное
-                        значение, у multi — сколько выбрано: сами чипсы лежат
-                        снаружи кнопки и читаются отдельными кнопками. */}
-                    <span id={valueId} className={styles.value}>
-                        {multi
-                            ? <span className={styles.srOnly}>{count(selected.length)}</span>
-                            : chosen[0] !== undefined && (itemRender ? itemRender(chosen[0]) : labelOf(chosen[0]))}
-                    </span>
-                </button>
-            </div>
-
-            <span className={styles.arrow} aria-hidden="true">{arrowIcon}</span>
-
-            <Popover
-                id={listId}
-                ref={listRef}
-                role="listbox"
-                aria-multiselectable={multi || undefined}
-                aria-labelledby={labelId}
-                anchor={anchor}
-                tabIndex={-1}
-                className={styles.list}
-                onKeyDown={handleListKeyDown}
-                onToggle={handleToggle}
+        <div className={[field.group, className].filter(Boolean).join(' ')} style={style}>
+            <div
+                {...props}
+                data-variant={variant}
+                data-filled={selected.length > 0 || undefined}
+                data-invalid={validity.invalid || undefined}
+                className={[field.field, styles.field].join(' ')}
+                style={{anchorName: anchor} as CSSProperties}
             >
-                {items.map((item, index) => {
-                    const raw = key(item, index);
-                    const off = flag(item, itemDisabled);
-
-                    return (
-                        <div
-                            key={raw}
-                            role="option"
-                            tabIndex={-1}
-                            aria-selected={selected.includes(raw)}
-                            aria-disabled={off || undefined}
-                            className={styles.option}
-                            onClick={() => !off && toggle(raw)}
+                <span id={labelId} className={field.label}>{label}</span>
+                <div className={field.row}>
+                    {multi && chosen.map((item, index) => (
+                        <button
+                            key={key(item, index)}
+                            type="button"
+                            className={styles.chip}
+                            disabled={disabled}
+                            aria-label={`Убрать ${textOf(item, index)}`}
+                            onClick={() => toggle(key(item, index))}
                         >
-                            {itemRender ? itemRender(item) : labelOf(item)}
-                        </div>
-                    );
-                })}
-            </Popover>
+                            <span aria-hidden="true">{chipRender ? chipRender(item) : labelOf(item)}</span>
+                            <span className={styles.chipRemove} aria-hidden="true">×</span>
+                        </button>
+                    ))}
+                    <button
+                        type="button"
+                        id={id}
+                        ref={buttonRef}
+                        role="combobox"
+                        aria-haspopup="listbox"
+                        aria-expanded={open}
+                        aria-controls={listId}
+                        disabled={disabled}
+                        aria-labelledby={`${labelId} ${valueId}`}
+                        aria-describedby={validity.invalid ? errorId : undefined}
+                        aria-invalid={validity.invalid || undefined}
+                        aria-required={required || undefined}
+                        popoverTarget={disabled ? undefined : listId}
+                        className={[field.control, styles.control].join(' ')}
+                    >
+                        <span id={valueId} className={styles.value}>
+                            {multi
+                                ? <span className={field.srOnly}>{count(selected.length)}</span>
+                                : chosen[0] !== undefined && (itemRender ? itemRender(chosen[0]) : labelOf(chosen[0]))}
+                        </span>
+                    </button>
+                </div>
+                <span className={styles.arrow} aria-hidden="true">{arrowIcon}</span>
 
-            {/* По полю на значение: FormData.getAll(name) вернёт массив —
-                так же ведут себя select multiple и группа флажков. */}
-            {name && selected.map(raw => <input key={raw} type="hidden" name={name} value={raw}/>)}
+                <Popover
+                    id={listId}
+                    ref={listRef}
+                    role="listbox"
+                    aria-multiselectable={multi || undefined}
+                    aria-labelledby={labelId}
+                    anchor={anchor}
+                    tabIndex={-1}
+                    className={styles.list}
+                    onKeyDown={handleListKeyDown}
+                    onToggle={handleToggle}
+                >
+                    {items.map((item, index) => {
+                        const raw = key(item, index);
+                        const off = flag(item, itemDisabled);
+
+                        return (
+                            <div
+                                key={raw}
+                                role="option"
+                                tabIndex={-1}
+                                aria-selected={selected.includes(raw)}
+                                aria-disabled={off || undefined}
+                                className={styles.option}
+                                onClick={() => !off && toggle(raw)}
+                            >
+                                {itemRender ? itemRender(item) : labelOf(item)}
+                            </div>
+                        );
+                    })}
+                </Popover>
+
+                {name && selected.map(raw => (
+                    <input key={raw} type="hidden" name={name} value={raw} disabled={disabled}/>
+                ))}
+                {required && (
+                    <input
+                        ref={proxyRef}
+                        required
+                        disabled={disabled}
+                        tabIndex={-1}
+                        aria-hidden="true"
+                        value={selected.join(',')}
+                        className={styles.validity}
+                        onChange={ignore}
+                        onFocus={handleProxyFocus}
+                        onInvalid={validity.report}
+                    />
+                )}
+
+            </div>
+            <span id={errorId} className={field.message} aria-live="polite">{validity.message}</span>
         </div>
     );
+
+    /*
+     * Фокус браузер наводит на спутник — уводим его на кнопку: невидимое
+     * поле в фокусе это тупик, из которого человеку некуда деться.
+     */
+    function handleProxyFocus(event: FormEvent<HTMLInputElement>) {
+        event.preventDefault();
+        buttonRef.current?.focus();
+    }
 
     function key(item: T, index: number) {
         return String(valueOf(item, itemValue, index));
@@ -222,6 +276,9 @@ function Select<T>({
             : [raw];
 
         if (value === undefined) setOwn(next);
+        /* Выбрали — сообщение уходит сразу: спутник узнает об этом
+           только на следующей отрисовке, а показывать ошибку уже незачем. */
+        if (next.length > 0) validity.drop();
         const picked = items.filter((item, index) => next.includes(key(item, index)));
 
         if (multi) (onChange as SelectMultiProps<T>['onChange'])?.(next, picked);
@@ -265,8 +322,6 @@ function Select<T>({
 
             return;
         }
-        /* Без preventDefault: список закрывается, фокус возвращается
-           на кнопку, и Tab уводит с неё дальше по странице. */
         if (event.key === 'Tab') listRef.current?.hidePopover();
     }
 }
@@ -274,6 +329,13 @@ function Select<T>({
 /* -------------------------------------------------------------------------- */
 /*  Доступ к полям элемента                                                   */
 /* -------------------------------------------------------------------------- */
+
+/*
+ * Спутник проверки значение не меняет — его ставит компонент. Обработчик
+ * нужен только React: полю со значением он его требует, а readOnly вместо
+ * него вывел бы поле из проверки формы.
+ */
+function ignore() {}
 
 function toList(value: unknown): string[] {
     if (value === undefined || value === null || value === '') return [];

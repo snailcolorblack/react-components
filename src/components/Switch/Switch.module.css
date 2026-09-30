@@ -179,3 +179,19 @@
         transition-duration: 0.01ms;
     }
 }
+
+/* -------------------------------------------------------------------------- */
+/*  Ошибка                                                                    */
+/*                                                                            */
+/*  Дорожка краснеет по :user-invalid — то есть после того, как человек       */
+/*  закончил ввод, — и по атрибуту обёртки, когда ошибка пришла снаружи       */
+/*  или от проверки формы. Атрибут стоит на обёртке (Control.module.css),     */
+/*  поэтому селектор смотрит на предка.                                       */
+/* -------------------------------------------------------------------------- */
+
+.switch:has(.input:user-invalid) .input,
+[data-invalid] .switch .input {
+    --switch-track-border: var(--danger-color-soft);
+    --switch-track-off: color-mix(in oklab, var(--danger-color-soft) 20%, transparent);
+    --switch-ring: var(--danger-color-soft);
+}

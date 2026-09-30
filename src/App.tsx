@@ -1,6 +1,6 @@
 // App.tsx
 import './App.css';
-import {useRef, useState, useTransition} from "react";
+import {useRef, useState, useTransition, type FormEvent} from "react";
 import {Accordion} from "./components/Accoridon/Accordion.tsx";
 import {Alert} from "./components/Alert/Alert.tsx";
 import {Button} from "./components/Button/Button.tsx";
@@ -8,10 +8,12 @@ import {Checkbox} from "./components/Checkbox/Checkbox.tsx";
 import {Dialog} from "./components/Dialog/Dialog.tsx";
 import {Dropdown} from "./components/Dropdown/Dropdown.tsx";
 import {Fieldset} from "./components/Fieldset/Fieldset.tsx";
+import {Input} from "./components/Input/Input.tsx";
 import {Popover} from "./components/Popover/Popover.tsx";
 import {Radio} from "./components/Radio/Radio.tsx";
 import {Select} from "./components/Select/Select.tsx";
 import {Switch} from "./components/Switch/Switch.tsx";
+import {Textarea} from "./components/Textarea/Textarea.tsx";
 import {Toast} from "./components/Toast/Toast.tsx";
 import {Tooltip} from "./components/Tooltip/Tooltip.tsx";
 import {Typography} from "./components/Typography/Typography.tsx";
@@ -178,6 +180,20 @@ function App() {
     const toastRef = useRef<ToastHandle>(null);
     const noticeRef = useRef<ToastHandle>(null);
 
+    /*
+     * Что уйдёт в форму. Показываем сообщением: у Input с affixInValue
+     * значение отправляет скрытое поле, и это видно только в FormData.
+     */
+    function submit(event: FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+
+        const data = [...new FormData(event.currentTarget)]
+            .map(([key, value]) => `${key}: ${value || '—'}`)
+            .join(', ');
+
+        toastRef.current?.show(data, {duration: 8000});
+    }
+
     function save() {
         startSaving(async () => {
             const response = await fakeRequest();
@@ -193,11 +209,16 @@ function App() {
     return (
         <>
             <main className='content'>
+                {/* Страница начинается с h1: без него разделы h2 висят
+                    без корня, и обход по заголовкам начинается с середины. */}
+                <Typography as={'h1'}>Компоненты</Typography>
                 <section id={'ACCORDION'} className='section'>
                     <Typography as={'h2'}>ACCORDION</Typography>
                     {ACCORDION.map((item, index) => (
                         <Accordion {...item.attr} key={index}>
-                            <Accordion.Header>{item.summary}</Accordion.Header>
+                            {/* as="h3": иначе summary не попадает в список
+                                заголовков и по разделам не пройтись. */}
+                            <Accordion.Header as={'h3'}>{item.summary}</Accordion.Header>
                             <Accordion.Content>{item.body}</Accordion.Content>
                         </Accordion>
                     ))}
@@ -217,6 +238,12 @@ function App() {
                             ))}
                         </div>
                     ))}
+                    {/* Нажатое состояние слышно, а не только видно:
+                        у кнопки aria-pressed, у ссылки aria-current. */}
+                    <div className="block">
+                        <Button active>Нажатая кнопка</Button>
+                        <Button as={'a'} href="#BUTTON" active variant={'OUTLINE'}>Текущая ссылка</Button>
+                    </div>
                 </section>
                 <section id={'DIALOG'} className="section">
                     <Typography as={'h2'}>DIALOG</Typography>
@@ -334,9 +361,15 @@ function App() {
                 <section id={'TOOLTIP'} className="section">
                     <Typography as={'h2'}>TOOLTIP</Typography>
                     <div className="block">
+                        {/* Триггер обязан получать фокус: подсказка показывается
+                            и по наведению, и по фокусу, а до <div> с клавиатуры
+                            не добраться. Компонент об этом предупреждает. */}
                         <Tooltip text="Наведение сработало, теперь убери курсор">
-                            <div style={{padding: 12, borderRadius: 8, backgroundColor: 'var(--base-color-200)'}}>Наведи
-                                курсор на тултип
+                            <div
+                                tabIndex={0}
+                                style={{padding: 12, borderRadius: 8, backgroundColor: 'var(--base-color-200)'}}
+                            >
+                                Наведи курсор или перейди табом
                             </div>
                         </Tooltip>
                         <Tooltip text="Кнопка в состоянии disabled">
@@ -357,6 +390,13 @@ function App() {
                         <Checkbox variant={'CHIP'} name="terms" value="yes">Согласен с условиями</Checkbox>
                         <Checkbox variant={'CHIP'} disabled>Недоступно</Checkbox>
                     </div>
+                    {/* Ошибка: своя и от браузера — обе под флажком, а не
+                        в пузыре, который исчезает по таймеру. */}
+                    <form className="block">
+                        <Checkbox name="agree" required>Обязательное согласие</Checkbox>
+                        <Checkbox error="Этот тариф уже подключён">Своя ошибка</Checkbox>
+                        <Button type="submit" variant={'OUTLINE'}>Проверить</Button>
+                    </form>
                 </section>
                 <section id={'RADIO'} className="section">
                     <Typography as={'h2'}>RADIO</Typography>
@@ -394,6 +434,31 @@ function App() {
                         <Button>Наличными</Button>
                     </Fieldset>
                 </section>
+                <section id={'INPUT'} className="section">
+                    <Typography as={'h2'}>INPUT</Typography>
+                    <form className="block" style={{flexDirection: 'column', alignItems: 'stretch'}} onSubmit={submit}>
+                        <Input label="Имя" name="name" placeholder="Как к вам обращаться"/>
+                        <Input label="Телефон" name="phone" mask="+7 ### ##-##-##" format={/\d/} inputMode="tel"/>
+                        <Input label="Дата рождения" name="birth" mask="##.##.####" format={/\d/} inputMode="numeric"/>
+                        <Input label="Сумма" name="amount" suffix="₽" format={/\d/} inputMode="numeric"/>
+                        <Input label="Сайт" name="site" prefix="https://" affixInValue/>
+                        <Input label="Почта" name="mail" type="email" required
+                               placeholder="you@example.com"/>
+                        <Select label="Вид депозита" name="deposit" items={DEPOSITS}
+                                itemLabel="visibleName" itemValue="value" required/>
+                        <Input label="Логин" name="login" error="Такой логин уже занят"/>
+                        <Textarea label="Комментарий" name="comment" maxLength={200} required/>
+                        <Button type="submit">Отправить и показать FormData</Button>
+                    </form>
+                </section>
+                <section id={'TEXTAREA'} className="section">
+                    <Typography as={'h2'}>TEXTAREA</Typography>
+                    <div className="block" style={{flexDirection: 'column', alignItems: 'stretch'}}>
+                        <Textarea label="Растёт под текст" placeholder="Наберите несколько строк"/>
+                        <Textarea label="Фиксированная высота" autoGrow={false} rows={3}
+                                  defaultValue={'раз\nдва\nтри\nчетыре\nпять'}/>
+                    </div>
+                </section>
                 <section id={'TOAST'} className="section">
                     <Typography as={'h2'}>TOAST</Typography>
                     <div className="block">
@@ -417,23 +482,25 @@ function App() {
 
             {/*  DIALOG   */}
             <>
-                <Dialog open={dialog === 'firstType'} onClose={close} label="Первое окно">
-                    <Typography as={'h2'}>Это первое окно для модалки открыто через state.</Typography>
+                {/* Имя окна — его видимый заголовок, а не отдельная строка:
+                    так они не разъедутся и не прочитаются дважды. */}
+                <Dialog open={dialog === 'firstType'} onClose={close} aria-labelledby="first-title">
+                    <Typography as={'h2'} id="first-title">Первое окно открыто через state</Typography>
                     <form method="dialog"><Button type="submit">Закрытие через форму</Button></form>
                 </Dialog>
-                <Dialog ref={dialogRef} label="Второе окно">
-                    <Typography as={'h2'}>Это второе окно для модалки открыто через ref</Typography>
+                <Dialog ref={dialogRef} aria-labelledby="second-title">
+                    <Typography as={'h2'} id="second-title">Второе окно открыто через ref</Typography>
                     <Button onClick={() => dialogRef.current?.close()}>Закрыть через ref</Button>
                 </Dialog>
-                <Dialog id="threeType" label="Третье окно">
-                    <Typography as={'h2'}>Это третье окно для модалки открыто нативно</Typography>
+                <Dialog id="threeType" aria-labelledby="third-title">
+                    <Typography as={'h2'} id="third-title">Третье окно открыто нативно</Typography>
                     <Button commandfor="threeType" command="close">Закрытие через кнопку</Button>
                 </Dialog>
             </>
             {/*  TOAST   */}
             <>
                 <Toast ref={toastRef} position="BOTTOM_END" duration={5000}/>
-                <Toast ref={noticeRef} position="TOP_START"/>
+                <Toast ref={noticeRef} position="TOP_START" label="Уведомления в другом углу"/>
             </>
             {/*  POPOVER   */}
             <>

@@ -283,3 +283,33 @@ describe('Popover', () => {
         error.mockRestore();
     });
 });
+
+describe('Popover: имя и роль', () => {
+    /*
+     * Замерено в браузере: <div> с aria-label и без роли в дерево
+     * доступности не попадает вовсе — узла нет, имя теряется. Поэтому
+     * именованная панель получает роль group.
+     */
+    it('с именем панель становится группой', () => {
+        /*
+         * Имя проверяем атрибутом, а не getByRole({name}): у закрытого
+         * поповера display: none, и вычисление имени в jsdom возвращает
+         * пустую строку независимо от разметки. Что имя доходит до дерева
+         * доступности — это браузерный замер.
+         */
+        render(<Popover id="p1" label="Настройки вида">Содержимое</Popover>);
+        const panel = screen.getByRole('group', {hidden: true});
+
+        expect(panel).toHaveAttribute('aria-label', 'Настройки вида');
+    });
+
+    it('без имени роли не появляется: называть нечего', () => {
+        const {container} = render(<Popover id="p2">Содержимое</Popover>);
+        expect(container.querySelector('[popover]')).not.toHaveAttribute('role');
+    });
+
+    it('своя роль сильнее', () => {
+        render(<Popover id="p3" role="listbox" label="Валюты">Содержимое</Popover>);
+        expect(screen.getByRole('listbox', {hidden: true})).toHaveAttribute('aria-label', 'Валюты');
+    });
+});

@@ -1,4 +1,4 @@
-import {render, screen} from '@testing-library/react';
+import {act, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import axe from 'axe-core';
 import {useState} from 'react';
@@ -393,5 +393,169 @@ describe('Select multi', () => {
         );
         expect(error).not.toHaveBeenCalled();
         error.mockRestore();
+    });
+});
+
+describe('Select: выключенное поле', () => {
+    it('кнопка выключена и выпадает из табуляции', async () => {
+        render(<Select label="Вид" items={STRINGS} disabled/>);
+        const control = screen.getByRole('combobox');
+
+        expect(control).toBeDisabled();
+
+        await userEvent.tab();
+        expect(control).not.toHaveFocus();
+    });
+
+    it('список не открывается', async () => {
+        render(<Select label="Вид" items={STRINGS} disabled/>);
+
+        await userEvent.click(screen.getByRole('combobox'));
+        expect(screen.getByRole('combobox')).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it('значение не уходит в форму', () => {
+        render(
+            <form>
+                <Select label="Вид" name="deposit" items={DEPOSITS} itemLabel="visibleName"
+                        itemValue="value" defaultValue={2} disabled/>
+            </form>,
+        );
+        const form = document.querySelector('form') as HTMLFormElement;
+
+        /* Выключенное поле в форме не участвует — как любое нативное. */
+        expect(new FormData(form).getAll('deposit')).toEqual([]);
+    });
+
+    it('чипсы не убираются', async () => {
+        render(
+            <Select variant="multi" label="Валюты" items={STRINGS} defaultValue={['Детский']} disabled/>,
+        );
+        const chip = screen.getByRole('button', {name: 'Убрать Детский'});
+
+        expect(chip).toBeDisabled();
+
+        /*
+         * Клик программный, а не через userEvent: у выключенного чипса
+         * pointer-events: none, и userEvent отказывается по нему целиться,
+         * то есть проверял бы CSS вместо поведения. Настоящий disabled
+         * не пускает и такой клик.
+         */
+        chip.click();
+        expect(screen.getByRole('button', {name: 'Убрать Детский'})).toBeInTheDocument();
+    });
+});
+
+describe('Select: обязательный выбор', () => {
+    /*
+     * Скрытые поля со значениями в проверке формы не участвуют: type="hidden"
+     * исключён из неё спецификацией. Поэтому required держит отдельный
+     * спутник без имени — до него у поля выбора не было ни required,
+     * ни состояния ошибки вовсе.
+     */
+    function submit() {
+        return act(async () => (document.querySelector('form') as HTMLFormElement).requestSubmit());
+    }
+
+    it('пустое поле не даёт отправить форму', async () => {
+        render(
+            <form>
+                <Select label="Вид депозита" name="deposit" items={STRINGS} required/>
+                <button>Отправить</button>
+            </form>,
+        );
+        const form = document.querySelector('form') as HTMLFormElement;
+        const onSubmit = vi.fn(event => event.preventDefault());
+
+        form.addEventListener('submit', onSubmit);
+        await submit();
+
+        expect(onSubmit).not.toHaveBeenCalled();
+    });
+
+    it('сообщение браузера появляется под полем и связано с кнопкой', async () => {
+        render(
+            <form>
+                <Select label="Вид депозита" name="deposit" items={STRINGS} required/>
+            </form>,
+        );
+        const trigger = screen.getByRole('combobox');
+
+        await submit();
+
+        expect(trigger).toHaveAttribute('aria-invalid', 'true');
+        expect(trigger).toHaveAccessibleDescription(/\S/);
+    });
+
+    it('после выбора ошибка уходит и форма отправляется', async () => {
+        render(
+            <form>
+                <Select label="Вид депозита" name="deposit" items={STRINGS} required/>
+            </form>,
+        );
+        const form = document.querySelector('form') as HTMLFormElement;
+        const onSubmit = vi.fn(event => event.preventDefault());
+
+        form.addEventListener('submit', onSubmit);
+        await submit();
+        expect(screen.getByRole('combobox')).toHaveAttribute('aria-invalid', 'true');
+
+        await openList();
+        await userEvent.click(screen.getByRole('option', {name: 'Детский'}));
+
+        expect(screen.getByRole('combobox')).not.toHaveAttribute('aria-invalid');
+
+        await submit();
+        expect(onSubmit).toHaveBeenCalled();
+    });
+
+    it('спутник не отправляет ничего своего', async () => {
+        render(
+            <form>
+                <Select label="Вид депозита" name="deposit" items={STRINGS} defaultValue="Детский" required/>
+            </form>,
+        );
+        const form = document.querySelector('form') as HTMLFormElement;
+
+        /* Ровно одно значение и ровно одно имя: у спутника имени нет. */
+        expect([...new FormData(form).keys()]).toEqual(['deposit']);
+    });
+
+    it('кнопка помечена обязательной для скринридера', () => {
+        render(<Select label="Вид депозита" items={STRINGS} required/>);
+        expect(screen.getByRole('combobox')).toHaveAttribute('aria-required', 'true');
+    });
+
+    it('обязательное поле проходит axe', async () => {
+        const {container} = render(
+            <Select label="Вид депозита" name="deposit" items={STRINGS} required/>,
+        );
+        const results = await axe.run(container, {rules: {'color-contrast': {enabled: false}}});
+
+        expect(results.violations).toEqual([]);
+    });
+});
+
+describe('Select: своя ошибка', () => {
+    it('показана под полем и объявлена описанием кнопки', () => {
+        render(<Select label="Валюты" items={STRINGS} error="Выберите хотя бы одну"/>);
+        const trigger = screen.getByRole('combobox');
+
+        expect(screen.getByText('Выберите хотя бы одну')).toBeInTheDocument();
+        expect(trigger).toHaveAccessibleDescription('Выберите хотя бы одну');
+        expect(trigger).toHaveAttribute('aria-invalid', 'true');
+    });
+
+    it('помечает коробку, а не только текст', () => {
+        render(<Select label="Валюты" items={STRINGS} error="Ошибка"/>);
+        expect(screen.getByRole('combobox').closest('[data-invalid]')).not.toBeNull();
+    });
+
+    it('без ошибки живая область пуста, но в разметке есть', () => {
+        const {container} = render(<Select label="Валюты" items={STRINGS}/>);
+        const live = container.querySelector('[aria-live="polite"]');
+
+        expect(live).not.toBeNull();
+        expect(live).toBeEmptyDOMElement();
     });
 });

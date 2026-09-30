@@ -39,3 +39,17 @@ export const Чипсами: Story = {
         </div>
     ),
 };
+
+/** Обязательной делают всю группу: `required` достаточно одному варианту. */
+export const Ошибка: Story = {
+    render: () => (
+        <form style={{display: 'grid', gap: '1rem', justifyItems: 'start'}}>
+            <fieldset style={{display: 'grid', gap: '0.5rem', justifyItems: 'start'}}>
+                <legend>Тариф</legend>
+                <Radio name="plan" value="free" required>Бесплатный</Radio>
+                <Radio name="plan" value="pro">Профессиональный</Radio>
+            </fieldset>
+            <button type="submit">Отправить</button>
+        </form>
+    ),
+};

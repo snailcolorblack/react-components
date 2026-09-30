@@ -212,11 +212,18 @@ function Button<T extends ButtonTag = 'button'>(props: ButtonProps<T>) {
      * Явный loading (в том числе loading={false}) всегда главнее.
      */
     const busy = loading ?? (type === 'submit' && form.pending);
-
+    /*
+     * «Нажато» должно быть слышно, а не только видно: раньше active ставил
+     * один data-state, и для скринридера нажатая кнопка ничем не отличалась
+     * от обычной. У кнопки это aria-pressed, у ссылки — aria-current
+     * («ведёт туда, где мы сейчас»).
+     */
+    const state = active ? aria(as, rest) : undefined;
 
     return (
         <Component
             {...rest}
+            {...state}
             type={type}
             aria-disabled={busy || rest['aria-disabled'] || undefined}
             aria-busy={busy || rest['aria-busy'] || undefined}
@@ -238,6 +245,19 @@ function Button<T extends ButtonTag = 'button'>(props: ButtonProps<T>) {
         onClick?.(event as MouseEvent<HTMLButtonElement>);
     }
 
+}
+
+/*
+ * Что именно объявить нажатым. Если вызывающий уже сказал это сам — любым
+ * из трёх атрибутов состояния, — не спорим: смысл кнопки он знает лучше,
+ * это может быть вкладка, шаг мастера или выбранный пункт.
+ */
+function aria(as: ButtonTag, rest: Record<string, unknown>) {
+    const said = rest['aria-pressed'] ?? rest['aria-current'] ?? rest['aria-selected'];
+
+    if (said !== undefined) return undefined;
+
+    return as === 'a' ? {'aria-current': true} : {'aria-pressed': true};
 }
 
 export {Button};

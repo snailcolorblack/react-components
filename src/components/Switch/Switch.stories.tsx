@@ -23,3 +23,8 @@ export const Выключен: Story = {};
 export const Включён: Story = {args: {defaultChecked: true}};
 
 export const Недоступен: Story = {args: {disabled: true, children: 'Недоступно'}};
+
+/** Своя ошибка: ответ сервера или проверка по другим полям формы. */
+export const СвояОшибка: Story = {
+    args: {children: 'Уведомления по почте', error: 'Сначала подтвердите адрес'},
+};

@@ -1,4 +1,4 @@
-import {render, screen} from '@testing-library/react';
+import {act, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import axe from 'axe-core';
 import {createRef, useState} from 'react';
@@ -189,5 +189,64 @@ describe('Switch', () => {
         render(<Switch defaultChecked name="a" value="1">Текст</Switch>);
         expect(error).not.toHaveBeenCalled();
         error.mockRestore();
+    });
+});
+
+describe('Switch: ошибка', () => {
+    function submit() {
+        return act(async () => (document.querySelector('form') as HTMLFormElement).requestSubmit());
+    }
+
+    it('своя ошибка видна и читается описанием', () => {
+        render(<Switch error="Так нельзя">Уведомления</Switch>);
+        const input = screen.getByRole('switch');
+
+        expect(screen.getByText('Так нельзя')).toBeInTheDocument();
+        expect(input).toHaveAccessibleDescription('Так нельзя');
+        expect(input).toHaveAttribute('aria-invalid', 'true');
+    });
+
+    it('текст ошибки не попадает в имя', () => {
+        /* Обёртка — <label>, её содержимое целиком идёт в имя, поэтому
+           сообщение лежит снаружи. */
+        render(<Switch error="Так нельзя">Уведомления</Switch>);
+        expect(screen.getByRole('switch', {name: 'Уведомления'})).toBeInTheDocument();
+    });
+
+    it('без ошибки живая область пуста, но в разметке есть', () => {
+        const {container} = render(<Switch>Уведомления</Switch>);
+        const live = container.querySelector('[aria-live="polite"]');
+
+        expect(live).not.toBeNull();
+        expect(live).toBeEmptyDOMElement();
+        expect(screen.getByRole('switch')).not.toHaveAttribute('aria-invalid');
+    });
+
+    it('браузерное сообщение появляется на попытке отправить', async () => {
+        render(<form><Switch name="notify" required>Уведомления</Switch></form>);
+        const input = screen.getByRole('switch') as HTMLInputElement;
+
+        await submit();
+
+        expect(input).toHaveAttribute('aria-invalid', 'true');
+        expect(input).toHaveAccessibleDescription(input.validationMessage);
+    });
+
+    it('сообщение уходит, как только поле поправили', async () => {
+        render(<form><Switch name="notify" required>Уведомления</Switch></form>);
+        const input = screen.getByRole('switch');
+
+        await submit();
+        expect(input).toHaveAttribute('aria-invalid', 'true');
+
+        await userEvent.click(input);
+        expect(input).not.toHaveAttribute('aria-invalid');
+    });
+
+    it('с ошибкой проходит axe', async () => {
+        const {container} = render(<Switch error="Так нельзя">Уведомления</Switch>);
+        const results = await axe.run(container, {rules: {'color-contrast': {enabled: false}}});
+
+        expect(results.violations).toEqual([]);
     });
 });

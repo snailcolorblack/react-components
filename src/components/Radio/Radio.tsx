@@ -1,82 +1,20 @@
 // Radio.tsx
 
 /* -------------------------------------------------------------------------- */
-/*  РАБОТА С ПЕРЕКЛЮЧАТЕЛЕМ                                                   */
+/*  ПЕРЕКЛЮЧАТЕЛЬ                                                             */
 /*                                                                            */
-/*  Обычный <input type="radio"> внутри <label>. Обёртка — сам label,          */
-/*  поэтому id и useId не нужны: связь подписи с полем даёт вложенность,       */
-/*  а кликом работает вся область.                                            */
+/*  Настоящий <input type="radio">: группу, стрелки и выбор одного из многих  */
+/*  делает браузер по общему атрибуту name. Обёртка — <label>, поэтому клик   */
+/*  по подписи выбирает вариант без обработчиков.                            */
 /*                                                                            */
-/*  Внутрь нельзя класть ссылки и кнопки: клик по ним достанется               */
-/*  переключателю, а вложенный интерактив внутри label ломает разметку.        */
+/*  Ошибка — как у полей: текст в разметке под переключателем, связан через   */
+/*  aria-describedby. Лежит снаружи <label>, иначе ушёл бы в имя варианта.    */
+/*  Обязательной делают всю группу: required хватает поставить одному         */
+/*  из вариантов, браузер проверит группу целиком.                            */
 /* -------------------------------------------------------------------------- */
 
-/* --- 1. Группа, а не одиночное поле ---------------------------------------- */
-/*
- *  <Radio name="plan" value="free">Бесплатный</Radio>
- *  <Radio name="plan" value="pro" defaultChecked>Профессиональный</Radio>
- *
- *  name и value обязательны, и это главное отличие от флажка. Общее имя
- *  делает варианты группой: выбор одного гасит остальные, вся группа
- *  занимает один таб-стоп, а стрелки внутри неё одновременно двигают
- *  фокус и переключают выбор. Всё это браузер, кода здесь нет.
- *
- *  Снять выбор кликом нельзя — так устроена платформа. Нужен пустой
- *  ответ, заводите для него отдельный вариант.
- */
-
-/* --- 2. Чего здесь не хватает ---------------------------------------------- */
-/*
- *  Группе нужно собственное имя: fieldset с legend или role="radiogroup"
- *  с aria-label. Иначе скринридер прочитает «Бесплатный, переключатель,
- *  1 из 2», но не скажет, что выбирают тариф.
- *
- *  Компонент этого не делает — он видит только себя. Пока нет RadioGroup,
- *  имя даёт разметка вокруг:
- *
- *      <fieldset>
- *          <legend>Тариф</legend>
- *          <Radio name="plan" value="free">Бесплатный</Radio>
- *          <Radio name="plan" value="pro">Профессиональный</Radio>
- *      </fieldset>
- *
- *  required достаточно поставить одному варианту: браузер требует выбор
- *  во всей группе с этим именем.
- */
-
-/* --- 3. Два варианта оформления ------------------------------------------- */
-/*
- *  variant="DEFAULT"  — круг с точкой рядом с подписью.
- *  variant="CHIP"     — круг скрыт, подсвечивается вся область.
- *
- *  Чип нужен там, где выбирают карточку, а не строку: тарифы, способы
- *  доставки, плитки. Подсвечивается контейнер, поэтому внутрь можно класть
- *  что угодно — картинку, цену, две строки, — и ничего перекрашивать
- *  не придётся.
- *
- *  Одним цветом подписи состояние нигде не показывается. По WCAG 1.4.1 цвет
- *  не может быть единственным каналом, и в высоком контрасте он подменяется
- *  системой. В чипе каналов два — заливка и рамка, а в forced-colors, где
- *  не работают оба, круг возвращается на место.
- */
-
-/* --- 4. Свои цвета --------------------------------------------------------- */
-/*
- *  <Radio style={{'--control-accent': 'var(--purple-color-200)',
- *                 '--control-accent-contrast': 'var(--contrast-color)'}}/>
- *
- *  Акцент задаётся парой: заливка и цвет точки на ней. Порознь нельзя —
- *  точка лежит поверх заливки и на светлом акценте пропадает.
- */
-
-/* --- 5. Перерисовки -------------------------------------------------------- */
-/*
- *  Состояния, хуков и эффектов нет: компонент считает строку классов
- *  и отдаёт разметку. Без checked он неуправляемый — выбор живёт в DOM,
- *  и React о нём не знает вовсе.
- */
-/* -------------------------------------------------------------------------- */
-
+import {useId, type ChangeEvent, type FocusEvent, type FormEvent} from 'react';
+import {useValidity} from '../Field/Field.validity.ts';
 import type {ControlVariant} from '../Control/Control.interface.ts';
 import type {RadioProps} from './Radio.interface.ts';
 import styles from '../Control/Control.module.css';
@@ -88,22 +26,64 @@ const VARIANT_CLASS = {
 
 function Radio({
                    variant = 'DEFAULT',
+                   error,
                    children,
                    className = '',
                    style,
+                   onBlur,
+                   onChange,
+                   onInvalid,
                    ...props
                }: RadioProps) {
 
+    const auto = useId();
+    const validity = useValidity(error);
+
+    /* Идентификатор нужен только сообщению: имя поле берёт из <label>,
+       и своего id ему для этого не требуется. */
+    const errorId = `${auto}-error`;
     const classes = [styles.control, styles.radio, VARIANT_CLASS[variant], className]
         .filter(Boolean)
         .join(' ');
+    const described = [props['aria-describedby'], validity.invalid && errorId]
+        .filter(Boolean).join(' ') || undefined;
 
     return (
-        <label className={classes} style={style}>
-            <input {...props} type="radio" className={styles.input}/>
-            {children !== undefined && <span className={styles.label}>{children}</span>}
-        </label>
+        <span className={styles.group} data-invalid={validity.invalid || undefined}>
+            <label className={classes} style={style}>
+                <input
+                    {...props}
+                    type="radio"
+                    aria-describedby={described}
+                    aria-invalid={validity.invalid || undefined}
+                    className={styles.input}
+                    onBlur={handleBlur}
+                    onChange={handleChange}
+                    onInvalid={handleInvalid}
+                />
+                <span className={styles.label}>{children}</span>
+            </label>
+
+            {/* Область лежит в разметке всегда: объявляется только то, что
+                появилось в уже существующей области, а не вместе с ней. */}
+            <span id={errorId} className={styles.message} aria-live="polite">{validity.message}</span>
+        </span>
     );
+
+    function handleBlur(event: FocusEvent<HTMLInputElement>) {
+        validity.settle(event);
+        onBlur?.(event);
+    }
+
+    function handleInvalid(event: FormEvent<HTMLInputElement>) {
+        validity.report(event);
+        onInvalid?.(event);
+    }
+
+    function handleChange(event: ChangeEvent<HTMLInputElement>) {
+        validity.clear(event.currentTarget);
+        onChange?.(event);
+    }
 }
 
 export {Radio};

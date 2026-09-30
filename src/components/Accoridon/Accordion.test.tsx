@@ -95,3 +95,34 @@ describe('Accordion', () => {
         expect(container.querySelector('summary')).toHaveClass('head');
     });
 });
+
+describe('Accordion: заголовок раздела', () => {
+    /*
+     * Замерено: без as ни один summary не попадает в список заголовков,
+     * и пройтись по разделам клавишей заголовков нельзя — только табом
+     * через всё подряд.
+     */
+    it('по умолчанию заголовка нет', () => {
+        render(
+            <Accordion>
+                <Accordion.Header>Доставка</Accordion.Header>
+                <Accordion.Content>Три дня</Accordion.Content>
+            </Accordion>,
+        );
+
+        expect(screen.queryByRole('heading')).toBeNull();
+    });
+
+    it('as делает подпись настоящим заголовком', () => {
+        render(
+            <Accordion>
+                <Accordion.Header as="h3">Доставка</Accordion.Header>
+                <Accordion.Content>Три дня</Accordion.Content>
+            </Accordion>,
+        );
+
+        const heading = screen.getByRole('heading', {level: 3, name: 'Доставка'});
+
+        expect(heading.closest('summary')).not.toBeNull();
+    });
+});

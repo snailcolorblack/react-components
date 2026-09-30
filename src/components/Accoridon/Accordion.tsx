@@ -72,9 +72,9 @@
 
 
 import {plusIcon} from "../../assets/icons/icon.tsx";
+import {Typography} from "../Typography/Typography.tsx";
 import type {AccordionProps, AccordionHeaderProps, AccordionContentProps} from "./Accordion.interface.ts";
 import styles from "./Accordion.module.css";
-import {Typography} from "../Typography/Typography.tsx";
 
 
 function Accordion({

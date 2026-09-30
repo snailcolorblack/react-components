@@ -1,15 +1,33 @@
 // Switch.interface.ts
 import type {ComponentPropsWithRef, ReactNode} from 'react';
+import type {ControlNamed} from '../Control/Control.interface.ts';
 
 interface SwitchOwnProps {
     /**
      * Подпись. Может быть разметкой — текст, картинка, несколько строк.
+     *
+     * Из неё собирается имя переключателя. Обойтись без неё можно, только
+     * назвав его иначе — `aria-label` или `aria-labelledby`: безымянным
+     * он остаться не может, это запрещено типом.
      *
      * Интерактива внутри быть не должно: обёртка это сам `<label>`,
      * и клик по вложенной ссылке или кнопке уйдёт переключателю.
      * Нужна ссылка рядом — выносите её за пределы компонента.
      */
     children?: ReactNode
+    /**
+     * Своя ошибка: то, чего браузер знать не может, — ответ сервера,
+     * проверка по другим полям формы.
+     *
+     * Показывается под переключателем и объявляется его описанием. Пока
+     * она задана, браузерное сообщение не показывается; снимается тоже
+     * снаружи.
+     *
+     * Ошибки самого браузера (`required`) показывать не нужно: компонент
+     * берёт их текст сам и кладёт туда же. Пузырь при этом гасится — он
+     * исчезает по таймеру и на него нельзя сослаться.
+     */
+    error?: ReactNode
 }
 
 /**
@@ -42,4 +60,7 @@ interface SwitchOwnProps {
  * без промежуточного «применяется» — в отличие от `Button` с его `loading`,
  * которому есть что показывать между кликом и ответом сервера.
  */
-export type SwitchProps = Omit<ComponentPropsWithRef<'input'>, 'type' | 'children' | 'role'> & SwitchOwnProps;
+export type SwitchProps =
+    Omit<ComponentPropsWithRef<'input'>, 'type' | 'children' | 'role'>
+    & SwitchOwnProps
+    & ControlNamed;

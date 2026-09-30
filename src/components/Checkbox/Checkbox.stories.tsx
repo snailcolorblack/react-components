@@ -55,3 +55,22 @@ export const СРазметкой: Story = {
         </Checkbox>
     ),
 };
+
+/**
+ * Ошибка лежит под флажком, в разметке, и связана с ним через
+ * `aria-describedby`. Пузырь браузера гасится: он исчезает по таймеру
+ * и на него нельзя сослаться.
+ */
+export const Ошибка: Story = {
+    render: () => (
+        <form style={{display: 'grid', gap: '1rem', justifyItems: 'start'}}>
+            <Checkbox name="terms" required>Согласен с условиями</Checkbox>
+            <button type="submit">Отправить</button>
+        </form>
+    ),
+};
+
+/** Своя ошибка: ответ сервера или проверка по другим полям формы. */
+export const СвояОшибка: Story = {
+    args: {children: 'Подключить тариф', error: 'Этот тариф уже подключён'},
+};

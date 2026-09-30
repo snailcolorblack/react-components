@@ -1,4 +1,4 @@
-import {render, screen} from '@testing-library/react';
+import {act, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import axe from 'axe-core';
 import {createRef} from 'react';
@@ -207,5 +207,64 @@ describe('Radio', () => {
         render(<Radio variant="CHIP" name="plan" value="pro">Текст</Radio>);
         expect(error).not.toHaveBeenCalled();
         error.mockRestore();
+    });
+});
+
+describe('Radio: ошибка', () => {
+    function submit() {
+        return act(async () => (document.querySelector('form') as HTMLFormElement).requestSubmit());
+    }
+
+    it('своя ошибка видна и читается описанием', () => {
+        render(<Radio name="plan" value="free" error="Так нельзя">Базовый</Radio>);
+        const input = screen.getByRole('radio');
+
+        expect(screen.getByText('Так нельзя')).toBeInTheDocument();
+        expect(input).toHaveAccessibleDescription('Так нельзя');
+        expect(input).toHaveAttribute('aria-invalid', 'true');
+    });
+
+    it('текст ошибки не попадает в имя', () => {
+        /* Обёртка — <label>, её содержимое целиком идёт в имя, поэтому
+           сообщение лежит снаружи. */
+        render(<Radio name="plan" value="free" error="Так нельзя">Базовый</Radio>);
+        expect(screen.getByRole('radio', {name: 'Базовый'})).toBeInTheDocument();
+    });
+
+    it('без ошибки живая область пуста, но в разметке есть', () => {
+        const {container} = render(<Radio name="plan" value="free">Базовый</Radio>);
+        const live = container.querySelector('[aria-live="polite"]');
+
+        expect(live).not.toBeNull();
+        expect(live).toBeEmptyDOMElement();
+        expect(screen.getByRole('radio')).not.toHaveAttribute('aria-invalid');
+    });
+
+    it('браузерное сообщение появляется на попытке отправить', async () => {
+        render(<form><Radio name="plan" value="free" required>Базовый</Radio></form>);
+        const input = screen.getByRole('radio') as HTMLInputElement;
+
+        await submit();
+
+        expect(input).toHaveAttribute('aria-invalid', 'true');
+        expect(input).toHaveAccessibleDescription(input.validationMessage);
+    });
+
+    it('сообщение уходит, как только поле поправили', async () => {
+        render(<form><Radio name="plan" value="free" required>Базовый</Radio></form>);
+        const input = screen.getByRole('radio');
+
+        await submit();
+        expect(input).toHaveAttribute('aria-invalid', 'true');
+
+        await userEvent.click(input);
+        expect(input).not.toHaveAttribute('aria-invalid');
+    });
+
+    it('с ошибкой проходит axe', async () => {
+        const {container} = render(<Radio name="plan" value="free" error="Так нельзя">Базовый</Radio>);
+        const results = await axe.run(container, {rules: {'color-contrast': {enabled: false}}});
+
+        expect(results.violations).toEqual([]);
     });
 });

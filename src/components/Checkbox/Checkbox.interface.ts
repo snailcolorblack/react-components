@@ -1,6 +1,6 @@
 // Checkbox.interface.ts
 import type {ComponentPropsWithRef} from 'react';
-import type {ControlOwnProps} from '../Control/Control.interface.ts';
+import type {ControlNamed, ControlOwnProps} from '../Control/Control.interface.ts';
 
 interface CheckboxOwnProps extends ControlOwnProps {
     /**
@@ -35,4 +35,7 @@ interface CheckboxOwnProps extends ControlOwnProps {
  * платформы, а не компонента. Если серверу нужен явный «нет», кладите
  * рядом скрытое поле.
  */
-export type CheckboxProps = Omit<ComponentPropsWithRef<'input'>, 'type' | 'children'> & CheckboxOwnProps;
+export type CheckboxProps =
+    Omit<ComponentPropsWithRef<'input'>, 'type' | 'children'>
+    & CheckboxOwnProps
+    & ControlNamed;

@@ -284,3 +284,37 @@ describe('Tooltip', () => {
         error.mockRestore();
     });
 });
+
+describe('Tooltip: триггер обязан получать фокус', () => {
+    /*
+     * Подсказка показывается по наведению И по фокусу. У <div> фокуса нет,
+     * и с клавиатуры до неё не добраться вовсе (WCAG 2.1.1). Молча это
+     * пропускать нельзя — компонент ругается в консоль при разработке.
+     */
+    it('на нефокусируемом триггере предупреждает', () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+        render(<Tooltip text="Пояснение"><div>Просто текст</div></Tooltip>);
+
+        expect(warn).toHaveBeenCalledWith(expect.stringContaining('не получает фокус'));
+        warn.mockRestore();
+    });
+
+    it('на кнопке молчит', () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+        render(<Tooltip text="Пояснение"><Button>Сохранить</Button></Tooltip>);
+
+        expect(warn).not.toHaveBeenCalled();
+        warn.mockRestore();
+    });
+
+    it('молчит и на том, кому дали tabindex', () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+        render(<Tooltip text="Пояснение"><div tabIndex={0}>Своя мишень</div></Tooltip>);
+
+        expect(warn).not.toHaveBeenCalled();
+        warn.mockRestore();
+    });
+});

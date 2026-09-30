@@ -58,7 +58,12 @@ describe('Toast: очередь', () => {
         });
 
         expect(plates()).toHaveLength(4);
-        expect(plates().map(plate => plate.textContent?.replace('×', '')))
+        /*
+         * «Ошибка.» в начале — слово варианта из Alert: оно скрыто от глаз
+         * и существует ради озвучки, потому что одним цветом вариант
+         * показывать нельзя. В текст плашки оно попадает, в вид — нет.
+         */
+        expect(plates().map(plate => plate.textContent?.replace('×', '').replace('Ошибка. ', '')))
             .toEqual(['Первая ошибка', 'Вторая ошибка', 'Третья ошибка', 'Четвёртая ошибка']);
     });
 
@@ -298,5 +303,29 @@ describe('Toast: таймер', () => {
 
         expect(plates().map(plate => plate.textContent?.replace('×', ''))).toEqual(['Под курсором']);
         vi.useRealTimers();
+    });
+});
+
+describe('Toast: имя области', () => {
+    it('по умолчанию область названа «Уведомления»', () => {
+        const toast = mount();
+
+        act(() => void toast.current.show('Сохранено'));
+        expect(document.querySelector('[role="region"]')).toHaveAttribute('aria-label', 'Уведомления');
+    });
+
+    it('имя меняется пропом: двух ориентиров с одним именем быть не должно', () => {
+        const first = mount({position: 'TOP_END'});
+        const second = mount({position: 'BOTTOM_START', label: 'Фоновые задачи'});
+
+        act(() => {
+            first.current.show('Первое');
+            second.current.show('Второе');
+        });
+
+        const names = [...document.querySelectorAll('[role="region"]')]
+            .map(node => node.getAttribute('aria-label'));
+
+        expect(names).toEqual(['Уведомления', 'Фоновые задачи']);
     });
 });

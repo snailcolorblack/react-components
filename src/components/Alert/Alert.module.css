@@ -61,9 +61,33 @@
  * а не только для декоративной иконки.
  */
 .alert :global(.accent),
-.alert > svg {
+.alert > svg,
+.icon {
     color: var(--alert-tint);
     flex: 0 0 auto;
+}
+
+/*
+ * Значок и слово — одна и та же мысль для разных людей. Значок видно,
+ * но он скрыт от озвучки; слово наоборот. Показывать оба глазами было бы
+ * повтором, а цветом одним обойтись нельзя: в режиме высокого контраста
+ * цвета подменяет система (WCAG 1.4.1).
+ */
+.icon {
+    display: inline-flex;
+    line-height: 0;
+}
+
+.word {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
 }
 
 /* -------------------------------------------------------------------------- */

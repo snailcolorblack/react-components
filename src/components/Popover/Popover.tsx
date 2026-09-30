@@ -125,6 +125,7 @@ function Popover({
                      id,
                      popover = 'auto',
                      label,
+                     role,
                      placement = 'block-end',
                      anchor,
                      className = '',
@@ -141,11 +142,22 @@ function Popover({
         ...(anchor ? {'--popover-anchor': anchor} : null),
     } as CSSProperties;
 
+    /*
+     * Имя нужно вешать на что-то, у чего есть роль. Замерено: <div>
+     * с aria-label и без роли в дерево доступности не попадает вовсе —
+     * узла нет, имя теряется. Обёртки вроде Select и Dropdown роль задают
+     * сами (listbox, menu), а голая панель оставалась безымянной коробкой.
+     * Поэтому именованная панель без своей роли становится group: она
+     * принимает имя и при этом не притворяется ни диалогом, ни ориентиром.
+     */
+    const kind = role ?? (label !== undefined ? 'group' : undefined);
+
     return (
         <div
             {...props}
             id={id}
             popover={popover}
+            role={kind}
             aria-label={label}
             className={`${styles.popover} ${className}`.trim()}
             style={placementStyle}

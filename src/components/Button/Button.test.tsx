@@ -370,3 +370,40 @@ describe('Button в форме', () => {
         expect(screen.getByRole('button')).not.toHaveAttribute('aria-busy');
     });
 });
+
+describe('Button: нажатое состояние слышно', () => {
+    /*
+     * Раньше active ставил один data-state: состояние было видно глазами,
+     * но для скринридера нажатая кнопка ничем не отличалась от обычной.
+     */
+    it('кнопка объявляется нажатой', () => {
+        render(<Button active>Без звука</Button>);
+        expect(screen.getByRole('button', {pressed: true})).toBeInTheDocument();
+    });
+
+    it('без active ничего не объявляется', () => {
+        render(<Button>Без звука</Button>);
+        expect(screen.getByRole('button')).not.toHaveAttribute('aria-pressed');
+    });
+
+    it('ссылка объявляется текущей, а не нажатой', () => {
+        render(<Button as="a" href="/pricing" active>Тарифы</Button>);
+        const link = screen.getByRole('link');
+
+        expect(link).toHaveAttribute('aria-current', 'true');
+        expect(link).not.toHaveAttribute('aria-pressed');
+    });
+
+    it('переданное состояние сильнее: смысл кнопки знает вызывающий', () => {
+        render(<Button active aria-current="step">Шаг 2</Button>);
+        const button = screen.getByRole('button');
+
+        expect(button).toHaveAttribute('aria-current', 'step');
+        expect(button).not.toHaveAttribute('aria-pressed');
+    });
+
+    it('вид не потерялся: data-state остался', () => {
+        render(<Button active>Без звука</Button>);
+        expect(screen.getByRole('button')).toHaveAttribute('data-state', 'active');
+    });
+});

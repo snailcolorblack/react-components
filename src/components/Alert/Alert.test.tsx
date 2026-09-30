@@ -63,3 +63,47 @@ describe('Popover', () => {
         expect(container.querySelector('#pop')).toHaveAttribute('popover', 'manual');
     });
 });
+
+describe('Alert: вариант не только цветом', () => {
+    /*
+     * Замерено: до этой правки варианты различались только цветом рамки
+     * и фона — ::before был пуст. Цвет один смысл нести не может (WCAG 1.4.1),
+     * и в режиме высокого контраста система его подменяет.
+     */
+    it('у каждого варианта своё слово в озвучке', () => {
+        const {rerender} = render(<Alert variant="ERROR">Не сохранилось</Alert>);
+
+        expect(screen.getByText('Ошибка.')).toBeInTheDocument();
+
+        rerender(<Alert variant="WARNING">Скоро закончится</Alert>);
+        expect(screen.getByText('Предупреждение.')).toBeInTheDocument();
+
+        rerender(<Alert variant="SUCCESS">Сохранено</Alert>);
+        expect(screen.getByText('Готово.')).toBeInTheDocument();
+    });
+
+    it('слово скрыто от глаз, а значок — от озвучки', () => {
+        const {container} = render(<Alert variant="ERROR">Не сохранилось</Alert>);
+        const icon = container.querySelector('[aria-hidden="true"]');
+
+        expect(icon?.querySelector('svg')).not.toBeNull();
+        /* Слово вынесено из потока и не занимает места: его видит только озвучка. */
+        expect(screen.getByText('Ошибка.')).toHaveStyle({position: 'absolute'});
+    });
+
+    it('без варианта ни значка, ни слова', () => {
+        const {container} = render(<Alert>Просто сообщение</Alert>);
+
+        expect(container.querySelector('svg')).toBeNull();
+        expect(screen.queryByText(/Ошибка\.|Готово\.|Предупреждение\./)).toBeNull();
+    });
+
+    it('свой значок заменяет стандартный', () => {
+        const {container} = render(
+            <Alert variant="SUCCESS" icon={<span data-testid="mine">!</span>}>Сохранено</Alert>,
+        );
+
+        expect(screen.getByTestId('mine')).toBeInTheDocument();
+        expect(container.querySelector('svg')).toBeNull();
+    });
+});

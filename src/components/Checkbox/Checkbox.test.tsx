@@ -1,4 +1,4 @@
-import {render, screen} from '@testing-library/react';
+import {act, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import axe from 'axe-core';
 import {createRef, useState} from 'react';
@@ -209,5 +209,64 @@ describe('Checkbox', () => {
         render(<Checkbox variant="CHIP" indeterminate name="a" value="1">Текст</Checkbox>);
         expect(error).not.toHaveBeenCalled();
         error.mockRestore();
+    });
+});
+
+describe('Checkbox: ошибка', () => {
+    function submit() {
+        return act(async () => (document.querySelector('form') as HTMLFormElement).requestSubmit());
+    }
+
+    it('своя ошибка видна и читается описанием', () => {
+        render(<Checkbox error="Так нельзя">Согласен</Checkbox>);
+        const input = screen.getByRole('checkbox');
+
+        expect(screen.getByText('Так нельзя')).toBeInTheDocument();
+        expect(input).toHaveAccessibleDescription('Так нельзя');
+        expect(input).toHaveAttribute('aria-invalid', 'true');
+    });
+
+    it('текст ошибки не попадает в имя', () => {
+        /* Обёртка — <label>, её содержимое целиком идёт в имя, поэтому
+           сообщение лежит снаружи. */
+        render(<Checkbox error="Так нельзя">Согласен</Checkbox>);
+        expect(screen.getByRole('checkbox', {name: 'Согласен'})).toBeInTheDocument();
+    });
+
+    it('без ошибки живая область пуста, но в разметке есть', () => {
+        const {container} = render(<Checkbox>Согласен</Checkbox>);
+        const live = container.querySelector('[aria-live="polite"]');
+
+        expect(live).not.toBeNull();
+        expect(live).toBeEmptyDOMElement();
+        expect(screen.getByRole('checkbox')).not.toHaveAttribute('aria-invalid');
+    });
+
+    it('браузерное сообщение появляется на попытке отправить', async () => {
+        render(<form><Checkbox name="agree" required>Согласен</Checkbox></form>);
+        const input = screen.getByRole('checkbox') as HTMLInputElement;
+
+        await submit();
+
+        expect(input).toHaveAttribute('aria-invalid', 'true');
+        expect(input).toHaveAccessibleDescription(input.validationMessage);
+    });
+
+    it('сообщение уходит, как только поле поправили', async () => {
+        render(<form><Checkbox name="agree" required>Согласен</Checkbox></form>);
+        const input = screen.getByRole('checkbox');
+
+        await submit();
+        expect(input).toHaveAttribute('aria-invalid', 'true');
+
+        await userEvent.click(input);
+        expect(input).not.toHaveAttribute('aria-invalid');
+    });
+
+    it('с ошибкой проходит axe', async () => {
+        const {container} = render(<Checkbox error="Так нельзя">Согласен</Checkbox>);
+        const results = await axe.run(container, {rules: {'color-contrast': {enabled: false}}});
+
+        expect(results.violations).toEqual([]);
     });
 });

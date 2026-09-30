@@ -1,6 +1,6 @@
 // Radio.interface.ts
 import type {ComponentPropsWithRef} from 'react';
-import type {ControlOwnProps} from '../Control/Control.interface.ts';
+import type {ControlNamed, ControlOwnProps} from '../Control/Control.interface.ts';
 
 interface RadioOwnProps extends ControlOwnProps {
     /**
@@ -37,4 +37,7 @@ interface RadioOwnProps extends ControlOwnProps {
  * Снять выбор кликом нельзя — так работает платформа. Нужен вариант
  * «ничего из перечисленного» — добавьте его отдельным переключателем.
  */
-export type RadioProps = Omit<ComponentPropsWithRef<'input'>, 'type' | 'children' | 'name' | 'value'> & RadioOwnProps;
+export type RadioProps =
+    Omit<ComponentPropsWithRef<'input'>, 'type' | 'children' | 'name' | 'value'>
+    & RadioOwnProps
+    & ControlNamed;

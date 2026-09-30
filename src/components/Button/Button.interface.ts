@@ -1,5 +1,5 @@
 // Button.interface.ts
-import type {ComponentPropsWithRef} from 'react';
+import type {ComponentPropsWithRef, ReactNode} from 'react';
 
 /**
  * Оформление. На поведение не влияет ни один из вариантов: роль, фокус,
@@ -39,8 +39,33 @@ export type ButtonTag = 'button' | 'a';
 interface ButtonOwnProps<T extends ButtonTag> {
     /** Тег: кнопка или ссылка. По умолчанию кнопка. */
     as?: T
+    /**
+     * Содержимое. Обязательно: имя кнопки собирается из него, и пустая
+     * кнопка остаётся безымянной — проверки такого не ловят, элемент
+     * формально есть.
+     *
+     * Кнопке из одного значка имя даёт `aria-label`, а сам значок
+     * помечается `aria-hidden`.
+     */
+    children: ReactNode
     variant?: ButtonVariant
     size?: ButtonSize
+    /**
+     * Кнопка сейчас «нажата», ссылка ведёт на текущее место.
+     *
+     * Меняет не только вид: кнопка получает `aria-pressed`, ссылка —
+     * `aria-current`. Раньше проп ставил один `data-state`, и состояние
+     * было видно глазами, но не слышно совсем — для скринридера нажатая
+     * кнопка ничем не отличалась от обычной.
+     *
+     * Если смысл другой — вкладка, выбранный пункт, текущая страница
+     * определённого рода, — задайте `aria-pressed`, `aria-current`
+     * или `aria-selected` сами: переданное значение сильнее.
+     *
+     *     <Button active={muted} onClick={toggle}>Без звука</Button>
+     *     <Button as="a" href="/pricing" active>Тарифы</Button>
+     *     <Button active aria-current="step">Шаг 2</Button>
+     */
     active?: boolean
     /**
      * Действие уже идёт: клик гасится, появляется индикатор, подпись
@@ -111,6 +136,12 @@ interface TagProps {
  * Пропсы наследуются от выбранного тега: `href`, `target` и `rel` появятся
  * только у `as="a"`, а `type`, `disabled`, `form`, `popoverTarget`
  * и `commandfor` — только у кнопки.
+ *
+ * Содержимое обязательно: имя кнопки собирается из него, и без него она
+ * остаётся безымянной. Кнопке из одного значка имя задают `aria-label`,
+ * а сам значок помечают `aria-hidden`:
+ *
+ *     <Button aria-label="Закрыть"><span aria-hidden="true">×</span></Button>
  */
 export type ButtonProps<T extends ButtonTag = 'button'> =
     Omit<TagProps[T], 'as' | 'variant' | 'size' | 'active' | 'loading'>

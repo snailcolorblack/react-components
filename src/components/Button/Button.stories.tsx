@@ -85,3 +85,9 @@ export const СвойАкцент: Story = {
         } as React.CSSProperties,
     },
 };
+
+/**
+ * Нажатое состояние слышно, а не только видно: кнопка получает
+ * `aria-pressed`, ссылка — `aria-current`.
+ */
+export const Нажатая: Story = {args: {children: 'Без звука', active: true}};

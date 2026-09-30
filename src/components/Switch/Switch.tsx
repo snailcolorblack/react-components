@@ -1,105 +1,80 @@
 // Switch.tsx
 
 /* -------------------------------------------------------------------------- */
-/*  РАБОТА СО СВИТЧОМ                                                         */
+/*  ПЕРЕКЛЮЧАТЕЛЬ «ВКЛ/ВЫКЛ»                                                  */
 /*                                                                            */
-/*  Обычный <input type="checkbox"> внутри <label>. Обёртка — сам label,       */
-/*  поэтому id и useId не нужны: связь подписи с полем даёт вложенность,       */
-/*  а кликом работает вся область.                                            */
+/*  Настоящий <input type="checkbox"> с role="switch": состояние читается     */
+/*  как «включено/выключено», а не «отмечено», но клавиатура, форма и фокус   */
+/*  остаются платформенными. Обёртка — <label>, клик по подписи переключает.  */
 /*                                                                            */
-/*  Отсюда и единственное ограничение: внутрь нельзя класть ссылки и кнопки.   */
-/*  Клик по ним достанется свитчу, а вложенный интерактив внутри label         */
-/*  разметку ломает.                                                          */
+/*  Ошибка устроена как у флажка: текст под переключателем, снаружи <label>,  */
+/*  чтобы не попасть в имя.                                                   */
 /* -------------------------------------------------------------------------- */
 
-/* --- 1. Как пишется -------------------------------------------------------- */
-/*
- *  <Switch name="notify" defaultChecked>Уведомления по почте</Switch>
- *  <Switch checked={dark} onChange={event => setDark(event.target.checked)}>
- *      Тёмная тема
- *  </Switch>
- *
- *  className и style идут на обёртку — на ней оформление и переменные цвета.
- *  Всё остальное, включая ref, идёт на само поле.
- *
- *  Выключенный свитч в данные формы не попадает: это платформа, не мы, —
- *  ровно как у обычного чекбокса. Нужен явный «нет» — рядом кладут скрытое
- *  поле с тем же именем.
- */
-
-/* --- 2. Чем свитч отличается от флажка -------------------------------------- */
-/*
- *  У обоих одна и та же механика: неуправляемое булево поле, которое
- *  живёт в форме. Разница не в поведении, а в том, что они значат
- *  и как это читает скринридер.
- *
- *  Флажок — это «отметьте вариант»: согласие с условиями, пункт списка,
- *  один из тарифов внутри Fieldset. Состояние применяется вместе
- *  с остальной формой, при отправке.
- *
- *  Свитч — это «включите настройку прямо сейчас»: уведомления, тёмная
- *  тема, автосохранение. Действие происходит сразу по клику, отдельно
- *  от какой-либо формы вокруг, и означает «вкл/выкл», а не «отмечено».
- *  Отсюда и role="switch" ниже: скринридер объявляет его так и есть,
- *  а не как «флажок, отмечено».
- *
- *  Если по факту это выбор одного варианта из списка — нужен Radio,
- *  а не два независимых свитча: у независимых полей оба можно
- *  одновременно оставить выключенными или включить разом, а группа
- *  переключателей такого не допускает по конструкции.
- */
-
-/* --- 3. role="switch" ставится вручную -------------------------------------- */
-/*
- *  Атрибута role на входе нет — компонент сам решает, что это свитч,
- *  и не даёт его перебить (см. Switch.interface.ts).
- *
- *  Есть нативный HTML-атрибут switch у input type="checkbox" с тем же
- *  эффектом. На начало 2026-го его понимает только Safari 17.4+, остальные
- *  движки молча его игнорируют и показывают обычный чекбокс — без ошибки,
- *  но и без роли. role="switch" работает во всех браузерах уже сейчас,
- *  и именно поэтому здесь он, а не атрибут.
- *
- *  Менять роль при этом не значит менять поведение: checked, форма,
- *  клавиатура (пробел) остаются теми же, что у обычного чекбокса,
- *  — переключатель и флажок в ARIA специально устроены как один и тот же
- *  набор состояний с разным именем роли, поэтому aria-checked отдельно
- *  прописывать не нужно, его вычисляет сам браузер из checked.
- */
-
-/* --- 4. Свои цвета --------------------------------------------------------- */
-/*
- *  <Switch style={{'--switch-accent': 'var(--purple-color-200)',
- *                  '--switch-thumb': 'var(--contrast-color)'}}/>
- *
- *  --switch-accent — заливка дорожки во включённом состоянии.
- *  --switch-thumb — цвет бегунка, один и тот же в обоих состояниях:
- *  он и так на разном фоне, дублировать акцентом его не нужно. В высоком
- *  контрасте переменная не участвует вовсе: там цвета системные и парные,
- *  бегунок берёт CanvasText на выключенной дорожке и HighlightText
- *  на включённой.
- */
-
-/* --- 5. Перерисовки -------------------------------------------------------- */
-/*
- *  Состояния, хуков и эффектов нет: компонент считает строку классов
- *  и отдаёт разметку. Без checked он неуправляемый — состояние живёт
- *  в DOM, и React о переключении не знает вовсе.
- */
-/* -------------------------------------------------------------------------- */
-
+import {useId, type ChangeEvent, type FocusEvent, type FormEvent} from 'react';
+import {useValidity} from '../Field/Field.validity.ts';
 import type {SwitchProps} from './Switch.interface.ts';
+import control from '../Control/Control.module.css';
 import styles from './Switch.module.css';
 
-function Switch({children, className = '', style, ...props}: SwitchProps) {
+function Switch({
+                    error,
+                    children,
+                    className = '',
+                    style,
+                    onBlur,
+                    onChange,
+                    onInvalid,
+                    ...props
+                }: SwitchProps) {
+
+    const auto = useId();
+    const validity = useValidity(error);
+
+    /* Идентификатор нужен только сообщению: имя поле берёт из <label>,
+       и своего id ему для этого не требуется. */
+    const errorId = `${auto}-error`;
     const classes = [styles.switch, className].filter(Boolean).join(' ');
+    const described = [props['aria-describedby'], validity.invalid && errorId]
+        .filter(Boolean).join(' ') || undefined;
 
     return (
-        <label className={classes} style={style}>
-            <input {...props} type="checkbox" role="switch" className={styles.input}/>
-            {children !== undefined && <span className={styles.label}>{children}</span>}
-        </label>
+        <span className={control.group} data-invalid={validity.invalid || undefined}>
+            <label className={classes} style={style}>
+                <input
+                    {...props}
+                    type="checkbox"
+                    role="switch"
+                    aria-describedby={described}
+                    aria-invalid={validity.invalid || undefined}
+                    className={styles.input}
+                    onBlur={handleBlur}
+                    onChange={handleChange}
+                    onInvalid={handleInvalid}
+                />
+                <span className={styles.label}>{children}</span>
+            </label>
+
+            {/* Область лежит в разметке всегда: объявляется только то, что
+                появилось в уже существующей области, а не вместе с ней. */}
+            <span id={errorId} className={control.message} aria-live="polite">{validity.message}</span>
+        </span>
     );
+
+    function handleBlur(event: FocusEvent<HTMLInputElement>) {
+        validity.settle(event);
+        onBlur?.(event);
+    }
+
+    function handleInvalid(event: FormEvent<HTMLInputElement>) {
+        validity.report(event);
+        onInvalid?.(event);
+    }
+
+    function handleChange(event: ChangeEvent<HTMLInputElement>) {
+        validity.clear(event.currentTarget);
+        onChange?.(event);
+    }
 }
 
 export {Switch};

@@ -7,6 +7,10 @@
 /*  ничего не рисует на месте и держит очередь сам: сколько раз позвали       */
 /*  show, столько плашек и стоит в углу. Четыре ошибки — четыре сообщения.    */
 /*                                                                            */
+/*  Область — ориентир (role="region") со своим именем. Имён на странице     */
+/*  не должно быть двух одинаковых: axe даёт landmark-unique, и это           */
+/*  замерено на демо-странице с двумя областями. Отсюда проп label.           */
+/*                                                                            */
 /*  Движение одностороннее: снаружи сообщение показывают (ref.show), а        */
 /*  закрывает его сама плашка — крестиком или таймером. Поэтому у ручки       */
 /*  нет ни hide, ни clear: код, который показал сообщение, давно отработал    */
@@ -72,6 +76,7 @@ const REGIONS = new Map<ToastPosition, HTMLElement>();
 function Toast({
                    position = 'BOTTOM_END',
                    duration = 3000,
+                   label = 'Уведомления',
                    closeLabel = 'Закрыть',
                    className = '',
                    ref,
@@ -133,7 +138,7 @@ function Toast({
                 onDismiss={() => dismiss(item.id)}
             />
         )),
-        region(position),
+        region(position, label),
     );
 
 }
@@ -172,6 +177,9 @@ function Plate({item, duration, closeLabel, className, onDismiss}: PlateProps) {
     return (
         <Alert
             variant={item.variant}
+            /* Значок отдаём Alert, а не рисуем сами: иначе рядом со своим
+               встал бы ещё и значок варианта — два подряд об одном и том же. */
+            icon={item.icon}
             data-state={item.closing ? 'closed' : 'open'}
             className={`${styles.toast} ${className}`.trim()}
             onPointerEnter={() => setPaused(true)}
@@ -179,7 +187,6 @@ function Plate({item, duration, closeLabel, className, onDismiss}: PlateProps) {
             onFocus={() => setPaused(true)}
             onBlur={() => setPaused(false)}
         >
-            {item.icon !== undefined && <span className={styles.icon} aria-hidden="true">{item.icon}</span>}
             <span className={styles.text}>{item.content}</span>
             <button
                 type="button"
@@ -197,10 +204,14 @@ function Plate({item, duration, closeLabel, className, onDismiss}: PlateProps) {
 /*  Область: одна на угол                                                     */
 /* -------------------------------------------------------------------------- */
 
-function region(position: ToastPosition) {
+function region(position: ToastPosition, label: string) {
     const known = REGIONS.get(position);
 
-    if (known?.isConnected) return known;
+    if (known?.isConnected) {
+        known.setAttribute('aria-label', label);
+
+        return known;
+    }
 
     const element = document.createElement('div');
 
@@ -208,7 +219,7 @@ function region(position: ToastPosition) {
     element.dataset.position = position;
     element.setAttribute('popover', 'manual');
     element.setAttribute('role', 'region');
-    element.setAttribute('aria-label', 'Уведомления');
+    element.setAttribute('aria-label', label);
     element.setAttribute('aria-live', 'polite');
     element.setAttribute('aria-atomic', 'false');
 

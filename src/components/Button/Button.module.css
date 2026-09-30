@@ -8,7 +8,7 @@
      *                   '--button-accent-contrast': 'var(--contrast-color)'}} />
      */
     --button-accent: var(--accent-color);
-    --button-accent-contrast: var(--accent-contrast);
+    --button-accent-contrast: var(--contrast-color);
     /* Тот же тон, поднятый по светлоте: им пишут по тёмному фону, где сама
        заливка была бы слишком тёмной для текста. */
     --button-accent-text: var(--accent-color-soft);

@@ -109,6 +109,9 @@ const PLACEMENT = {
    подсказку, не потеряв её. Требование WCAG 1.4.13 о наводимости. */
 const HIDE_DELAY = 150;
 
+/* Что умеет получать фокус само, без tabindex. */
+const FOCUSABLE = 'a[href], area[href], button, input, select, textarea, summary, [tabindex]:not([tabindex^="-"])';
+
 function Tooltip({
                      text,
                      children,
@@ -152,6 +155,26 @@ function Tooltip({
         clearTimeout(showTimer.current);
         clearTimeout(hideTimer.current);
     }, []);
+
+    /*
+     * Подсказка показывается по наведению И по фокусу, а фокус бывает
+     * только у фокусируемого. На <div> или <span> она остаётся доступной
+     * одной мыши — с клавиатуры до неё не добраться вовсе (WCAG 2.1.1).
+     * Проверка только в разработке: в сборке эта ветка вырезается.
+     */
+    useEffect(() => {
+        if (!import.meta.env.DEV) return;
+
+        const owner = document.querySelector(`[${relation}~="${id}"]`);
+
+        if (owner === null || owner.matches(FOCUSABLE)) return;
+
+        console.warn(
+            `Tooltip: триггер <${owner.tagName.toLowerCase()}> не получает фокус, `
+            + 'и с клавиатуры подсказку не увидеть. Оберните содержимое в <button> '
+            + 'или задайте ему tabindex="0".',
+        );
+    }, [id, relation]);
 
     return (
         <>

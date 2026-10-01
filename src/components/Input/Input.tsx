@@ -50,6 +50,7 @@
 /* -------------------------------------------------------------------------- */
 
 import {useId, useRef, useState, type ChangeEvent, type FocusEvent, type FormEvent, type ReactNode} from 'react';
+import {holdFocus} from '../Field/Field.focus.ts';
 import {useValidity} from '../Field/Field.validity.ts';
 import {capacity, display, keep, unmask} from './Input.mask.ts';
 import type {InputProps} from './Input.interface.ts';
@@ -131,6 +132,7 @@ function Input({
                 data-filled={view !== '' || prefix !== undefined || undefined}
                 data-invalid={validity.invalid || undefined}
                 className={[field.field, styles.field].join(' ')}
+                onMouseDown={event => holdFocus(event, field.control)}
             >
                 <span className={field.label}>{label}</span>
 

@@ -1,0 +1,368 @@
+/* -------------------------------------------------------------------------- */
+/*  ГРУППА КНОПОК: оболочка в двух видах                                      */
+/*                                                                            */
+/*  Один файл на всё, что выглядит как ряд кнопок с одной активной: сам       */
+/*  ButtonGroup и полоса вкладок у Tabs. Ровно как Field делит коробку        */
+/*  между Select, Input и Textarea — вид живёт в одном месте, а компоненты    */
+/*  приносят свою семантику.                                                  */
+/*                                                                            */
+/*      LINE — кнопки в строку, под активной линия, снизу граница.            */
+/*      PILL — кнопки встык в коробке с фоном, под активной таблетка.         */
+/*                                                                            */
+/*  Активный элемент определяется тем, что и так обязано стоять: у вкладки    */
+/*  это aria-selected, у переключателя — :checked у настоящего radio внутри.  */
+/*  Своего класса-состояния нет: второй источник правды разошёлся бы          */
+/*  с первым.                                                                 */
+/* -------------------------------------------------------------------------- */
+
+/* --- Индикатор ------------------------------------------------------------ */
+/*
+ *  И линия, и таблетка — один и тот же элемент, просто разной формы.
+ *  Ездит он на CSS anchor positioning, без единого замера в JS: имя якоря
+ *  есть только у активного элемента, индикатор к нему привязан, переходы
+ *  по left/width дают скольжение. Замерено в Chromium 141: 36px → 111px
+ *  на середине пути → 204px.
+ *
+ *  Так заменяется прежняя механика: чтения offsetLeft (принудительный
+ *  reflow на каждое переключение), ResizeObserver, MutationObserver
+ *  по всему поддереву и внешняя библиотека анимации. Пересчёт при смене
+ *  ширины, шрифта и содержимого браузер делает сам.
+ *
+ *  Имя якоря своё на каждый экземпляр (--group-pill приходит из useId),
+ *  поэтому две группы на странице не перетягивают индикатор друг у друга —
+ *  замерено.
+ *
+ *  Где anchor positioning не поддержан (Safari, Firefox) индикатора нет,
+ *  а его работу берёт на себя сама активная кнопка: фон в PILL,
+ *  подчёркивание тенью в LINE.
+ */
+/* -------------------------------------------------------------------------- */
+
+.group {
+    --group-accent: var(--accent-color);
+    --group-bg: var(--base-color-200);
+    --group-pill-bg: var(--base-color);
+    --group-line: var(--contrast-alpha-20);
+    --group-fg: var(--contrast-alpha-60);
+    --group-fg-active: var(--contrast-color);
+    --group-fg-hover: var(--accent-color-soft);
+    --group-ring: var(--accent-color-soft);
+
+    --group-radius: calc(var(--base-gap) * 3);
+    --group-item-radius: calc(var(--base-gap) * 2);
+    --group-indicator: 2px;
+    --group-duration: 0.2s;
+
+    position: relative;
+    display: flex;
+    align-items: stretch;
+    /* У fieldset и у прокручиваемой полосы min-inline-size равен min-content:
+       без нуля широкая группа распирала бы родителя вместо прокрутки. */
+    min-inline-size: 0;
+    margin: 0;
+
+    /*
+     * Прокрутка, а не перенос: перенос на вторую строку разорвал бы
+     * и коробку, и путь индикатора. Полоса скрыта — до кнопок и так
+     * довозит клавиатура.
+     */
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.group::-webkit-scrollbar {
+    display: none;
+}
+
+/*
+ * Вертикальная раскладка приходит из aria-orientation: его и так обязан
+ * поставить список вкладок, а второй источник правды разошёлся бы с первым.
+ */
+.group[aria-orientation="vertical"] {
+    flex-direction: column;
+    overflow-x: visible;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Вид LINE                                                                  */
+/* -------------------------------------------------------------------------- */
+
+.line {
+    --group-item-padding: calc(var(--base-gap) * 2) calc(var(--base-gap) * 3);
+
+    gap: var(--base-gap);
+    border-block-end: 1px solid var(--group-line);
+}
+
+.line[aria-orientation="vertical"] {
+    border-block-end: 0;
+    border-inline-end: 1px solid var(--group-line);
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Вид PILL                                                                  */
+/* -------------------------------------------------------------------------- */
+
+.pill {
+    --group-item-padding: calc(var(--base-gap) * 2) calc(var(--base-gap) * 4);
+
+    inline-size: fit-content;
+    max-inline-size: 100%;
+    padding: var(--base-gap);
+    border: 0;
+    border-radius: var(--group-radius);
+    background-color: var(--group-bg);
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Кнопка                                                                    */
+/* -------------------------------------------------------------------------- */
+
+.item {
+    position: relative;
+    /* Над индикатором: он лежит фоном, а не поверх подписи. */
+    z-index: 1;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--base-gap);
+    padding: var(--group-item-padding);
+
+    border: 0;
+    border-radius: var(--group-item-radius);
+    font: inherit;
+    color: var(--group-fg);
+    background-color: transparent;
+    cursor: pointer;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+
+    transition: color var(--group-duration) var(--ease-in-out);
+}
+
+.pill .item {
+    font-weight: 600;
+}
+
+.line .item {
+    border-radius: var(--group-item-radius) var(--group-item-radius) 0 0;
+}
+
+.line[aria-orientation="vertical"] .item {
+    border-radius: var(--group-item-radius) 0 0 var(--group-item-radius);
+    justify-content: flex-start;
+}
+
+@media (hover: hover) {
+    .item:hover {
+        color: var(--group-fg-hover);
+    }
+}
+
+.group [aria-selected="true"],
+.item:has(.input:checked) {
+    color: var(--group-fg-active);
+}
+
+.item:has(.input:disabled),
+.group [aria-disabled="true"] {
+    color: var(--group-fg);
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+@media (hover: hover) {
+    .item:has(.input:disabled):hover,
+    .group [aria-disabled="true"]:hover {
+        color: var(--group-fg);
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Скрытый radio                                                             */
+/*                                                                            */
+/*  Настоящее поле, а не подставной div: от платформы достаются стрелки       */
+/*  внутри группы, одна остановка табуляции на всю группу, участие в форме    */
+/*  и :checked, по которому едет индикатор. Поле растянуто на всю кнопку,     */
+/*  поэтому нажатие в любое место — это нажатие по нему.                      */
+/* -------------------------------------------------------------------------- */
+
+.input {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    appearance: none;
+    opacity: 0;
+    cursor: inherit;
+}
+
+/* Кольцо на кнопке, а не на поле: поле прозрачное и своего контура не имеет. */
+.item:has(.input:focus-visible),
+.item:focus-visible {
+    outline: 2px solid var(--group-ring);
+    outline-offset: -2px;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Индикатор                                                                 */
+/* -------------------------------------------------------------------------- */
+
+.indicator {
+    position: absolute;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.pill .indicator {
+    border-radius: var(--group-item-radius);
+    background-color: var(--group-pill-bg);
+}
+
+.line .indicator {
+    background-color: var(--group-accent);
+}
+
+@supports (anchor-name: --a) {
+    .group [aria-selected="true"],
+    .item:has(.input:checked) {
+        anchor-name: var(--group-pill);
+    }
+
+    .indicator {
+        position-anchor: var(--group-pill);
+        transition:
+                left var(--group-duration) var(--ease-out),
+                top var(--group-duration) var(--ease-out),
+                width var(--group-duration) var(--ease-out),
+                height var(--group-duration) var(--ease-out);
+    }
+
+    /* Таблетка повторяет кнопку целиком. */
+    .pill .indicator {
+        left: anchor(left);
+        top: anchor(top);
+        width: anchor-size(width);
+        height: anchor-size(height);
+    }
+
+    /* Линия берёт у кнопки только ширину, а стоит по нижнему краю полосы. */
+    .line .indicator {
+        left: anchor(left);
+        width: anchor-size(width);
+        bottom: 0;
+        height: var(--group-indicator);
+    }
+
+    .line[aria-orientation="vertical"] .indicator {
+        left: auto;
+        right: 0;
+        width: var(--group-indicator);
+        top: anchor(top);
+        height: anchor-size(height);
+    }
+
+    /* Пока ничего не выбрано, якоря нет и показывать индикатор не на чем. */
+    .group:not(:has([aria-selected="true"])):not(:has(.input:checked)) .indicator {
+        display: none;
+    }
+}
+
+/*
+ * Без anchor positioning индикатора нет, а его работу берёт сама активная
+ * кнопка: тот же вид, только без скольжения.
+ */
+@supports not (anchor-name: --a) {
+    .indicator {
+        display: none;
+    }
+
+    .pill [aria-selected="true"],
+    .pill .item:has(.input:checked) {
+        background-color: var(--group-pill-bg);
+    }
+
+    .line [aria-selected="true"],
+    .line .item:has(.input:checked) {
+        box-shadow: inset 0 calc(var(--group-indicator) * -1) 0 var(--group-accent);
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Подпись группы                                                            */
+/*                                                                            */
+/*  Legend обязан быть первым ребёнком fieldset, поэтому коробка с фоном —    */
+/*  не сам fieldset, а вложенный блок. Так подпись стоит НАД коробкой         */
+/*  отдельной строкой, а не внутри неё, и не участвует в раскладке кнопок.    */
+/* -------------------------------------------------------------------------- */
+
+.field {
+    display: grid;
+    justify-items: start;
+    gap: var(--base-gap);
+    min-inline-size: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.legend {
+    /*
+     * Legend браузер выносит из потока родителя, поэтому gap до коробки
+     * на него не действует — отступ задаётся его собственным margin.
+     * Замерено в Chromium 141: display остаётся block при любом display
+     * у fieldset.
+     */
+    margin-block-end: var(--base-gap);
+    padding: 0;
+    color: var(--contrast-color);
+    font-size: var(--font-size-14, 0.875rem);
+    font-weight: 600;
+}
+
+.hiddenLegend {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Высокий контраст и покой                                                  */
+/* -------------------------------------------------------------------------- */
+
+@media (forced-colors: active) {
+    .pill {
+        border: 1px solid CanvasText;
+    }
+
+    .line {
+        border-color: CanvasText;
+    }
+
+    .pill .indicator {
+        border: 2px solid Highlight;
+        background-color: transparent;
+    }
+
+    .line .indicator {
+        background-color: Highlight;
+    }
+
+    .item:has(.input:focus-visible),
+    .item:focus-visible {
+        outline-color: Highlight;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .item,
+    .indicator {
+        transition: none;
+    }
+}

@@ -141,6 +141,7 @@ function Select<T>({
                 style={{anchorName: anchor} as CSSProperties}
             >
                 <span id={labelId} className={field.label}>{label}</span>
+
                 <div className={field.row}>
                     {multi && chosen.map((item, index) => (
                         <button
@@ -155,6 +156,7 @@ function Select<T>({
                             <span className={styles.chipRemove} aria-hidden="true">×</span>
                         </button>
                     ))}
+
                     <button
                         type="button"
                         id={id}
@@ -178,6 +180,7 @@ function Select<T>({
                         </span>
                     </button>
                 </div>
+
                 <span className={styles.arrow} aria-hidden="true">{arrowIcon}</span>
 
                 <Popover
@@ -212,14 +215,31 @@ function Select<T>({
                     })}
                 </Popover>
 
+                {/* По полю на значение: FormData.getAll(name) вернёт массив —
+                    так же ведут себя select multiple и группа флажков. */}
                 {name && selected.map(raw => (
                     <input key={raw} type="hidden" name={name} value={raw} disabled={disabled}/>
                 ))}
+
+                {/* Спутник проверки: скрытые поля выше в проверке формы
+                    не участвуют (type="hidden" исключён из неё), поэтому
+                    required держит он. Имени у него нет — он ничего
+                    не отправляет. */}
                 {required && (
                     <input
                         ref={proxyRef}
                         required
                         disabled={disabled}
+                        /*
+                         * Имени у спутника нет — иначе он отправлял бы
+                         * значение вторым полем. А вот id нужен: без имени
+                         * И без id браузер считает поле безымянным и пишет
+                         * в Issues «A form field element should have an id
+                         * or name attribute» (замерено — это подсказка
+                         * про автозаполнение, а не про доступность).
+                         */
+                        id={`${id}-validity`}
+                        autoComplete="off"
                         tabIndex={-1}
                         aria-hidden="true"
                         value={selected.join(',')}
@@ -231,6 +251,10 @@ function Select<T>({
                 )}
 
             </div>
+
+            {/* Под коробкой, а не в ней: сообщение относится к полю целиком.
+                Область лежит в разметке всегда — объявляется только то,
+                что появилось в уже существующей области. */}
             <span id={errorId} className={field.message} aria-live="polite">{validity.message}</span>
         </div>
     );

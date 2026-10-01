@@ -154,3 +154,52 @@ describe('Textarea: ошибка', () => {
         expect(results.violations).toEqual([]);
     });
 });
+
+describe('Textarea: повторный клик по коробке не роняет фокус', () => {
+    /*
+     * Замерено в Chromium: нажатие по коробке мимо поля, когда поле уже
+     * в фокусе, даёт focusout и только потом focusin от активации label.
+     * На экране это мигание — гаснет кольцо, подпись падает в центр
+     * и едет обратно.
+     */
+    function mousedown(node: HTMLElement) {
+        const event = new MouseEvent('mousedown', {bubbles: true, cancelable: true});
+
+        node.dispatchEvent(event);
+
+        return event;
+    }
+
+    it('нажатие мимо поля гасится, фокус остаётся', () => {
+        render(<Textarea label="Комментарий"/>);
+        const control = screen.getByRole('textbox');
+        const box = control.closest('label') as HTMLElement;
+
+        control.focus();
+        const event = mousedown(box);
+
+        expect(event.defaultPrevented).toBe(true);
+        expect(control).toHaveFocus();
+    });
+
+    it('первый клик остаётся платформенным', () => {
+        render(<Textarea label="Комментарий"/>);
+        const control = screen.getByRole('textbox');
+        const box = control.closest('label') as HTMLElement;
+
+        /* Поле не в фокусе: гасить нечего, иначе фокус бы и не поставился. */
+        const event = mousedown(box);
+
+        expect(event.defaultPrevented).toBe(false);
+    });
+
+    it('нажатие по самому полю не трогаем: там каретка', () => {
+        render(<Textarea label="Комментарий"/>);
+        const control = screen.getByRole('textbox');
+
+        control.focus();
+        const event = mousedown(control);
+
+        expect(event.defaultPrevented).toBe(false);
+    });
+});

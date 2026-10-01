@@ -78,13 +78,24 @@
  * Кольцо и подсветка рамки — на коробке, а не на контроле внутри: контрол
  * занимает только строку значения, и его собственный контур обвёл бы
  * половину поля.
+ *
+ * Кольцо — по :focus-visible: по мышиному клику оно было бы шумом,
+ * платформа его для того и придумала.
  */
 .field:has(.control:focus-visible) {
     outline: 2px solid var(--field-ring);
     outline-offset: 2px;
 }
 
-.field:has(.control:focus-visible),
+/*
+ * А вот «поле активно» — это :focus-within, и это не то же самое.
+ * Поле составное: у Select фокус ходит между кнопкой и пунктами списка,
+ * а кнопка по мышиному клику :focus-visible не получает вовсе. Замерено:
+ * после закрытия списка кликом поле оставалось в фокусе, но выглядело
+ * погасшим — рамка серая, подпись серая. Список лежит внутри коробки,
+ * поэтому :focus-within накрывает и открытое состояние.
+ */
+.field:focus-within,
 .field:has(.control[aria-expanded="true"]) {
     --field-border: var(--field-border-active);
 }
@@ -160,7 +171,7 @@
  * по центру и наложилась на подсказку placeholder, которая появляется
  * ровно в этот момент.
  */
-.field:not([data-filled]):not(:has(.control:focus)) .label {
+.field:not([data-filled]):not(:focus-within) .label {
     translate: 0 calc((var(--field-line) + var(--field-gap)) / 2);
     scale: var(--field-label-scale);
 }
@@ -170,7 +181,7 @@
  * подсвечивается вместе с рамкой, пока поле в фокусе или список открыт,
  * и гаснет, как только фокус ушёл.
  */
-.field:has(.control:focus-visible) .label,
+.field:focus-within .label,
 .field:has(.control[aria-expanded="true"]) .label {
     color: var(--field-label-active);
 }

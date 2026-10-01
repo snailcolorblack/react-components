@@ -23,6 +23,7 @@
 /* -------------------------------------------------------------------------- */
 
 import {useId, useState, type ChangeEvent, type FocusEvent, type FormEvent} from 'react';
+import {holdFocus} from '../Field/Field.focus.ts';
 import {useValidity} from '../Field/Field.validity.ts';
 import type {TextareaProps} from './Textarea.interface.ts';
 import field from '../Field/Field.module.css';
@@ -61,6 +62,7 @@ function Textarea({
                 data-filled={view !== '' || undefined}
                 data-invalid={validity.invalid || undefined}
                 className={[field.field, styles.field].join(' ')}
+                onMouseDown={event => holdFocus(event, field.control)}
             >
                 <span className={field.label}>{label}</span>
 

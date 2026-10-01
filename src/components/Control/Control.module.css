@@ -320,6 +320,7 @@
 
 .control:has(.input:user-invalid) .input,
 .group[data-invalid] .input {
+    --control-bg: var(--danger-color-soft);
     --control-border: var(--danger-color-soft);
     --control-ring: var(--danger-color-soft);
 }

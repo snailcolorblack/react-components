@@ -509,6 +509,23 @@ describe('Select: обязательный выбор', () => {
         expect(onSubmit).toHaveBeenCalled();
     });
 
+    it('у спутника есть id, но нет имени', () => {
+        /*
+         * Имя отправило бы значение вторым полем. Но и без имени, и без id
+         * браузер пишет в Issues «A form field element should have an id
+         * or name attribute» — замерено в Chromium 141, подсказка
+         * про автозаполнение. Отсюда id и autocomplete="off".
+         */
+        const {container} = render(
+            <Select label="Вид депозита" name="deposit" items={STRINGS} required/>,
+        );
+        const proxy = container.querySelector('input:not([type="hidden"])') as HTMLInputElement;
+
+        expect(proxy).toHaveAttribute('id');
+        expect(proxy).not.toHaveAttribute('name');
+        expect(proxy).toHaveAttribute('autocomplete', 'off');
+    });
+
     it('спутник не отправляет ничего своего', async () => {
         render(
             <form>
@@ -557,5 +574,34 @@ describe('Select: своя ошибка', () => {
 
         expect(live).not.toBeNull();
         expect(live).toBeEmptyDOMElement();
+    });
+});
+
+describe('Select: второе нажатие не теряет поле', () => {
+    /*
+     * Замерено в Chromium: после второго клика (список закрылся) кнопка
+     * остаётся в фокусе, но :focus-visible по мышиному клику она
+     * не получает — и поле выглядело погасшим, хотя было активным.
+     * Подсветку рамки и подписи переключили на :focus-within; вид проверяется
+     * браузерным замером, здесь — поведение под ним.
+     */
+    it('после закрытия кликом фокус остаётся на поле', async () => {
+        render(<Select label="Вид депозита" items={STRINGS}/>);
+        const trigger = screen.getByRole('combobox');
+
+        await userEvent.click(trigger);
+        expect(screen.getByRole('listbox')).toBeInTheDocument();
+
+        await userEvent.click(trigger);
+
+        expect(screen.queryByRole('listbox')).toBeNull();
+        expect(trigger).toHaveFocus();
+    });
+
+    it('список лежит внутри коробки: иначе :focus-within до него не достанет', () => {
+        const {container} = render(<Select label="Вид депозита" items={STRINGS}/>);
+        const box = container.querySelector('[data-variant]') as HTMLElement;
+
+        expect(box.querySelector('[role="listbox"]')).not.toBeNull();
     });
 });

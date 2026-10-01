@@ -4,6 +4,7 @@ import {useRef, useState, useTransition, type FormEvent} from "react";
 import {Accordion} from "./components/Accoridon/Accordion.tsx";
 import {Alert} from "./components/Alert/Alert.tsx";
 import {Button} from "./components/Button/Button.tsx";
+import {ButtonGroup} from "./components/ButtonGroup/ButtonGroup.tsx";
 import {Checkbox} from "./components/Checkbox/Checkbox.tsx";
 import {Dialog} from "./components/Dialog/Dialog.tsx";
 import {Dropdown} from "./components/Dropdown/Dropdown.tsx";
@@ -13,6 +14,7 @@ import {Popover} from "./components/Popover/Popover.tsx";
 import {Radio} from "./components/Radio/Radio.tsx";
 import {Select} from "./components/Select/Select.tsx";
 import {Switch} from "./components/Switch/Switch.tsx";
+import {Tabs} from "./components/Tabs/Tabs.tsx";
 import {Textarea} from "./components/Textarea/Textarea.tsx";
 import {Toast} from "./components/Toast/Toast.tsx";
 import {Tooltip} from "./components/Tooltip/Tooltip.tsx";
@@ -200,6 +202,7 @@ function App() {
 
             if (response.ok) {
                 toastRef.current?.show('Сохранено', {variant: 'SUCCESS'});
+
                 return;
             }
             toastRef.current?.show(`Ошибка ${response.status}: ${response.message}`, {variant: 'ERROR'});
@@ -457,6 +460,81 @@ function App() {
                         <Textarea label="Растёт под текст" placeholder="Наберите несколько строк"/>
                         <Textarea label="Фиксированная высота" autoGrow={false} rows={3}
                                   defaultValue={'раз\nдва\nтри\nчетыре\nпять'}/>
+                    </div>
+                </section>
+                <section id={'TABS'} className="section">
+                    <Typography as={'h2'}>TABS</Typography>
+                    <Tabs defaultValue="about">
+                        <Tabs.Buttons label="Раздел товара">
+                            <Tabs.Button value="about">Описание</Tabs.Button>
+                            <Tabs.Button value="reviews">Отзывы</Tabs.Button>
+                            <Tabs.Button value="stock" disabled>Наличие</Tabs.Button>
+                            <Tabs.Button value="delivery">Доставка</Tabs.Button>
+                        </Tabs.Buttons>
+
+                        <Tabs.Content value="about">
+                            Состав, размеры и всё, что стоит знать до покупки.
+                        </Tabs.Content>
+                        <Tabs.Content value="reviews">
+                            {/* Закрытая панель остаётся в разметке: набранное здесь
+                                переживёт переключение. */}
+                            <label>Ваш отзыв: <input type="text" placeholder="Понравилось ли?"/></label>
+                        </Tabs.Content>
+                        <Tabs.Content value="stock">Раздел появится, когда товар вернётся на склад.</Tabs.Content>
+                        <Tabs.Content value="delivery">
+                            По городу за день, по стране за три. Спрятанное слово: черепаха.
+                        </Tabs.Content>
+                    </Tabs>
+
+                    <Typography as={'h3'} variant={'note'}>Вид PILL</Typography>
+                    <Tabs defaultValue="nbt" variant="PILL">
+                        <Tabs.Buttons label="Курс">
+                            <Tabs.Button value="nbt">НБТ</Tabs.Button>
+                            <Tabs.Button value="cash">В кассе</Tabs.Button>
+                            <Tabs.Button value="card">Картой</Tabs.Button>
+                            <Tabs.Button value="wire">Безналичные</Tabs.Button>
+                        </Tabs.Buttons>
+
+                        <Tabs.Content value="nbt">Официальный курс Национального банка.</Tabs.Content>
+                        <Tabs.Content value="cash">Курс в кассах отделений.</Tabs.Content>
+                        <Tabs.Content value="card">Курс по операциям картой.</Tabs.Content>
+                        <Tabs.Content value="wire">Курс по безналичным переводам.</Tabs.Content>
+                    </Tabs>
+
+                    <Typography as={'h3'} variant={'note'}>Вертикальные</Typography>
+                    <Tabs defaultValue="profile" orientation="vertical">
+                        <Tabs.Buttons label="Настройки">
+                            <Tabs.Button value="profile">Профиль</Tabs.Button>
+                            <Tabs.Button value="security">Безопасность</Tabs.Button>
+                        </Tabs.Buttons>
+
+                        <Tabs.Content value="profile">Имя, аватар, часовой пояс.</Tabs.Content>
+                        <Tabs.Content value="security">Пароль, вход по коду, активные сессии.</Tabs.Content>
+                    </Tabs>
+                </section>
+                <section id={'BUTTONGROUP'} className="section">
+                    <Typography as={'h2'}>BUTTONGROUP</Typography>
+                    <div className="block">
+                        <ButtonGroup label="Способ оплаты" name="pay" defaultValue="nbt">
+                            <ButtonGroup.Item value="nbt">НБТ</ButtonGroup.Item>
+                            <ButtonGroup.Item value="cash">В кассе</ButtonGroup.Item>
+                            <ButtonGroup.Item value="card">Картой</ButtonGroup.Item>
+                            <ButtonGroup.Item value="wire" disabled>Безналичные</ButtonGroup.Item>
+                        </ButtonGroup>
+                    </div>
+                    <div className="block">
+                        {/* Подпись стоит над коробкой, а не внутри неё. */}
+                        <ButtonGroup label="Период" name="period" defaultValue="month" showLabel>
+                            <ButtonGroup.Item value="week">Неделя</ButtonGroup.Item>
+                            <ButtonGroup.Item value="month">Месяц</ButtonGroup.Item>
+                            <ButtonGroup.Item value="year">Год</ButtonGroup.Item>
+                        </ButtonGroup>
+                        <ButtonGroup label="Период" name="period-line" defaultValue="month"
+                                     showLabel variant="LINE">
+                            <ButtonGroup.Item value="week">Неделя</ButtonGroup.Item>
+                            <ButtonGroup.Item value="month">Месяц</ButtonGroup.Item>
+                            <ButtonGroup.Item value="year">Год</ButtonGroup.Item>
+                        </ButtonGroup>
                     </div>
                 </section>
                 <section id={'TOAST'} className="section">

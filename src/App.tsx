@@ -211,7 +211,12 @@ function App() {
 
     return (
         <>
+
+
+
             <main className='content'>
+                <div className={'atan'}></div>
+
                 {/* Страница начинается с h1: без него разделы h2 висят
                     без корня, и обход по заголовкам начинается с середины. */}
                 <Typography as={'h1'}>Компоненты</Typography>
@@ -556,6 +561,8 @@ function App() {
                     </div>
                 </section>
             </main>
+
+
 
 
             {/*  DIALOG   */}

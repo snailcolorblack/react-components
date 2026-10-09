@@ -115,6 +115,11 @@
     --ease-in-out: cubic-bezier(.4, 0, .2, 1);
 }
 
+.atan {
+    width: calc(1px * tan(atan2(100vw, 2px)));
+    background-color: white;
+    height: 2px;
+}
 #root {
     display: flex;
     align-items: center;

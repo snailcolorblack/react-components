@@ -99,8 +99,8 @@ export const ДваУгла: Story = {
                 <Button onClick={() => bottom.current?.show('Снизу справа')}>Снизу</Button>
                 <Button variant="OUTLINE" onClick={() => top.current?.show('Сверху слева')}>Сверху</Button>
             </div>
-            <Toast {...args} ref={bottom} position="BOTTOM_END"/>
-            <Toast {...args} ref={top} position="TOP_START"/>
+            <Toast {...args} ref={bottom} position="BOTTOM_END" label="Уведомления снизу"/>
+            <Toast {...args} ref={top} position="TOP_START" label="Уведомления сверху"/>
         </>;
     },
 };

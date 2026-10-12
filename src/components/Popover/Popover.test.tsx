@@ -1,7 +1,7 @@
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import axe from 'axe-core';
-import {createRef, useRef} from 'react';
+import {createRef, useEffect} from 'react';
 import {describe, expect, it, vi} from 'vitest';
 import {Button} from '../Button/Button';
 import {Popover} from './Popover';
@@ -183,7 +183,13 @@ describe('Popover', () => {
         const renders = {count: 0};
 
         function Host() {
-            renders.count += 1;
+            // Счётчик — побочный эффект, не вычисление рендера: мутировать
+            // его в теле компонента нельзя, поэтому считаем в эффекте.
+            // Без списка зависимостей он срабатывает на каждый коммит —
+            // то же самое число, что и было при счёте прямо в рендере.
+            useEffect(() => {
+                renders.count += 1;
+            });
 
             return (
                 <>
@@ -205,17 +211,11 @@ describe('Popover', () => {
     });
 
     it('не создаёт объект стиля заново при неизменных пропсах', () => {
-        const styles: CSSStyleDeclaration[] = [];
-
         function Host({tick}: {tick: number}) {
-            const seen = useRef(0);
-            seen.current = tick;
-
             return <Popover id="p" label="Окно">Контент {tick}</Popover>;
         }
 
         const {rerender} = render(<Host tick={1}/>);
-        styles.push({...document.getElementById('p')!.style} as CSSStyleDeclaration);
         rerender(<Host tick={2}/>);
 
         const style = document.getElementById('p')!.style;

@@ -122,6 +122,11 @@ function Input({
 
     return (
         <span className={[field.group, className].filter(Boolean).join(' ')} style={style}>
+            {/* onMouseDown держит фокус на поле при клике по обёртке — label
+                и так активирует input кликом нативно, обработчик только
+                удерживает фокус, когда клик приходится мимо самого input.
+                Клавиатуры здесь нет: label не в табуляции, input — и так. */}
+            {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
             <label
                 /*
                  * Приписка слева занимает то самое место, куда в пустом поле

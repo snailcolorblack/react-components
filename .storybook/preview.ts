@@ -26,6 +26,12 @@ const preview: Preview = {
              * фон вместо палитры и врёт.
              */
             config: {rules: [{id: 'color-contrast', enabled: false}]},
+            /*
+             * 'error' — тот же axe, что в панели Accessibility, но падает
+             * тестом: test-storybook гоняет его в headless Chromium по
+             * каждой истории, а не только там, где открыли вкладку руками.
+             */
+            test: 'error',
         },
     },
 };

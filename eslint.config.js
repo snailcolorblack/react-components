@@ -1,5 +1,6 @@
 import js from '@eslint/js'
 import globals from 'globals'
+import jsxA11y from 'eslint-plugin-jsx-a11y'
 import perfectionist from 'eslint-plugin-perfectionist'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
@@ -8,7 +9,11 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 import { hookOrder } from './eslint-rules/hook-order.js'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(['dist', 'storybook-static']),
+  {
+    files: ['**/*.tsx'],
+    extends: [jsxA11y.flatConfigs.recommended],
+  },
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

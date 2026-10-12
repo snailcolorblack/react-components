@@ -51,6 +51,11 @@ function Radio({
     return (
         <span className={styles.group} data-invalid={validity.invalid || undefined}>
             <label className={classes} style={style}>
+                {/* По ARIA aria-invalid поддержан у radiogroup, а не у
+                    одиночного radio — но невалидность здесь нативная: это
+                    тот самый input, который браузер подсветит через
+                    reportValidity(), и у него есть собственное :invalid. */}
+                {/* eslint-disable-next-line jsx-a11y/role-supports-aria-props */}
                 <input
                     {...props}
                     type="radio"

@@ -200,6 +200,10 @@ function Select<T>({
                         const off = flag(item, itemDisabled);
 
                         return (
+                            // Клавиатура не на самом пункте: Enter/Space ловит
+                            // onKeyDown на списке выше и жмёт activeElement.click() —
+                            // это тот же клик, roving tabindex на всю группу.
+                            // eslint-disable-next-line jsx-a11y/click-events-have-key-events
                             <div
                                 key={raw}
                                 role="option"

@@ -58,6 +58,9 @@ function Textarea({
 
     return (
         <span className={[field.group, className].filter(Boolean).join(' ')}>
+            {/* То же, что в Input: обработчик удерживает фокус на textarea
+                при клике по обёртке, label и так активирует поле кликом. */}
+            {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
             <label
                 data-filled={view !== '' || undefined}
                 data-invalid={validity.invalid || undefined}

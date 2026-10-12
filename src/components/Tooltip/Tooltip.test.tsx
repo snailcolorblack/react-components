@@ -312,6 +312,7 @@ describe('Tooltip: триггер обязан получать фокус', () 
     it('молчит и на том, кому дали tabindex', () => {
         const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- div здесь только мишень фокуса, тот самый случай из теста
         render(<Tooltip text="Пояснение"><div tabIndex={0}>Своя мишень</div></Tooltip>);
 
         expect(warn).not.toHaveBeenCalled();

@@ -216,16 +216,11 @@ function App() {
 
             <main className='content'>
                 <div className={'atan'}></div>
-
-                {/* Страница начинается с h1: без него разделы h2 висят
-                    без корня, и обход по заголовкам начинается с середины. */}
                 <Typography as={'h1'}>Компоненты</Typography>
                 <section id={'ACCORDION'} className='section'>
                     <Typography as={'h2'}>ACCORDION</Typography>
                     {ACCORDION.map((item, index) => (
                         <Accordion {...item.attr} key={index}>
-                            {/* as="h3": иначе summary не попадает в список
-                                заголовков и по разделам не пройтись. */}
                             <Accordion.Header as={'h3'}>{item.summary}</Accordion.Header>
                             <Accordion.Content>{item.body}</Accordion.Content>
                         </Accordion>
@@ -246,8 +241,6 @@ function App() {
                             ))}
                         </div>
                     ))}
-                    {/* Нажатое состояние слышно, а не только видно:
-                        у кнопки aria-pressed, у ссылки aria-current. */}
                     <div className="block">
                         <Button active>Нажатая кнопка</Button>
                         <Button as={'a'} href="#BUTTON" active variant={'OUTLINE'}>Текущая ссылка</Button>
@@ -369,14 +362,8 @@ function App() {
                 <section id={'TOOLTIP'} className="section">
                     <Typography as={'h2'}>TOOLTIP</Typography>
                     <div className="block">
-                        {/* Триггер обязан получать фокус: подсказка показывается
-                            и по наведению, и по фокусу, а до <div> с клавиатуры
-                            не добраться. Компонент об этом предупреждает. */}
                         <Tooltip text="Наведение сработало, теперь убери курсор">
-                            <div
-                                tabIndex={0}
-                                style={{padding: 12, borderRadius: 8, backgroundColor: 'var(--base-color-200)'}}
-                            >
+                            <div style={{padding: 12, borderRadius: 8, backgroundColor: 'var(--base-color-200)'}}>
                                 Наведи курсор или перейди табом
                             </div>
                         </Tooltip>
@@ -398,8 +385,6 @@ function App() {
                         <Checkbox variant={'CHIP'} name="terms" value="yes">Согласен с условиями</Checkbox>
                         <Checkbox variant={'CHIP'} disabled>Недоступно</Checkbox>
                     </div>
-                    {/* Ошибка: своя и от браузера — обе под флажком, а не
-                        в пузыре, который исчезает по таймеру. */}
                     <form className="block">
                         <Checkbox name="agree" required>Обязательное согласие</Checkbox>
                         <Checkbox error="Этот тариф уже подключён">Своя ошибка</Checkbox>
@@ -481,8 +466,6 @@ function App() {
                             Состав, размеры и всё, что стоит знать до покупки.
                         </Tabs.Content>
                         <Tabs.Content value="reviews">
-                            {/* Закрытая панель остаётся в разметке: набранное здесь
-                                переживёт переключение. */}
                             <label>Ваш отзыв: <input type="text" placeholder="Понравилось ли?"/></label>
                         </Tabs.Content>
                         <Tabs.Content value="stock">Раздел появится, когда товар вернётся на склад.</Tabs.Content>
@@ -528,7 +511,6 @@ function App() {
                         </ButtonGroup>
                     </div>
                     <div className="block">
-                        {/* Подпись стоит над коробкой, а не внутри неё. */}
                         <ButtonGroup label="Период" name="period" defaultValue="month" showLabel>
                             <ButtonGroup.Item value="week">Неделя</ButtonGroup.Item>
                             <ButtonGroup.Item value="month">Месяц</ButtonGroup.Item>
@@ -567,8 +549,6 @@ function App() {
 
             {/*  DIALOG   */}
             <>
-                {/* Имя окна — его видимый заголовок, а не отдельная строка:
-                    так они не разъедутся и не прочитаются дважды. */}
                 <Dialog open={dialog === 'firstType'} onClose={close} aria-labelledby="first-title">
                     <Typography as={'h2'} id="first-title">Первое окно открыто через state</Typography>
                     <form method="dialog"><Button type="submit">Закрытие через форму</Button></form>

@@ -605,3 +605,108 @@ describe('Select: второе нажатие не теряет поле', () =>
         expect(box.querySelector('[role="listbox"]')).not.toBeNull();
     });
 });
+
+describe('Select: длинный список', () => {
+    /*
+     * Потолок высоты, прокрутка и растушёвка краёв — геометрия и CSS,
+     * которых в jsdom нет: scroll-driven анимация, mask-image и
+     * max-block-size считаются движком. Они проверены замером в Chromium 141
+     * (прозрачность верха 1 → 0 на первых --select-fade пикселях прокрутки,
+     * низа — 0 → 1 на последних; у непрокручиваемого списка оба края
+     * остаются непрозрачными). Здесь — только то, что можно проверить
+     * без движка: поиск по первым буквам и разметка под прокрутку.
+     */
+
+    const MANY = ['Евро', 'Злотый', 'Иена', 'Крона', 'Рубль', 'Шведская крона', 'Шекель', 'Юань'];
+
+    async function openMany(items: string[] = MANY) {
+        render(<Select label="Валюта" items={items}/>);
+        await openList();
+    }
+
+    it('набор буквы уводит фокус на первый пункт с неё', async () => {
+        await openMany();
+        await userEvent.keyboard('ш');
+
+        expect(screen.getByRole('option', {name: 'Шведская крона'})).toHaveFocus();
+    });
+
+    it('вторая буква уточняет поиск, а не начинает его заново', async () => {
+        await openMany();
+        await userEvent.keyboard('ше');
+
+        expect(screen.getByRole('option', {name: 'Шекель'})).toHaveFocus();
+    });
+
+    it('одна и та же буква подряд шагает по пунктам на неё', async () => {
+        await openMany();
+        await userEvent.keyboard('к');
+        expect(screen.getByRole('option', {name: 'Крона'})).toHaveFocus();
+
+        await userEvent.keyboard('к');
+        expect(screen.getByRole('option', {name: 'Крона'})).toHaveFocus();
+    });
+
+    /*
+     * Пауза здесь настоящая, а не vi.useFakeTimers(): user-event ждёт
+     * собственные таймеры между нажатиями, и с подменёнными часами тест
+     * просто зависал (замерено — 5000ms timeout). Полторы секунды того
+     * стоят: срок жизни набранного — часть поведения, а не деталь.
+     */
+    it('набранное живёт недолго: после паузы «е» ищет заново', async () => {
+        await openMany();
+        await userEvent.keyboard('ш');
+        expect(screen.getByRole('option', {name: 'Шведская крона'})).toHaveFocus();
+
+        await new Promise(done => setTimeout(done, 1200));
+        await userEvent.keyboard('е');
+
+        // не «ше» → Шекель, а поиск с чистого листа
+        expect(screen.getByRole('option', {name: 'Евро'})).toHaveFocus();
+    });
+
+    it('буква не трогает фокус, если ни один пункт с неё не начинается', async () => {
+        await openMany();
+        const first = screen.getByRole('option', {name: 'Евро'});
+        expect(first).toHaveFocus();
+
+        await userEvent.keyboard('щ');
+        expect(first).toHaveFocus();
+    });
+
+    it('поиск пропускает выключенные пункты', async () => {
+        render(
+            <Select
+                label="Вид" items={DEPOSITS}
+                itemLabel="visibleName" itemValue="value" itemDisabled="off"
+            />,
+        );
+        await openList();
+        // «Накопительный» выключен, поэтому «н» уходит на «Надёжный»
+        await userEvent.keyboard('н');
+
+        expect(screen.getByRole('option', {name: 'Надёжный'})).toHaveFocus();
+    });
+
+    it('прокручивается список, а не поповер: маска у поповера съела бы его фон', async () => {
+        const {container} = render(<Select label="Валюта" items={MANY}/>);
+        const popup = container.querySelector('[popover]') as HTMLElement;
+        const list = popup.querySelector('[role="listbox"]');
+
+        expect(list).not.toBeNull();
+        expect(popup).not.toHaveAttribute('role', 'listbox');
+        // поповер — коробка, его в дереве доступности быть не должно
+        expect(popup).toHaveAttribute('role', 'presentation');
+    });
+
+    it('кнопка открывает поповер, а управляет списком', async () => {
+        const {container} = render(<Select label="Валюта" items={MANY}/>);
+        const trigger = screen.getByRole('combobox');
+        const popup = container.querySelector('[popover]') as HTMLElement;
+        const list = popup.querySelector('[role="listbox"]') as HTMLElement;
+
+        expect(trigger).toHaveAttribute('popovertarget', popup.id);
+        expect(trigger).toHaveAttribute('aria-controls', list.id);
+        expect(popup.id).not.toBe(list.id);
+    });
+});

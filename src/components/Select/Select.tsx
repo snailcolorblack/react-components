@@ -42,9 +42,31 @@
  *      с ней (замерено: поле 948px, список 890 → 772 → 671 → 514).
  *
  *  Мы:
- *      стрелки и Home/End, выбор, скрытые поля для формы.
+ *      стрелки и Home/End, поиск по первым буквам, выбор, скрытые поля
+ *      для формы.
+ */
+
+/* --- Длинный список ------------------------------------------------------- */
+/*
+ *  Список не растёт бесконечно: у него потолок --select-list-max и своя
+ *  прокрутка. Потолок именно фиксированный, а не max-block-size: stretch
+ *  «до нижнего края экрана»: со stretch высота списка зависит от того,
+ *  в каком месте страницы стоит поле, и один и тот же Select выглядит
+ *  по-разному сверху и снизу формы.
  *
- *  Поиска по первым буквам нет намеренно: по APG он необязателен.
+ *  У краёв прокрутки содержимое растворяется — это подсказка, что список
+ *  продолжается. Растушёвка целиком на CSS: маска, прозрачность которой
+ *  ведёт scroll-driven анимация. JS не участвует, обработчика прокрутки
+ *  нет, перерисовок нет.
+ *
+ *  Стрелок для прокрутки по наведению (как у shadcn) здесь нет намеренно:
+ *  они доступны только мыши, дублируют полосу прокрутки и накрывают собой
+ *  первый и последний пункт — то есть отнимают у них зону нажатия.
+ *
+ *  Сам список — отдельный элемент внутри поповера, а не сам поповер.
+ *  Замерено: маска у поповера съедает и его собственный фон с рамкой —
+ *  сквозь верхние два сантиметра видно страницу. Прокрутка и маска живут
+ *  на внутреннем listbox, коробка остаётся у поповера.
  */
 
 /* --- Выключенное поле ------------------------------------------------------ */
@@ -60,6 +82,12 @@
  *  или на первый. В списке: стрелки по кругу, Home и End к краям,
  *  Enter и пробел выбирают, Esc закрывает и возвращает фокус на кнопку,
  *  Tab закрывает и уходит дальше по странице.
+ *
+ *  Буквы ищут пункт по началу подписи — так же, как в нативном <select>:
+ *  набрал «ше» — фокус прыгнул на «Шекель». Набранное живёт секунду после
+ *  последней клавиши, одна и та же буква подряд шагает по пунктам на неё.
+ *  Для списка из полусотни пунктов это единственный способ добраться
+ *  до нужного с клавиатуры быстрее, чем сорока нажатиями стрелки.
  */
 /* -------------------------------------------------------------------------- */
 
@@ -81,6 +109,8 @@ import field from '../Field/Field.module.css';
 import styles from './Select.module.css';
 
 const OPTION_SELECTOR = '[role="option"]';
+/* Сколько живёт набранное. Столько же держит нативный <select>. */
+const TYPEAHEAD_LIFE = 1000;
 
 function Select<T>({
                        items,
@@ -112,13 +142,20 @@ function Select<T>({
      * и это единственная перерисовка на открытие и на закрытие.
      */
     const [open, setOpen] = useState(false);
+    const popupRef = useRef<HTMLDivElement>(null);
     const listRef = useRef<HTMLDivElement>(null);
     const buttonRef = useRef<HTMLButtonElement>(null);
     const proxyRef = useRef<HTMLInputElement>(null);
+    /* Набранное для поиска по буквам. Состоянием быть не должно:
+       разметку оно не меняет, а перерисовку на каждую букву стоило бы. */
+    const searchRef = useRef({text: '', timer: 0});
 
     const id = useId();
     const validity = useValidity(error);
 
+    /* Поповер и список — разные элементы: popovertarget указывает
+       на первый, aria-controls на второй. */
+    const popupId = `${id}-popup`;
     const listId = `${id}-list`;
     const labelId = `${id}-label`;
     const valueId = `${id}-value`;
@@ -170,7 +207,7 @@ function Select<T>({
                         aria-describedby={validity.invalid ? errorId : undefined}
                         aria-invalid={validity.invalid || undefined}
                         aria-required={required || undefined}
-                        popoverTarget={disabled ? undefined : listId}
+                        popoverTarget={disabled ? undefined : popupId}
                         className={[field.control, styles.control].join(' ')}
                     >
                         <span id={valueId} className={styles.value}>
@@ -184,39 +221,50 @@ function Select<T>({
                 <span className={styles.arrow} aria-hidden="true">{arrowIcon}</span>
 
                 <Popover
-                    id={listId}
-                    ref={listRef}
-                    role="listbox"
-                    aria-multiselectable={multi || undefined}
-                    aria-labelledby={labelId}
+                    id={popupId}
+                    ref={popupRef}
+                    /* Коробка, а не узел дерева доступности: замерено, что
+                       Chromium отдаёт голому <div popover> роль group, и над
+                       списком появлялась безымянная группа. С presentation
+                       узел уходит, listbox внутри остаётся на месте. */
+                    role="presentation"
                     anchor={anchor}
-                    tabIndex={-1}
-                    className={styles.list}
-                    onKeyDown={handleListKeyDown}
+                    className={styles.popup}
                     onToggle={handleToggle}
                 >
-                    {items.map((item, index) => {
-                        const raw = key(item, index);
-                        const off = flag(item, itemDisabled);
+                    <div
+                        id={listId}
+                        ref={listRef}
+                        role="listbox"
+                        aria-multiselectable={multi || undefined}
+                        aria-labelledby={labelId}
+                        tabIndex={-1}
+                        className={styles.list}
+                        onKeyDown={handleListKeyDown}
+                    >
+                        {items.map((item, index) => {
+                            const raw = key(item, index);
+                            const off = flag(item, itemDisabled);
 
-                        return (
-                            // Клавиатура не на самом пункте: Enter/Space ловит
-                            // onKeyDown на списке выше и жмёт activeElement.click() —
-                            // это тот же клик, roving tabindex на всю группу.
-                            // eslint-disable-next-line jsx-a11y/click-events-have-key-events
-                            <div
-                                key={raw}
-                                role="option"
-                                tabIndex={-1}
-                                aria-selected={selected.includes(raw)}
-                                aria-disabled={off || undefined}
-                                className={styles.option}
-                                onClick={() => !off && toggle(raw)}
-                            >
-                                {itemRender ? itemRender(item) : labelOf(item)}
-                            </div>
-                        );
-                    })}
+                            return (
+                                // Клавиатура не на самом пункте: Enter/Space ловит
+                                // onKeyDown на списке выше и жмёт activeElement.click() —
+                                // это тот же клик, roving tabindex на всю группу.
+                                // eslint-disable-next-line jsx-a11y/click-events-have-key-events
+                                <div
+                                    key={raw}
+                                    role="option"
+                                    tabIndex={-1}
+                                    aria-selected={selected.includes(raw)}
+                                    aria-disabled={off || undefined}
+                                    className={styles.option}
+                                    onClick={() => !off && toggle(raw)}
+                                >
+                                    {itemRender ? itemRender(item) : labelOf(item)}
+                                </div>
+                            );
+                        })}
+                    </div>
                 </Popover>
 
                 {/* По полю на значение: FormData.getAll(name) вернёт массив —
@@ -314,14 +362,20 @@ function Select<T>({
 
         /* Один выбирают один раз: список закрывается, а фокус на кнопку
            возвращает браузер — hidePopover() делает это сам. */
-        if (!multi) listRef.current?.hidePopover();
+        if (!multi) popupRef.current?.hidePopover();
     }
 
     function handleToggle(event: ToggleEvent<HTMLDivElement>) {
         setOpen(event.newState === 'open');
+        /* Закрыли — набранное не продолжают: следующее открытие начинает
+           поиск с чистого листа. */
+        forget();
         if (event.newState !== 'open') return;
 
-        /* Открыли — фокус на уже выбранном пункте, а если его нет, на первом. */
+        /* Открыли — фокус на уже выбранном пункте, а если его нет, на первом.
+           Прокрутку до него делает браузер, а scroll-padding у списка не даёт
+           пункту встать под растушёвкой (замерено: шаг стрелкой оставляет
+           до нижнего края ровно --select-fade). */
         const list = options();
         const current = list.findIndex(option => option.getAttribute('aria-selected') === 'true');
         (list[current] ?? list[0])?.focus();
@@ -350,7 +404,49 @@ function Select<T>({
 
             return;
         }
-        if (event.key === 'Tab') listRef.current?.hidePopover();
+        if (event.key === 'Tab') {
+            popupRef.current?.hidePopover();
+
+            return;
+        }
+
+        typeahead(event);
+    }
+
+    /*
+     * Поиск по первым буквам. Стрелки и Esc сюда не доходят — они разобраны
+     * выше, а event.key длиной в один символ отсекает служебные клавиши
+     * разом: у них имена длиннее («ArrowDown», «Escape»). Модификаторы
+     * исключены отдельно, иначе Ctrl+F страницы искал бы по списку.
+     */
+    function typeahead(event: KeyboardEvent<HTMLDivElement>) {
+        if (event.key.length !== 1 || event.ctrlKey || event.metaKey || event.altKey) return;
+
+        const search = searchRef.current;
+        /* Та же буква подряд — не «аа», а шаг по пунктам на эту букву:
+           так ведёт себя нативный <select>. */
+        const repeat = search.text.length > 0 && search.text === event.key.toLowerCase().repeat(search.text.length);
+
+        window.clearTimeout(search.timer);
+        search.timer = window.setTimeout(forget, TYPEAHEAD_LIFE);
+        search.text = repeat ? event.key.toLowerCase() : search.text + event.key.toLowerCase();
+
+        const list = options();
+        const current = list.indexOf(document.activeElement as HTMLElement);
+        /* Длинное набранное уточняет уже найденное, поэтому ищем с текущего
+           пункта; одна буква и повтор — с соседнего, иначе шага не выйдет. */
+        const from = search.text.length > 1 && !repeat ? current : current + 1;
+        const found = seek(list, search.text, from);
+
+        if (found === undefined) return;
+
+        event.preventDefault();
+        found.focus();
+    }
+
+    function forget() {
+        window.clearTimeout(searchRef.current.timer);
+        searchRef.current.text = '';
     }
 }
 
@@ -364,6 +460,24 @@ function Select<T>({
  * него вывел бы поле из проверки формы.
  */
 function ignore() {}
+
+/*
+ * Пункт, чья подпись начинается с набранного. Ищем по кругу от указанного
+ * места, текст берём из самой разметки, а не из items: подпись может быть
+ * собрана itemRender из чего угодно, а в дереве доступности и перед глазами
+ * человека остаётся именно этот текст. Выключенные пункты пропускаем —
+ * фокус на них ничего не даёт.
+ */
+function seek(list: HTMLElement[], text: string, from: number) {
+    for (let step = 0; step < list.length; step += 1) {
+        const option = list[(from + step + list.length) % list.length];
+
+        if (option === undefined || option.getAttribute('aria-disabled') === 'true') continue;
+        if ((option.textContent ?? '').trim().toLowerCase().startsWith(text)) return option;
+    }
+
+    return undefined;
+}
 
 function toList(value: unknown): string[] {
     if (value === undefined || value === null || value === '') return [];

@@ -44,6 +44,15 @@
     --select-chip-size: var(--font-size-14, 0.875rem);
 
     --select-list-padding: var(--base-gap);
+    /*
+     * Потолок списка и высота растушёвки у его краёв. Потолок фиксированный:
+     * при max-block-size: stretch («до нижнего края экрана») высота зависела
+     * бы от того, в каком месте страницы стоит поле, и один и тот же Select
+     * вверху и внизу формы выглядел бы по-разному.
+     */
+    --select-list-max: 18rem;
+    --select-fade: 2rem;
+    --select-scroll-thumb: var(--contrast-alpha-20);
     --select-option-gap: calc(var(--base-gap) * 2);
     --select-option-padding: calc(var(--base-gap) * 2) calc(var(--base-gap) * 3);
     --select-option-radius: var(--base-gap);
@@ -121,18 +130,101 @@
 /*  список 890 → 772 → 671 → 514.                                             */
 /* -------------------------------------------------------------------------- */
 
-.list[popover] {
+.popup[popover] {
     padding: var(--select-list-padding);
 }
 
-.list[popover]:focus {
+@supports (inline-size: anchor-size(inline)) {
+    .popup[popover] {
+        min-inline-size: anchor-size(inline);
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Прокрутка длинного списка и растушёвка у краёв                            */
+/*                                                                            */
+/*  Прокручивается не поповер, а список внутри него. Замерено: маска на самом */
+/*  поповере растворяет вместе с пунктами его собственный фон и рамку —       */
+/*  сквозь верхние два сантиметра окна видно страницу. Коробка остаётся       */
+/*  у поповера, прокрутка и маска живут на списке.                            */
+/*                                                                            */
+/*  Прозрачность краёв ведёт не JS, а сама прокрутка: scroll(self block) —    */
+/*  это шкала времени, у которой «сейчас» равно положению полосы прокрутки.   */
+/*  Обработчика scroll нет, перерисовок React нет, работает одинаково         */
+/*  и колесом, и пальцем, и стрелками.                                        */
+/*                                                                            */
+/*  animation-range задаёт, на каком отрезке прокрутки идёт анимация:         */
+/*  верхняя растушёвка появляется за первые --select-fade пикселей, нижняя    */
+/*  исчезает за последние. Без fill-mode: both значения за пределами отрезка  */
+/*  не держатся — замерено: прозрачность верха шла 1 → 0 на первых 32px       */
+/*  и тут же возвращалась к 1, то есть растушёвка пропадала сразу после       */
+/*  появления.                                                                */
+/*                                                                            */
+/*  Короткому списку растушёвка не нужна: прокрутки нет — шкала неактивна,    */
+/*  анимация не применяется, и остаются объявленные здесь единицы, то есть    */
+/*  оба края непрозрачны (замерено).                                          */
+/* -------------------------------------------------------------------------- */
+
+@property --select-fade-top {
+    syntax: '<number>';
+    inherits: false;
+    initial-value: 1;
+}
+
+@property --select-fade-bottom {
+    syntax: '<number>';
+    inherits: false;
+    initial-value: 1;
+}
+
+.list {
+    --select-fade-top: 1;
+    --select-fade-bottom: 1;
+
+    box-sizing: border-box;
+    max-block-size: var(--select-list-max);
+    overflow-y: auto;
+    /* Докрутив список до края, страницу за ним не листаем. */
+    overscroll-behavior: contain;
+    /*
+     * Запас, с которым браузер подводит пункт под фокус: без него пункт,
+     * до которого дошли стрелкой, вставал ровно у края и попадал под
+     * растушёвку. Замерено: с запасом до нижнего края остаётся ровно
+     * --select-fade.
+     */
+    scroll-padding-block: var(--select-fade);
+    scrollbar-width: thin;
+    scrollbar-color: var(--select-scroll-thumb) transparent;
+}
+
+.list:focus {
     outline: none;
 }
 
-@supports (inline-size: anchor-size(inline)) {
-    .list[popover] {
-        min-inline-size: anchor-size(inline);
+@supports (animation-timeline: scroll()) and (mask-image: linear-gradient(#000, #000)) {
+    .list {
+        mask-image: linear-gradient(
+                to bottom,
+                rgb(0 0 0 / var(--select-fade-top)) 0,
+                #000 var(--select-fade),
+                #000 calc(100% - var(--select-fade)),
+                rgb(0 0 0 / var(--select-fade-bottom)) 100%
+        );
+
+        animation: select-fade-top linear both, select-fade-bottom linear both;
+        animation-timeline: scroll(self block), scroll(self block);
+        animation-range: 0 var(--select-fade), calc(100% - var(--select-fade)) 100%;
     }
+}
+
+@keyframes select-fade-top {
+    from { --select-fade-top: 1; }
+    to { --select-fade-top: 0; }
+}
+
+@keyframes select-fade-bottom {
+    from { --select-fade-bottom: 0; }
+    to { --select-fade-bottom: 1; }
 }
 
 .option {
@@ -263,6 +355,15 @@
     .field,
     .chip {
         border: 1px solid CanvasText;
+    }
+
+    /*
+     * Растушёвка в высоком контрасте снимается: она гасит текст у краёв,
+     * а система подбирает цвета как раз ради максимальной читаемости.
+     * Что список продолжается, видно по полосе прокрутки.
+     */
+    .list {
+        mask-image: none;
     }
 
     .option:where(:focus, :hover) {

@@ -18,7 +18,7 @@
 /* -------------------------------------------------------------------------- */
 
 import {createContext, use} from 'react';
-import type {TabsOrientation, TabsVariant} from './Tabs.interface.ts';
+import type {TabsMotion, TabsOrientation, TabsVariant} from './Tabs.interface.ts';
 
 export interface TabsState {
     /** Основа для id кнопок и панелей: из неё строятся обе связи. */
@@ -29,6 +29,8 @@ export interface TabsState {
     orientation: TabsOrientation
     /** Вид: полоса с подчёркиванием или группа кнопок. */
     variant: TabsVariant
+    /** Чем сменяется панель: панель сама решает, считать ли ей сторону. */
+    motion: TabsMotion
     /** Открыть вкладку. */
     select: (value: string) => void
 }

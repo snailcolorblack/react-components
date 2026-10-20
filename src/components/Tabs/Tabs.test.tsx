@@ -289,3 +289,100 @@ describe('Tabs: вид PILL', () => {
         expect(results.violations).toEqual([]);
     });
 });
+
+describe('Tabs: смена панели', () => {
+    /*
+     * Сама анимация — переход CSS, которого в jsdom нет: ни
+     * content-visibility, ни allow-discrete, ни translate здесь не считаются.
+     * Это браузерный замер (Chromium 141: уходящая панель видима все 180 мс
+     * и гаснет на последнем кадре, приходящая едет 16px → 0, высота набора
+     * меняется сразу, без промежуточного максимума из двух панелей).
+     *
+     * Здесь проверяется ровно то, чем компонент управляет сам: подсказки
+     * в разметке, по которым работают правила CSS.
+     */
+
+    /** Панели в порядке разметки, включая закрытые. */
+    function panels(container: HTMLElement) {
+        return Array.from(container.querySelectorAll('[role="tabpanel"]'));
+    }
+
+    it('по умолчанию панель проявляется', () => {
+        const {container} = render(<Sample/>);
+
+        expect(container.firstElementChild).toHaveAttribute('data-motion', 'fade');
+    });
+
+    it('вариант уходит на корень: дальше всё решает CSS', () => {
+        const {container} = render(<Sample motion="slide"/>);
+
+        expect(container.firstElementChild).toHaveAttribute('data-motion', 'slide');
+    });
+
+    it('у сдвига закрытая панель знает свою сторону', () => {
+        const {container} = render(<Sample motion="slide"/>);
+        const [about, reviews, delivery] = panels(container);
+
+        /* Открытая не двигается, поэтому стороны у неё нет вовсе. */
+        expect(about).not.toHaveAttribute('data-side');
+        expect(reviews).toHaveAttribute('data-side', 'after');
+        expect(delivery).toHaveAttribute('data-side', 'after');
+    });
+
+    it('сторона пересчитывается при переключении', async () => {
+        const {container} = render(<Sample motion="slide"/>);
+        await userEvent.click(screen.getByRole('tab', {name: 'Отзывы'}));
+
+        const [about, reviews, delivery] = panels(container);
+
+        expect(about).toHaveAttribute('data-side', 'before');
+        expect(reviews).not.toHaveAttribute('data-side');
+        expect(delivery).toHaveAttribute('data-side', 'after');
+    });
+
+    it('сторона считается по разметке, а не по порядку панелей', () => {
+        /* Панели нарочно лежат не в том порядке, что кнопки. */
+        const {container} = render(
+            <Tabs defaultValue="b" motion="slide">
+                <Tabs.Buttons label="Раздел">
+                    <Tabs.Button value="a">Первая</Tabs.Button>
+                    <Tabs.Button value="b">Вторая</Tabs.Button>
+                </Tabs.Buttons>
+
+                <Tabs.Content value="b">Вторая панель</Tabs.Content>
+                <Tabs.Content value="a">Первая панель</Tabs.Content>
+            </Tabs>,
+        );
+        const closed = container.querySelector('[id$="-a-panel"]');
+
+        expect(closed).toHaveAttribute('data-side', 'before');
+    });
+
+    it('без сдвига сторона не ставится: она нужна только ему', () => {
+        const {container} = render(<Sample motion="fade"/>);
+
+        expect(panels(container).some(panel => panel.hasAttribute('data-side'))).toBe(false);
+    });
+
+    it('смена варианта убирает прежнюю сторону', () => {
+        const {container, rerender} = render(<Sample motion="slide"/>);
+        expect(panels(container)[1]).toHaveAttribute('data-side', 'after');
+
+        rerender(<Sample motion="none"/>);
+        expect(panels(container)[1]).not.toHaveAttribute('data-side');
+    });
+
+    it('анимация не трогает ни роли, ни связи', async () => {
+        const {container} = render(<Sample motion="slide"/>);
+        await userEvent.click(screen.getByRole('tab', {name: 'Отзывы'}));
+
+        const panel = screen.getByRole('tabpanel');
+        const tab = screen.getByRole('tab', {name: 'Отзывы'});
+
+        expect(tab).toHaveAttribute('aria-selected', 'true');
+        expect(panel).toHaveAttribute('aria-labelledby', tab.id);
+
+        const results = await axe.run(container, {rules: {'color-contrast': {enabled: false}}});
+        expect(results.violations).toEqual([]);
+    });
+});

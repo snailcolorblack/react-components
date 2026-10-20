@@ -34,6 +34,28 @@
  *      и подхват того, что браузер раскрыл панель поиском.
  */
 
+/* --- Смена панели ---------------------------------------------------------- */
+/*
+ *  Анимация целиком на CSS, в коде только одна подсказка разметке.
+ *
+ *  Работает это потому, что закрытая панель лежит под
+ *  hidden="until-found", то есть content-visibility: hidden, а не
+ *  display: none: элемент остаётся отрисованным, и переход из закрытого
+ *  состояния в открытое — обычная смена стиля. Ни @starting-style,
+ *  ни снятия с монтирования, ни хранения «предыдущей» панели не нужно.
+ *  Уходящая панель доживает свой кадр благодаря allow-discrete
+ *  у content-visibility (замерено: видима все 180 мс, гаснет в конце).
+ *
+ *  Подсказка — data-side у закрытой панели: лежит она до открытой
+ *  или после. Сторона своя у каждой панели, поэтому «откуда приехать»
+ *  не надо помнить между переключениями: панель справа всегда
+ *  приезжает справа, и обратный ход получается сам.
+ *
+ *  Считается сторона по разметке — compareDocumentPosition у кнопок
+ *  вкладок, а не по индексу в каком-нибудь списке: порядок вкладок
+ *  известен только разметке, между Tabs.Button можно класть что угодно.
+ */
+
 /* --- Закрытая панель ------------------------------------------------------- */
 /*
  *  hidden="until-found" вместо hidden: содержимое сохраняет прокрутку,
@@ -73,6 +95,7 @@ function Tabs({
                   onChange,
                   variant = 'LINE',
                   orientation = 'horizontal',
+                  motion = 'fade',
                   className = '',
                   ...props
               }: TabsProps) {
@@ -81,10 +104,10 @@ function Tabs({
 
     const base = useId();
     const state = useMemo(
-        () => ({base, active: value ?? own, orientation, variant, select}),
+        () => ({base, active: value ?? own, orientation, variant, motion, select}),
         /* select берётся из замыкания этого же рендера и всегда свежий. */
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [base, value, own, orientation, variant],
+        [base, value, own, orientation, variant, motion],
     );
 
     /* Открытое значение берём из того же объекта, что уходит в контекст:
@@ -97,6 +120,7 @@ function Tabs({
                 {...props}
                 data-orientation={orientation}
                 data-variant={variant}
+                data-motion={motion}
                 className={[styles.tabs, className].filter(Boolean).join(' ')}
             />
         </TabsContext>
@@ -208,21 +232,44 @@ function TabsButton({value, disabled = false, className = '', onClick, ...props}
 /* -------------------------------------------------------------------------- */
 
 function TabsContent({value, className = '', ...props}: TabsContentProps) {
-    const {base, active, select} = useTabs('Tabs.Content');
+    const {base, active, motion, select} = useTabs('Tabs.Content');
     const panelRef = useRef<HTMLDivElement>(null);
 
     const selected = active === value;
     const key = slug(value);
 
     /*
-     * Обычный hidden меняем на until-found сразу после отрисовки, до показа
-     * кадра: замерено, строку через проп React не пропускает.
+     * Два дела до показа кадра, и оба обязаны успеть до него.
+     *
+     * Первое: обычный hidden меняем на until-found — замерено, строку
+     * через проп React не пропускает.
+     *
+     * Второе: сторона закрытой панели. Снимаем её у открывшейся и ставим
+     * закрывшейся; браузер при этом сравнивает с тем, что было показано
+     * в прошлом кадре, поэтому приходящая панель едет от своего края
+     * к нулю, а уходящая — от нуля к своему (замерено: 16px → 0
+     * и 0 → −16px у соседних вкладок).
      */
     useLayoutEffect(() => {
-        if (selected) return;
+        const node = panelRef.current;
 
-        panelRef.current?.setAttribute('hidden', 'until-found');
-    }, [selected]);
+        if (node === null) return;
+        if (selected) {
+            node.removeAttribute('data-side');
+
+            return;
+        }
+
+        node.setAttribute('hidden', 'until-found');
+
+        if (motion !== 'slide') {
+            node.removeAttribute('data-side');
+
+            return;
+        }
+
+        node.setAttribute('data-side', sideOf(`${base}-${key}-tab`, `${base}-${slug(active)}-tab`));
+    }, [active, base, key, motion, selected]);
 
     /*
      * Браузер нашёл текст поиском по странице и собирается раскрыть панель.
@@ -257,6 +304,29 @@ function TabsContent({value, className = '', ...props}: TabsContentProps) {
             className={[styles.content, className].filter(Boolean).join(' ')}
         />
     );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Сторона закрытой панели                                                   */
+/*                                                                            */
+/*  Лежит её вкладка до открытой или после. Спрашиваем разметку, а не         */
+/*  список значений: порядок вкладок знает только она — между кнопками        */
+/*  можно класть разделители, заголовки и что угодно ещё, и никакого          */
+/*  массива с порядком у компонента нет.                                      */
+/*                                                                            */
+/*  Пока не открыта ни одна вкладка, открытой кнопки не существует —          */
+/*  сторона тогда любая, панель всё равно не двигается.                       */
+/* -------------------------------------------------------------------------- */
+
+function sideOf(mine: string, live: string) {
+    const from = document.getElementById(mine);
+    const to = document.getElementById(live);
+
+    if (from === null || to === null) return 'after';
+
+    const where = from.compareDocumentPosition(to);
+
+    return (where & Node.DOCUMENT_POSITION_PRECEDING) === 0 ? 'before' : 'after';
 }
 
 Tabs.Buttons = TabsButtons;

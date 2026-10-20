@@ -176,3 +176,75 @@ export const ТаблеткаВертикально: Story = {
         </Tabs>
     ),
 };
+
+/* -------------------------------------------------------------------------- */
+/*  Смена панели                                                              */
+/* -------------------------------------------------------------------------- */
+
+/** Панели разной длины: видно, что высота меняется сразу, без дёрганья. */
+const SECTIONS = [
+    {value: 'short', label: 'Коротко', text: 'Одна строка.'},
+    {
+        value: 'long', label: 'Подробно', text: `Абзац подлиннее, чтобы панель стала заметно выше соседней.
+            На нём и проверяется высота набора: уходящая панель на время ухода выносится из потока,
+            поэтому ячейка сетки не равняется на большую из двух.`,
+    },
+    {value: 'specs', label: 'Характеристики', text: 'Материал, вес, гарантия.'},
+];
+
+function Sections({motion}: {motion: 'fade' | 'slide' | 'none'}) {
+    return (
+        <Tabs defaultValue="short" motion={motion}>
+            <Tabs.Buttons label="Раздел">
+                {SECTIONS.map(section => (
+                    <Tabs.Button key={section.value} value={section.value}>{section.label}</Tabs.Button>
+                ))}
+            </Tabs.Buttons>
+
+            {SECTIONS.map(section => (
+                <Tabs.Content key={section.value} value={section.value}>{section.text}</Tabs.Content>
+            ))}
+        </Tabs>
+    );
+}
+
+/**
+ * Проявление — значение по умолчанию. Уходящая панель гаснет, приходящая
+ * проявляется на её месте.
+ *
+ * Анимация целиком на CSS. Закрытая панель лежит под `hidden="until-found"`,
+ * то есть под `content-visibility: hidden`, а не `display: none` — элемент
+ * остаётся отрисованным, и переход идёт обычным порядком, без
+ * `@starting-style` и без снятия с монтирования. Уходящая панель доживает
+ * свой кадр за счёт `transition-behavior: allow-discrete`.
+ */
+export const СменаПроявлением: Story = {
+    render: () => <Sections motion="fade"/>,
+};
+
+/**
+ * Сдвиг: панель приезжает с той стороны, где лежит её вкладка. Нажали
+ * вкладку правее — панель пришла справа, вернулись назад — слева.
+ *
+ * Направление не хранится между переключениями: у каждой закрытой панели
+ * есть своя сторона (`data-side`), посчитанная по разметке кнопок. Поэтому
+ * обратный ход получается сам собой, а порядок панелей в разметке может
+ * не совпадать с порядком кнопок.
+ */
+export const СменаСдвигом: Story = {
+    render: () => <Sections motion="slide"/>,
+};
+
+/** Без анимации: панель меняется мгновенно. То же самое делает `prefers-reduced-motion`. */
+export const СменаБезАнимации: Story = {
+    render: () => <Sections motion="none"/>,
+};
+
+/** Длительность и размах сдвига — переменные, а не зашитые значения. */
+export const СвояДлительность: Story = {
+    render: () => (
+        <div style={{'--tabs-content-duration': '0.4s', '--tabs-shift': '3rem'} as React.CSSProperties}>
+            <Sections motion="slide"/>
+        </div>
+    ),
+};

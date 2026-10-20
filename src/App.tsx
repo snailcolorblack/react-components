@@ -474,7 +474,7 @@ function App() {
                         </Tabs.Content>
                     </Tabs>
 
-                    <Typography as={'h3'} variant={'note'}>Вид PILL</Typography>
+                    <Typography as={'h3'} variant={'note'}>Вид PILL FADE</Typography>
                     <Tabs defaultValue="nbt" variant="PILL">
                         <Tabs.Buttons label="Курс">
                             <Tabs.Button value="nbt">НБТ</Tabs.Button>
@@ -488,9 +488,33 @@ function App() {
                         <Tabs.Content value="card">Курс по операциям картой.</Tabs.Content>
                         <Tabs.Content value="wire">Курс по безналичным переводам.</Tabs.Content>
                     </Tabs>
+                    <Typography as={'h3'} variant={'note'}>Вид PILL SLIDE</Typography>
+                    <Tabs defaultValue="nbt" variant="PILL" motion={'slide'}>
+                        <Tabs.Buttons label="Курс">
+                            <Tabs.Button value="nbt">НБТ</Tabs.Button>
+                            <Tabs.Button value="cash">В кассе</Tabs.Button>
+                            <Tabs.Button value="card">Картой</Tabs.Button>
+                            <Tabs.Button value="wire">Безналичные</Tabs.Button>
+                        </Tabs.Buttons>
 
-                    <Typography as={'h3'} variant={'note'}>Вертикальные</Typography>
+                        <Tabs.Content value="nbt">Официальный курс Национального банка.</Tabs.Content>
+                        <Tabs.Content value="cash">Курс в кассах отделений.</Tabs.Content>
+                        <Tabs.Content value="card">Курс по операциям картой.</Tabs.Content>
+                        <Tabs.Content value="wire">Курс по безналичным переводам.</Tabs.Content>
+                    </Tabs>
+
+                    <Typography as={'h3'} variant={'note'}>Вертикальные FADE</Typography>
                     <Tabs defaultValue="profile" orientation="vertical">
+                        <Tabs.Buttons label="Настройки">
+                            <Tabs.Button value="profile">Профиль</Tabs.Button>
+                            <Tabs.Button value="security">Безопасность</Tabs.Button>
+                        </Tabs.Buttons>
+
+                        <Tabs.Content value="profile">Имя, аватар, часовой пояс.</Tabs.Content>
+                        <Tabs.Content value="security">Пароль, вход по коду, активные сессии.</Tabs.Content>
+                    </Tabs>
+                    <Typography as={'h3'} variant={'note'}>Вертикальные SLIDE</Typography>
+                    <Tabs defaultValue="profile" orientation="vertical" motion={'fade'}>
                         <Tabs.Buttons label="Настройки">
                             <Tabs.Button value="profile">Профиль</Tabs.Button>
                             <Tabs.Button value="security">Безопасность</Tabs.Button>

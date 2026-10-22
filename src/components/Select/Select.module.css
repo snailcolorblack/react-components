@@ -242,7 +242,14 @@
     transition: background-color 0.12s var(--ease-in-out);
 }
 
-.option:where(:focus, :hover) {
+/*
+ * Выключенный пункт не подсвечивается ни под курсором, ни в фокусе:
+ * подсветка обещает, что по нему можно нажать. Фокус на него и не попадёт
+ * (он исключён из списка, по которому ходят стрелки), а курсор до него
+ * не доберётся из-за pointer-events — но правило оставлено явным,
+ * чтобы подсветка не вернулась вместе с одной из этих настроек.
+ */
+.option:where(:focus, :hover):not([aria-disabled="true"]) {
     outline: none;
     background-color: var(--select-option-bg-hover);
 }
@@ -274,6 +281,8 @@
 .option[aria-disabled="true"] {
     opacity: 0.5;
     cursor: not-allowed;
+    user-select: none;
+    pointer-events: none;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -366,7 +375,7 @@
         mask-image: none;
     }
 
-    .option:where(:focus, :hover) {
+    .option:where(:focus, :hover):not([aria-disabled="true"]) {
         color: HighlightText;
         background-color: Highlight;
         forced-color-adjust: none;

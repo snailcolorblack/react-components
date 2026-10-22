@@ -108,7 +108,15 @@ import type {SelectAccessor, SelectMultiProps, SelectProps, SelectSingleProps} f
 import field from '../Field/Field.module.css';
 import styles from './Select.module.css';
 
-const OPTION_SELECTOR = '[role="option"]';
+/*
+ * Выключенные пункты сюда не попадают, и это не мелочь: по этому списку
+ * ходят стрелки, с него начинается фокус при открытии и по нему ищет
+ * набор букв. Пока выключенные были в списке, стрелка вставала на пункт,
+ * который нельзя выбрать, подсветка фокуса уезжала с выбранного на него,
+ * а Enter не делал ничего. Мышь до них не добирается и так —
+ * у выключенного пункта pointer-events: none.
+ */
+const OPTION_SELECTOR = '[role="option"]:not([aria-disabled="true"])';
 /* Сколько живёт набранное. Столько же держит нативный <select>. */
 const TYPEAHEAD_LIFE = 1000;
 

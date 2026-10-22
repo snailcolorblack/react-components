@@ -1,4 +1,4 @@
-import {act, render, screen} from '@testing-library/react';
+import {act, fireEvent, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import axe from 'axe-core';
 import {useState} from 'react';
@@ -81,13 +81,37 @@ describe('Select single', () => {
         expect(onChange).toHaveBeenCalledWith('id-1', DEPOSITS[0]);
     });
 
-    it('itemDisabled выключает пункт', async () => {
+    /*
+     * Преград у выключенного пункта две, и проверяются обе: курсор до него
+     * не доходит (pointer-events), а если нажатие всё же придёт — его
+     * отклоняет обработчик. Поэтому первая проверка идёт через userEvent,
+     * который честно отказывается нажимать, а вторая через fireEvent,
+     * который бьёт прямо по обработчику в обход курсора.
+     */
+    it('itemDisabled выключает пункт: курсор до него не доходит', async () => {
         render(<Select label="Вид" items={DEPOSITS} itemLabel="visibleName" itemValue="value" itemDisabled="off"/>);
         await openList();
         const off = screen.getByRole('option', {name: 'Накопительный'});
         expect(off).toHaveAttribute('aria-disabled', 'true');
 
-        await userEvent.click(off);
+        await expect(userEvent.click(off)).rejects.toThrow(/pointer-events/);
+        expect(off).toHaveAttribute('aria-selected', 'false');
+    });
+
+    it('itemDisabled выключает пункт: нажатие в обход курсора тоже не выбирает', async () => {
+        const onChange = vi.fn();
+        render(
+            <Select
+                label="Вид" items={DEPOSITS} itemLabel="visibleName" itemValue="value"
+                itemDisabled="off" onChange={onChange}
+            />,
+        );
+        await openList();
+        const off = screen.getByRole('option', {name: 'Накопительный'});
+
+        fireEvent.click(off);
+
+        expect(onChange).not.toHaveBeenCalled();
         expect(off).toHaveAttribute('aria-selected', 'false');
     });
 
@@ -344,7 +368,9 @@ describe('Select multi', () => {
         const off = screen.getByRole('option', {name: 'Накопительный'});
         expect(off).toHaveAttribute('aria-disabled', 'true');
 
-        await userEvent.click(off);
+        await expect(userEvent.click(off)).rejects.toThrow(/pointer-events/);
+        fireEvent.click(off);
+
         expect(off).toHaveAttribute('aria-selected', 'false');
     });
 
@@ -708,5 +734,77 @@ describe('Select: длинный список', () => {
         expect(trigger).toHaveAttribute('popovertarget', popup.id);
         expect(trigger).toHaveAttribute('aria-controls', list.id);
         expect(popup.id).not.toBe(list.id);
+    });
+});
+
+describe('Select: выключенные пункты не забирают фокус', () => {
+    /*
+     * Замерено в браузере до правки: стрелка вставала на выключенный пункт,
+     * подсветка фокуса уезжала с выбранного на него, а Enter не делал
+     * ничего. Теперь выключенные не попадают в список, по которому ходят
+     * стрелки и с которого начинается фокус при открытии.
+     */
+    const MIXED = [
+        {value: 1, visibleName: 'Первый', off: true},
+        {value: 2, visibleName: 'Второй'},
+        {value: 3, visibleName: 'Третий', off: true},
+        {value: 4, visibleName: 'Четвёртый'},
+    ];
+
+    function open() {
+        return userEvent.click(screen.getByRole('combobox'));
+    }
+
+    function mixed(props = {}) {
+        return (
+            <Select
+                label="Вид" items={MIXED} itemLabel="visibleName" itemValue="value" itemDisabled="off"
+                {...props}
+            />
+        );
+    }
+
+    it('при открытии фокус встаёт на первый доступный, а не на первый подряд', async () => {
+        render(mixed());
+        await open();
+
+        expect(screen.getByRole('option', {name: 'Второй'})).toHaveFocus();
+    });
+
+    it('стрелка перешагивает выключенный пункт', async () => {
+        render(mixed());
+        await open();
+
+        await userEvent.keyboard('{ArrowDown}');
+        expect(screen.getByRole('option', {name: 'Четвёртый'})).toHaveFocus();
+    });
+
+    it('Home и End ведут к доступным краям списка', async () => {
+        render(mixed());
+        await open();
+
+        await userEvent.keyboard('{End}');
+        expect(screen.getByRole('option', {name: 'Четвёртый'})).toHaveFocus();
+
+        await userEvent.keyboard('{Home}');
+        expect(screen.getByRole('option', {name: 'Второй'})).toHaveFocus();
+    });
+
+    it('выбранный пункт остаётся отмеченным, когда рядом выключенные', async () => {
+        render(mixed({defaultValue: 4}));
+        await open();
+
+        const chosen = screen.getByRole('option', {name: 'Четвёртый'});
+
+        expect(chosen).toHaveAttribute('aria-selected', 'true');
+        expect(chosen).toHaveFocus();
+    });
+
+    it('выключенный первым не мешает кругу стрелок', async () => {
+        render(mixed());
+        await open();
+
+        await userEvent.keyboard('{ArrowUp}');
+        expect(screen.getByRole('option', {name: 'Четвёртый'})).toHaveFocus();
     });
 });

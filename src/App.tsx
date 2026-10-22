@@ -211,9 +211,6 @@ function App() {
 
     return (
         <>
-
-
-
             <main className='content'>
                 <div className={'atan'}></div>
                 <Typography as={'h1'}>Компоненты</Typography>
@@ -567,8 +564,6 @@ function App() {
                     </div>
                 </section>
             </main>
-
-
 
 
             {/*  DIALOG   */}

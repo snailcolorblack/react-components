@@ -188,7 +188,11 @@ function Select<T>({
             >
                 <span id={labelId} className={field.label}>{label}</span>
 
-                <div className={field.row}>
+                {/* Свой класс рядом с общим: правила ниже цепляются
+                    за него, а хеш у модулей свой на каждый файл —
+                    по одному только field.row из Select.module.css
+                    не попасть. */}
+                <div className={[field.row, styles.row].join(' ')}>
                     {multi && chosen.map((item, index) => (
                         <button
                             key={key(item, index)}

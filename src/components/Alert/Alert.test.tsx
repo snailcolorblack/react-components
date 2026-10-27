@@ -83,7 +83,7 @@ describe('Alert: вариант не только цветом', () => {
     });
 
     it('слово скрыто от глаз, а значок — от озвучки', () => {
-        const {container} = render(<Alert variant="ERROR">Не сохранилось</Alert>);
+        const {container} = render(<Alert withIcon variant="ERROR">Не сохранилось</Alert>);
         const icon = container.querySelector('[aria-hidden="true"]');
 
         expect(icon?.querySelector('svg')).not.toBeNull();
@@ -92,18 +92,67 @@ describe('Alert: вариант не только цветом', () => {
     });
 
     it('без варианта ни значка, ни слова', () => {
-        const {container} = render(<Alert>Просто сообщение</Alert>);
+        const {container} = render(<Alert withIcon>Просто сообщение</Alert>);
 
         expect(container.querySelector('svg')).toBeNull();
         expect(screen.queryByText(/Ошибка\.|Готово\.|Предупреждение\./)).toBeNull();
     });
 
-    it('свой значок заменяет стандартный', () => {
+    it('слово остаётся и без значка: озвучке вариант по-прежнему слышен', () => {
+        const {container} = render(<Alert variant="ERROR">Не сохранилось</Alert>);
+
+        expect(container.querySelector('svg')).toBeNull();
+        expect(screen.getByText('Ошибка.')).toBeInTheDocument();
+    });
+});
+
+describe('Alert: значок', () => {
+    it('по умолчанию значка нет', () => {
+        const {container} = render(<Alert variant="SUCCESS">Сохранено</Alert>);
+
+        expect(container.querySelector('svg')).toBeNull();
+        expect(container.querySelector('[aria-hidden="true"]')).toBeNull();
+    });
+
+    it('withIcon показывает стандартный значок варианта', () => {
+        const {container, rerender} = render(<Alert withIcon variant="SUCCESS">Сохранено</Alert>);
+        const первый = container.querySelector('svg')?.innerHTML;
+
+        expect(первый).toBeDefined();
+
+        /* У каждого варианта свой силуэт: цвет в высоком контрасте
+           подменяет система, а форма остаётся. */
+        rerender(<Alert withIcon variant="ERROR">Не сохранилось</Alert>);
+        expect(container.querySelector('svg')?.innerHTML).not.toBe(первый);
+    });
+
+    it('withIcon={false} оставляет плашку без значка', () => {
+        const {container} = render(<Alert withIcon={false} variant="WARNING">Скоро</Alert>);
+
+        expect(container.querySelector('svg')).toBeNull();
+    });
+
+    it('свой значок показывается и без withIcon', () => {
         const {container} = render(
             <Alert variant="SUCCESS" icon={<span data-testid="mine">!</span>}>Сохранено</Alert>,
         );
 
         expect(screen.getByTestId('mine')).toBeInTheDocument();
         expect(container.querySelector('svg')).toBeNull();
+    });
+
+    it('свой значок заменяет стандартный, а не добавляется к нему', () => {
+        const {container} = render(
+            <Alert withIcon variant="SUCCESS" icon={<span data-testid="mine">!</span>}>Сохранено</Alert>,
+        );
+
+        expect(screen.getByTestId('mine')).toBeInTheDocument();
+        expect(container.querySelector('svg')).toBeNull();
+    });
+
+    it('значок скрыт от озвучки: он повторяет слово', () => {
+        const {container} = render(<Alert withIcon variant="ERROR">Ошибка</Alert>);
+
+        expect(container.querySelector('[aria-hidden="true"]')?.querySelector('svg')).not.toBeNull();
     });
 });

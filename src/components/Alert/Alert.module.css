@@ -114,6 +114,23 @@
         border-color: CanvasText;
         color: CanvasText;
     }
+
+    /*
+     * Здесь цвета подменяет система, и плашки трёх видов становятся
+     * одинаковыми. Со значком разницу держит его силуэт, а без значка
+     * не остаётся ничего — кроме слова, которое до сих пор было скрыто
+     * от глаз. В этом режиме показываем его: цвет один смысл нести
+     * не может (WCAG 1.4.1).
+     */
+    .alert[data-variant]:not(:has(.icon)) .word {
+        position: static;
+        inline-size: auto;
+        block-size: auto;
+        margin: 0;
+        overflow: visible;
+        clip-path: none;
+        font-weight: 600;
+    }
 }
 
 @media (prefers-contrast: more) {

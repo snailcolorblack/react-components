@@ -177,8 +177,17 @@ function Plate({item, duration, closeLabel, className, onDismiss}: PlateProps) {
     return (
         <Alert
             variant={item.variant}
-            /* Значок отдаём Alert, а не рисуем сами: иначе рядом со своим
-               встал бы ещё и значок варианта — два подряд об одном и том же. */
+            /*
+             * Значок у всплывающего сообщения есть всегда: оно само
+             * появляется, живёт секунды и исчезает — разбираться в нём
+             * приходится мельком, и силуэт читается быстрее цвета.
+             * У обычного Alert значка по умолчанию нет, поэтому здесь
+             * withIcon проставлен явно.
+             *
+             * Рисует его Alert, а не Toast: иначе рядом со своим встал бы
+             * ещё и значок варианта — два подряд об одном и том же.
+             */
+            withIcon
             icon={item.icon}
             data-state={item.closing ? 'closed' : 'open'}
             className={`${styles.toast} ${className}`.trim()}

@@ -55,9 +55,9 @@
  *  по-разному сверху и снизу формы.
  *
  *  У краёв прокрутки содержимое растворяется — это подсказка, что список
- *  продолжается. Растушёвка целиком на CSS: маска, прозрачность которой
- *  ведёт scroll-driven анимация. JS не участвует, обработчика прокрутки
- *  нет, перерисовок нет.
+ *  продолжается. И прокрутку, и растушёвку, и удержание у края приносит
+ *  Scroll: тот же компонент, что ленты на страницах. Раньше всё это лежало
+ *  в Select.module.css отдельной копией на шестьдесят строк.
  *
  *  Стрелок для прокрутки по наведению (как у shadcn) здесь нет намеренно:
  *  они доступны только мыши, дублируют полосу прокрутки и накрывают собой
@@ -104,6 +104,7 @@ import {
 import {arrowIcon} from '../../assets/icons/icon.tsx';
 import {useValidity} from '../Field/Field.validity.ts';
 import {Popover} from '../Popover/Popover.tsx';
+import {Scroll} from '../Scroll/Scroll.tsx';
 import type {SelectAccessor, SelectMultiProps, SelectProps, SelectSingleProps} from './Select.interface.ts';
 import field from '../Field/Field.module.css';
 import styles from './Select.module.css';
@@ -240,7 +241,16 @@ function Select<T>({
                     className={styles.popup}
                     onToggle={handleToggle}
                 >
-                    <div
+                    {/*
+                      * Прокрутку, удержание у края и растушёвку приносит Scroll.
+                      * Роль, имя и tabIndex он не трогает: свои он ставит,
+                      * только если снаружи ничего не передали, — а здесь
+                      * передано всё.
+                      */}
+                    <Scroll
+                        axis="block"
+                        fade
+                        trap
                         id={listId}
                         ref={listRef}
                         role="listbox"
@@ -272,7 +282,7 @@ function Select<T>({
                                 </div>
                             );
                         })}
-                    </div>
+                    </Scroll>
                 </Popover>
 
                 {/* По полю на значение: FormData.getAll(name) вернёт массив —

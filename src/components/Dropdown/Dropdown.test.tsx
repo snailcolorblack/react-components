@@ -13,12 +13,22 @@ import type {DropdownItem} from './Dropdown.interface.ts';
  * работа браузера, заглушка в setup.ts их намеренно не подделывает.
  */
 
+/*
+ * Узлов два, и это важно для тестов: открывается и закрывается поповер
+ * (role="presentation", на нём popovertarget и popover="auto"), а роль
+ * menu, имя и клавиатура живут на меню внутри него — это Scroll, он же
+ * даёт прокрутку длинному меню.
+ */
 function menu() {
     return screen.getByRole('menu', {hidden: true});
 }
 
+function popup() {
+    return menu().closest('[popover]') as HTMLElement;
+}
+
 function isOpen() {
-    return menu().matches(':popover-open');
+    return popup().matches(':popover-open');
 }
 
 function setup(items: DropdownItem[] = ITEMS) {
@@ -40,7 +50,12 @@ describe('Dropdown', () => {
         const {trigger} = setup();
         expect(trigger).toHaveAttribute('popovertarget', 'm');
         expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
-        expect(menu()).toHaveAttribute('popover', 'auto');
+        // id с пропа остаётся на поповере: на него и ссылается popovertarget
+        expect(popup()).toHaveAttribute('id', 'm');
+        expect(popup()).toHaveAttribute('popover', 'auto');
+        // коробка из дерева доступности убрана, роль menu — у меню внутри
+        expect(popup()).toHaveAttribute('role', 'presentation');
+        expect(menu().parentElement).toBe(popup());
         // имя меню — подпись триггера, без дублирования текста
         expect(menu()).toHaveAttribute('aria-labelledby', trigger.id);
     });
@@ -183,7 +198,7 @@ describe('Dropdown', () => {
         const trigger = screen.getByRole('button', {name: 'Ещё'});
         expect(screen.getAllByRole('button')).toHaveLength(1);
         expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
-        expect(trigger).toHaveAttribute('popovertarget', menu().id);
+        expect(trigger).toHaveAttribute('popovertarget', popup().id);
         // свой id сохраняется и становится именем меню
         expect(menu()).toHaveAttribute('aria-labelledby', 'own');
         // свой style не трогается
@@ -268,6 +283,39 @@ describe('Dropdown', () => {
 
         expect(isOpen()).toBe(false);
         expect(onRender).toHaveBeenCalledTimes(initial);
+    });
+
+    /* ---------------------------------------------------------------- */
+    /*  Прокрутка длинного меню                                         */
+    /*                                                                  */
+    /*  Саму прокрутку приносит Scroll, и проверена она в его тестах.   */
+    /*  Здесь — только то, что меню действительно им обёрнуто: в jsdom  */
+    /*  ни высоты, ни прокрутки нет (scrollHeight всегда 0).            */
+    /*                                                                  */
+    /*  Замерено в Chromium 141 на меню из сорока пунктов: до потолка   */
+    /*  высоты меню было 1610px в окне 800px, 964px вне экрана,         */
+    /*  последний пункт недостижим. С потолком — 288px, прокрутка       */
+    /*  внутри меню, последний пункт виден.                             */
+    /* ---------------------------------------------------------------- */
+
+    it('меню прокручивается Scroll, а роль и имя остаются на нём', () => {
+        setup();
+
+        expect(menu()).toHaveAttribute('data-axis', 'block');
+        /* Докрутив меню до края, страницу за ним не листаем. */
+        expect(menu()).toHaveAttribute('data-trap');
+        /* Содержимое растворяется там, где меню продолжается. */
+        expect(menu()).toHaveAttribute('data-fade');
+        /* Своё решение по роли и табуляции Scroll здесь не принимает. */
+        expect(menu()).toHaveAttribute('role', 'menu');
+        expect(menu()).toHaveAttribute('tabindex', '-1');
+    });
+
+    it('пункты остаются прямыми детьми меню: по ним ходят стрелками', () => {
+        setup();
+        const items = screen.getAllByRole('menuitem', {hidden: true});
+
+        items.forEach(item => expect(item.parentElement).toBe(menu()));
     });
 
     /* ---------------------------------------------------------------- */

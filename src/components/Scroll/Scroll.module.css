@@ -1,0 +1,440 @@
+/* -------------------------------------------------------------------------- */
+/*  Лента с прокруткой                                                        */
+/*                                                                            */
+/*  Всё, что можно менять снаружи, объявлено переменными на корне:            */
+/*                                                                            */
+/*      <Scroll style={{'--scroll-padding': '2rem'}}/>                        */
+/*                                                                            */
+/*  Ось и способ остановки приходят data-атрибутами — теми же, что читает     */
+/*  обработчик колеса, чтобы в разметке не заводить два источника правды.     */
+/* -------------------------------------------------------------------------- */
+
+.scroll {
+    /* Отступ, на котором прицепленный элемент встаёт от края. */
+    --scroll-padding: var(--base-size, 1rem);
+    /*
+     * Запас внутри ленты под то, что элементы рисуют за своими границами:
+     * кольцо фокуса, тень, пульсацию. Замерено: у карточки с кольцом
+     * outline 3px и offset 3px лента срезала ровно 6px со всех сторон,
+     * и кольцо у крайних карточек было видно только с одной стороны.
+     *
+     * Снаружи запас не виден: он добавляется отступом внутрь и тут же
+     * снимается отрицательным полем, так что коробка ленты и места
+     * элементов остаются прежними (замерено — те же координаты
+     * до единого пикселя).
+     *
+     * overflow-clip-margin сделал бы это честнее, но он тут бесполезен:
+     * когда одна ось прокручивается, clip на другой вычисляется
+     * в hidden, а на hidden запас не действует (замерено).
+     */
+    --scroll-inset: 0.375rem;
+    /*
+     * На сколько лента вылезает наружу, возвращая себе место, занятое
+     * запасом. По умолчанию ровно на запас — тогда снаружи его не видно.
+     *
+     * Ноль нужен там, где лента занимает всю коробку родителя: вылезать
+     * ей некуда, и она переполняет его собой. У [popover] это видно сразу:
+     * по UA-стилям у него overflow: auto, и замерено — поповер Select
+     * с четырьмя пунктами, где прокручивать нечего вовсе, переполнялся
+     * на 2px по обеим осям и показывал две полосы прокрутки. Запас
+     * при этом остаётся: кольцо фокуса у крайних пунктов не срезается.
+     */
+    --scroll-pull: var(--scroll-inset);
+    /* Край ленты: запас плюс выход за отступы родителя, если он включён. */
+    --scroll-edge: calc(var(--scroll-inset) + var(--scroll-bleed, 0px));
+    --scroll-thumb: var(--contrast-alpha-20);
+    --scroll-ring: var(--accent-color-soft);
+
+    /* Растушёвка: ширина и начальная непрозрачность краёв. */
+    --scroll-fade: 2.5rem;
+    --scroll-fade-start: 1;
+    --scroll-fade-end: 1;
+
+    /* Стрелки: размер, цвета и имена для скринридера. */
+    --scroll-arrow-size: 2rem;
+    --scroll-arrow-bg: var(--base-color-200);
+    --scroll-arrow-fg: var(--contrast-color);
+    --scroll-arrow-start-label: 'Назад';
+    --scroll-arrow-end-label: 'Вперёд';
+
+    /*
+     * Полоса тонкая и бледная, но не спрятанная: scrollbar-width: none
+     * убрало бы единственный признак того, что лента вообще едет.
+     * Вендорные ::-webkit-scrollbar не нужны — Chromium понимает
+     * стандартные свойства, а Firefox понимал их всегда.
+     */
+    scrollbar-width: thin;
+    scrollbar-color: var(--scroll-thumb) transparent;
+
+    margin: calc(var(--scroll-pull) * -1);
+    padding: var(--scroll-inset);
+
+    /*
+     * Плавность программной прокрутки: клавиатура, scrollIntoView, переходы
+     * по якорям. Колесо сюда не относится — у него своя короткая анимация
+     * в Scroll.wheel.ts.
+     *
+     * Переменной, а не жёстко, потому что спискам, по которым ходят
+     * стрелками, она вредна. Замерено на списке Select: сразу после восьми
+     * нажатий стрелки вниз список ещё стоял на месте, а пункт под фокусом
+     * был на 78px ниже видимой части — то есть невидим; через 700мс
+     * накопившиеся анимации перелетали цель. С auto пункт встаёт на место
+     * тем же кадром, ровно по запасу прокрутки.
+     */
+    scroll-behavior: var(--scroll-behavior, smooth);
+
+    /*
+     * will-change: scroll-position из прежних классов сюда не переехал
+     * намеренно: он держит отдельный слой композиции всё время жизни
+     * элемента, а прокручиваемые блоки браузер и так выносит в слой,
+     * когда это нужно. Постоянная подсказка здесь только тратит память.
+     */
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Ось                                                                       */
+/*                                                                            */
+/*  overflow задаётся логическими свойствами, а поперёк оси ставится hidden:  */
+/*  иначе лента ловит случайную прокрутку в сторону, по которой ничего        */
+/*  не двигается. (В прежних классах у вертикального варианта стоял           */
+/*  overflow-x — вертикальная лента от этого не прокручивалась вовсе.)        */
+/* -------------------------------------------------------------------------- */
+
+.scroll[data-axis="inline"] {
+    overflow-inline: auto;
+    overflow-block: hidden;
+    scroll-padding-inline: calc(var(--scroll-padding) + var(--scroll-inset));
+
+    /*
+     * Без этого лента не ужимается уже своего содержимого, и прокручивать
+     * становится нечего: у элемента flex- или grid-раскладки наименьший
+     * размер по умолчанию равен min-content, а у ряда нерезиновых карточек
+     * это их сумма. Замерено: в колонке шириной 480px лента получалась
+     * 1904px, scrollWidth совпадал с clientWidth, и колесо честно листало
+     * страницу — прокручивать было нечего.
+     */
+    min-inline-size: 0;
+}
+
+.scroll[data-axis="block"] {
+    overflow-block: auto;
+    overflow-inline: hidden;
+    scroll-padding-block: calc(var(--scroll-padding) + var(--scroll-inset));
+    min-block-size: 0;
+}
+
+/*
+ * Запасной вариант: overflow-inline и overflow-block новее, чем
+ * overflow-x и overflow-y. Там, где логических имён ещё нет, берём
+ * физические — для горизонтальной письменности это одно и то же.
+ */
+@supports not (overflow-inline: auto) {
+    .scroll[data-axis="inline"] {
+        overflow-x: auto;
+        overflow-y: hidden;
+    }
+
+    .scroll[data-axis="block"] {
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Привязка к элементам                                                      */
+/*                                                                            */
+/*  mandatory, а не proximity: обещание «лента всегда стоит на элементе»      */
+/*  должно выполняться всегда, иначе непонятно, когда оно действует.          */
+/*  scroll-snap-stop: always не даёт пролистать несколько элементов одним     */
+/*  махом — ради этого привязку и включают.                                   */
+/* -------------------------------------------------------------------------- */
+
+.scroll[data-mode="fixed"] > * {
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+}
+
+.scroll[data-mode="fixed"][data-axis="inline"] {
+    scroll-snap-type: inline mandatory;
+}
+
+.scroll[data-mode="fixed"][data-axis="block"] {
+    scroll-snap-type: block mandatory;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Выход за отступы родителя                                                 */
+/*                                                                            */
+/*  Лента идёт во всю ширину карточки, а её собственные отступы возвращают    */
+/*  первому и последнему элементу ровно то расстояние от края, которое было   */
+/*  у родителя. Снаружи это выглядит так, будто карточка разрезана:           */
+/*  заголовки стоят по отступу, а лента уезжает под край.                     */
+/*                                                                            */
+/*  Размер отступа приходит переменной: её ставит компонент, сняв с родителя  */
+/*  при отрисовке, либо автор передаёт значение сам.                          */
+/* -------------------------------------------------------------------------- */
+
+.scroll[data-bleed][data-axis="inline"] {
+    margin-inline: calc(var(--scroll-edge) * -1);
+    padding-inline: var(--scroll-edge);
+    scroll-padding-inline: var(--scroll-edge);
+}
+
+.scroll[data-bleed][data-axis="block"] {
+    margin-block: calc(var(--scroll-edge) * -1);
+    padding-block: var(--scroll-edge);
+    scroll-padding-block: var(--scroll-edge);
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Растушёвка у краёв                                                        */
+/*                                                                            */
+/*  Та же техника, что у длинного списка в Select: маска, прозрачность краёв  */
+/*  которой ведёт scroll-driven анимация. Ни обработчика прокрутки,           */
+/*  ни перерисовок React — «сейчас» у этой шкалы равно положению полосы.      */
+/*                                                                            */
+/*  Растушёвка появляется только с той стороны, где есть продолжение:         */
+/*  у непрокрученной ленты начало непрозрачно, а конец растворён.             */
+/*  fill-mode: both обязателен — без него значения за пределами отрезка       */
+/*  не держатся, и растушёвка пропадает сразу после появления.                */
+/*                                                                            */
+/*  Короткой ленте растушёвка не нужна: прокрутки нет — шкала неактивна,      */
+/*  анимация не применяется, остаются объявленные единицы, то есть оба        */
+/*  края непрозрачны.                                                         */
+/* -------------------------------------------------------------------------- */
+
+@property --scroll-fade-start {
+    syntax: '<number>';
+    inherits: false;
+    initial-value: 1;
+}
+
+@property --scroll-fade-end {
+    syntax: '<number>';
+    inherits: false;
+    initial-value: 1;
+}
+
+@supports (animation-timeline: scroll()) and (mask-image: linear-gradient(#000, #000)) {
+    .scroll[data-fade][data-axis="inline"] {
+        mask-image: linear-gradient(
+                to right,
+                rgb(0 0 0 / var(--scroll-fade-start)) 0,
+                #000 var(--scroll-fade),
+                #000 calc(100% - var(--scroll-fade)),
+                rgb(0 0 0 / var(--scroll-fade-end)) 100%
+        );
+
+        animation: scroll-fade-start linear both, scroll-fade-end linear both;
+        animation-timeline: scroll(self inline), scroll(self inline);
+        animation-range: 0 var(--scroll-fade), calc(100% - var(--scroll-fade)) 100%;
+    }
+
+    /*
+     * Направление заливки у градиента физическое, логического у него нет.
+     * В арабской вёрстке начало ленты справа, поэтому градиент
+     * переворачивается. Селектор по атрибуту, а не :dir(rtl): замерено,
+     * сборка переписывает :dir() в список :lang() и правило перестаёт
+     * срабатывать на обычном dir="rtl".
+     */
+    [dir="rtl"] .scroll[data-fade][data-axis="inline"] {
+        mask-image: linear-gradient(
+                to left,
+                rgb(0 0 0 / var(--scroll-fade-start)) 0,
+                #000 var(--scroll-fade),
+                #000 calc(100% - var(--scroll-fade)),
+                rgb(0 0 0 / var(--scroll-fade-end)) 100%
+        );
+    }
+
+    .scroll[data-fade][data-axis="block"] {
+        mask-image: linear-gradient(
+                to bottom,
+                rgb(0 0 0 / var(--scroll-fade-start)) 0,
+                #000 var(--scroll-fade),
+                #000 calc(100% - var(--scroll-fade)),
+                rgb(0 0 0 / var(--scroll-fade-end)) 100%
+        );
+
+        animation: scroll-fade-start linear both, scroll-fade-end linear both;
+        animation-timeline: scroll(self block), scroll(self block);
+        animation-range: 0 var(--scroll-fade), calc(100% - var(--scroll-fade)) 100%;
+    }
+}
+
+/*
+ * С растушёвкой запас прокрутки обязан быть не меньше её самой: иначе
+ * элемент, до которого дошли с клавиатуры, встаёт у самого края и попадает
+ * под затухание — видно его будет наполовину. max(), а не замена: свой
+ * --scroll-padding, если он больше, остаётся в силе.
+ */
+.scroll[data-fade][data-axis="inline"] {
+    scroll-padding-inline: calc(max(var(--scroll-padding), var(--scroll-fade)) + var(--scroll-inset));
+}
+
+.scroll[data-fade][data-axis="block"] {
+    scroll-padding-block: calc(max(var(--scroll-padding), var(--scroll-fade)) + var(--scroll-inset));
+}
+
+@keyframes scroll-fade-start {
+    from { --scroll-fade-start: 1; }
+    to { --scroll-fade-start: 0; }
+}
+
+@keyframes scroll-fade-end {
+    from { --scroll-fade-end: 0; }
+    to { --scroll-fade-end: 1; }
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Стрелки                                                                   */
+/*                                                                            */
+/*  Это ::scroll-button() — кнопки самого браузера. Он делает их настоящими   */
+/*  кнопками в дереве доступности (замерено), сам выключает крайнюю, когда    */
+/*  дальше ехать некуда, и сам листает почти на экран. Своего кода здесь нет  */
+/*  вовсе — ни обработчиков, ни состояния.                                    */
+/*                                                                            */
+/*  Имя кнопки берётся из второй части content — это её альтернативный        */
+/*  текст: замерено, в дереве доступности кнопки называются «Назад»           */
+/*  и «Вперёд», а не стрелками.                                               */
+/*                                                                            */
+/*  position: fixed с привязкой к ленте, а не absolute: абсолютный ребёнок    */
+/*  прокручиваемого блока уезжает вместе с содержимым, а привязанный          */
+/*  fixed остаётся у края.                                                    */
+/*                                                                            */
+/*  Где ::scroll-button() ещё нет, не появляется ничего: лента остаётся       */
+/*  прокручиваемой колесом, пальцем, полосой и клавишами.                     */
+/* -------------------------------------------------------------------------- */
+
+@supports selector(::scroll-button(*)) {
+    .scroll[data-arrows] {
+        anchor-name: --scroll-strip;
+    }
+
+    .scroll[data-arrows]::scroll-button(*) {
+        position: fixed;
+        position-anchor: --scroll-strip;
+        position-area: center center;
+        align-self: center;
+
+        display: grid;
+        place-items: center;
+        inline-size: var(--scroll-arrow-size);
+        block-size: var(--scroll-arrow-size);
+
+        border: 1px solid var(--contrast-alpha-20);
+        border-radius: 50%;
+        font: inherit;
+        color: var(--scroll-arrow-fg);
+        background-color: var(--scroll-arrow-bg);
+        cursor: pointer;
+        transition: opacity 0.12s var(--ease-in-out);
+    }
+
+    /* Дальше ехать некуда — кнопка не нужна. Браузер выключает её сам. */
+    .scroll[data-arrows]::scroll-button(*):disabled {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .scroll[data-arrows]::scroll-button(*):focus-visible {
+        outline: 2px solid var(--scroll-ring);
+        outline-offset: 2px;
+    }
+
+    .scroll[data-arrows][data-axis="inline"]::scroll-button(inline-start) {
+        content: '‹' / var(--scroll-arrow-start-label);
+        justify-self: start;
+    }
+
+    .scroll[data-arrows][data-axis="inline"]::scroll-button(inline-end) {
+        content: '›' / var(--scroll-arrow-end-label);
+        justify-self: end;
+    }
+
+    .scroll[data-arrows][data-axis="block"]::scroll-button(block-start) {
+        content: '⌃' / var(--scroll-arrow-start-label);
+        align-self: start;
+    }
+
+    .scroll[data-arrows][data-axis="block"]::scroll-button(block-end) {
+        content: '⌄' / var(--scroll-arrow-end-label);
+        align-self: end;
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Полоса прокрутки                                                          */
+/*                                                                            */
+/*  Спрятанная полоса — это потеря единственного постоянного признака того,   */
+/*  что лента вообще едет, поэтому прятать её стоит только вместе             */
+/*  с растушёвкой или стрелками. Прокрутка при этом остаётся всей:            */
+/*  колесо, палец, трекпад, клавиши.                                          */
+/* -------------------------------------------------------------------------- */
+
+.scroll[data-bar="none"] {
+    scrollbar-width: none;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Удержание прокрутки                                                       */
+/* -------------------------------------------------------------------------- */
+
+.scroll[data-trap] {
+    overscroll-behavior: contain;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Фокус                                                                     */
+/*                                                                            */
+/*  Кольцо нужно только когда лента сама стала остановкой табуляции:          */
+/*  при ходьбе по карточкам внутри подсвечиваются они, а не коробка.          */
+/* -------------------------------------------------------------------------- */
+
+.scroll:focus-visible {
+    outline: 2px solid var(--scroll-ring);
+    outline-offset: 2px;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Высокий контраст                                                          */
+/* -------------------------------------------------------------------------- */
+
+@media (forced-colors: active) {
+    .scroll {
+        --scroll-thumb: CanvasText;
+        --scroll-arrow-bg: Canvas;
+        --scroll-arrow-fg: CanvasText;
+    }
+
+    /*
+     * Растушёвка снимается: система подбирает цвета ради читаемости,
+     * а маска гасит содержимое у краёв. Что лента продолжается, видно
+     * по полосе прокрутки и по стрелкам.
+     */
+    .scroll[data-fade] {
+        mask-image: none;
+    }
+
+    .scroll:focus-visible {
+        outline-color: Highlight;
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Reduced motion                                                            */
+/*                                                                            */
+/*  Плавная прокрутка — это движение большого куска экрана, ровно то,         */
+/*  от чего людям с вестибулярными нарушениями делается плохо. Лента          */
+/*  продолжает ездить, просто переносится сразу.                              */
+/* -------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+    .scroll {
+        scroll-behavior: auto;
+    }
+
+    .scroll[data-arrows]::scroll-button(*) {
+        transition: none;
+    }
+}

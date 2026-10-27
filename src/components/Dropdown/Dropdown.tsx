@@ -72,6 +72,11 @@
  *  CSS (anchor positioning, из Popover):
  *      место у кнопки и переворот у края экрана, без замеров в JS.
  *
+ *  Scroll (тот же, что у списка Select):
+ *      прокрутка длинного меню, удержание её у края, полоса, запас под
+ *      фокус и растушёвка краёв. Здесь остаётся только потолок высоты:
+ *      он у меню свой.
+ *
  *  Мы — только обязательное для меню по APG, чего у платформы нет:
  *      фокус внутрь при открытии; стрелки и Home/End; закрытие по Tab
  *      и после выбора пункта.
@@ -104,6 +109,7 @@
 import {cloneElement, Fragment, useId, useRef, type KeyboardEvent, type MouseEvent, type ToggleEvent} from 'react';
 import {Button} from '../Button/Button.tsx';
 import {Popover} from '../Popover/Popover.tsx';
+import {Scroll} from '../Scroll/Scroll.tsx';
 import type {DropdownItem, DropdownProps} from './Dropdown.interface.ts';
 import styles from './Dropdown.module.css';
 
@@ -119,16 +125,24 @@ function Dropdown({
                       className = '',
                       onKeyDown,
                       onToggle,
+                      'aria-label': label,
+                      'aria-labelledby': labelledBy,
                       ...props
                   }: DropdownProps) {
 
     const generatedId = useId();
+    /*
+     * Два узла, две ссылки: открытием и закрытием распоряжается поповер,
+     * а фокус, клавиши и перечисление пунктов живут на самом меню внутри.
+     */
+    const popupRef = useRef<HTMLDivElement>(null);
     const menuRef = useRef<HTMLDivElement>(null);
     const openedByKeyboard = useRef(true);
 
     const menuId = id ?? generatedId;
+    const listId = `${menuId}-list`;
     const triggerId = (children ? children.props.id : triggerProps?.id) ?? `${menuId}-trigger`;
-    const named = props['aria-label'] !== undefined || props['aria-labelledby'] !== undefined;
+    const named = label !== undefined || labelledBy !== undefined;
     const link = {
         id: triggerId,
         popoverTarget: menuId,
@@ -144,17 +158,42 @@ function Dropdown({
             <Popover
                 {...props}
                 id={menuId}
-                ref={menuRef}
-                role="menu"
-                tabIndex={-1}
-                label={props['aria-label']}
-                aria-labelledby={named ? props['aria-labelledby'] : triggerId}
+                ref={popupRef}
+                /* Коробка, а не узел дерева доступности: у голого <div popover>
+                   Chromium берёт роль group, и над меню появлялась бы безымянная
+                   группа. С presentation узел уходит, menu внутри остаётся. */
+                role="presentation"
                 placement={placement}
                 className={`${styles.menu} ${className}`.trim()}
-                onKeyDown={handleMenuKeyDown}
                 onToggle={handleToggle}
             >
-                {items.map(renderItem)}
+                {/*
+                  * Прокрутку, удержание у края и растушёвку приносит Scroll —
+                  * тот же, что у списка Select. Без потолка высоты меню из
+                  * сорока пунктов уходило за экран: замерено, 1610px в окне
+                  * 800px, из них 964px вне его, и последний пункт было
+                  * не достать — страница прокручивалась, а меню из верхнего
+                  * слоя стояло на месте.
+                  *
+                  * Роль, имя и tabIndex Scroll не трогает: свои он ставит,
+                  * только если снаружи ничего не передали, — а здесь
+                  * передано всё.
+                  */}
+                <Scroll
+                    axis="block"
+                    fade
+                    trap
+                    id={listId}
+                    ref={menuRef}
+                    role="menu"
+                    tabIndex={-1}
+                    aria-label={label}
+                    aria-labelledby={named ? labelledBy : triggerId}
+                    className={styles.list}
+                    onKeyDown={handleMenuKeyDown}
+                >
+                    {items.map(renderItem)}
+                </Scroll>
             </Popover>
         </>
     );
@@ -201,7 +240,7 @@ function Dropdown({
         item.onSelect?.(event);
         if (event.defaultPrevented) return;
 
-        menuRef.current?.hidePopover();
+        popupRef.current?.hidePopover();
     }
 
     function handleTriggerClick(event: MouseEvent<HTMLButtonElement>) {
@@ -237,7 +276,7 @@ function Dropdown({
 
             return;
         }
-        if (event.key === 'Tab') menuRef.current?.hidePopover();
+        if (event.key === 'Tab') popupRef.current?.hidePopover();
     }
 
     function menuItems() {

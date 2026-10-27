@@ -212,7 +212,6 @@ function App() {
     return (
         <>
             <main className='content'>
-                <div className={'atan'}></div>
                 <Typography as={'h1'}>Компоненты</Typography>
                 <section id={'ACCORDION'} className='section'>
                     <Typography as={'h2'}>ACCORDION</Typography>

@@ -9,6 +9,8 @@
 
     Button  Popover  Typography  Scroll  Alert  Dialog  Accordion  Fieldset
     Progress
+    Flow    (процесс на несколько страниц: состояние, адрес и черновик,
+             вида у него нет вовсе — рисует только текущий шаг)
     Control (только стили и типы, компонента нет)
     Field   (только стили, типы, Field.focus.ts, Field.validity.ts)
     Scroll.wheel.ts (перехват колеса, живёт отдельно от самого Scroll)

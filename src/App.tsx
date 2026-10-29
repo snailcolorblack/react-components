@@ -1,6 +1,6 @@
 // App.tsx
 import './App.css';
-import {useRef, useState, useTransition, type FormEvent} from "react";
+import {useRef, useState, useTransition, type FormEvent, type ReactNode} from "react";
 import {Accordion} from "./components/Accoridon/Accordion.tsx";
 import {Alert} from "./components/Alert/Alert.tsx";
 import {Button} from "./components/Button/Button.tsx";
@@ -9,8 +9,11 @@ import {Checkbox} from "./components/Checkbox/Checkbox.tsx";
 import {Dialog} from "./components/Dialog/Dialog.tsx";
 import {Dropdown} from "./components/Dropdown/Dropdown.tsx";
 import {Fieldset} from "./components/Fieldset/Fieldset.tsx";
+import {useFlow} from "./components/Flow/Flow.context.ts";
+import {Flow} from "./components/Flow/Flow.tsx";
 import {Input} from "./components/Input/Input.tsx";
 import {Popover} from "./components/Popover/Popover.tsx";
+import {Progress} from "./components/Progress/Progress.tsx";
 import {Radio} from "./components/Radio/Radio.tsx";
 import {Select} from "./components/Select/Select.tsx";
 import {Switch} from "./components/Switch/Switch.tsx";
@@ -23,6 +26,7 @@ import type {AccordionProps} from "./components/Accoridon/Accordion.interface.ts
 import type {AlertProps} from "./components/Alert/Alert.interface.ts";
 import type {ButtonProps} from "./components/Button/Button.interface.ts";
 import type {DropdownItem} from "./components/Dropdown/Dropdown.interface.ts";
+import type {FlowStep} from "./components/Flow/Flow.interface.ts";
 import type {ToastHandle} from "./components/Toast/Toast.interface.ts";
 
 
@@ -165,6 +169,158 @@ const TOAST_BACKGROUND = [
 
 
 /* eslint-disable local/hook-order */
+
+/* -------------------------------------------------------------------------- */
+/*  FLOW: заявка в три шага и итоговый экран                                  */
+/*                                                                            */
+/*  Данные общие, шаги про них ничего не знают — берут через useFlow().       */
+/*  Шаг лежит в адресе (?step=…), поэтому «назад» у браузера ходит по шагам,  */
+/*  а F5 возвращает туда же: ниже включён черновик.                           */
+/*                                                                            */
+/*  Две концовки показаны обе. Удачная: с последнего шага отрабатывает        */
+/*  onFinish и процесс уходит на итоговый экран. Неудачная окончательно:      */
+/*  переключатель на первом шаге изображает просроченную заявку, и тогда      */
+/*  onLeave второго шага зовёт finish(false, …) — возвращаться некуда,        */
+/*  тот же экран показывает ошибку.                                           */
+/* -------------------------------------------------------------------------- */
+
+interface Application {
+    city: string;
+    sum: string;
+    expired: boolean;
+}
+
+const APPLICATION: Application = {city: '', sum: '', expired: false};
+
+/** Запрос, который «проверяет срок» заявки. */
+function checkApplication(data: Application) {
+    return new Promise<{ok: boolean, message: string}>(resolve => {
+        setTimeout(() => resolve(data.expired
+            ? {ok: false, message: 'Срок заявки истёк: ссылка действовала 24 часа.'}
+            : {ok: true, message: ''}), 600);
+    });
+}
+
+/**
+ * Общая рамка шагов: ход дела, кнопки и место под сообщение об ошибке.
+ * Передаётся во Flow пропом layout, поэтому в самих шагах её нет —
+ * им остаётся только содержимое.
+ *
+ * Вид здесь целиком свой: Flow не рисует ни кнопок, ни счётчика
+ * и даже обёртки — в разметке остаётся ровно то, что нарисовали мы.
+ */
+function FlowFrame({children}: {children: ReactNode}) {
+    const {currentStepIndex, stepsLength, isFirst, isLast, goPrevStep, goNextStep, pending, error} = useFlow<Application>();
+
+    return (
+        <div className="block" style={{display: 'grid', gap: '1rem'}}>
+            <Progress
+                label="Заполнение заявки" showLabel
+                value={currentStepIndex + 1} max={stepsLength}
+                format={(value, max) => `шаг ${value} из ${max}`}
+            />
+            {children}
+            {/* Поправимая неудача: человек остался на шаге и пробует снова. */}
+            {error !== undefined && <Alert variant={'ERROR'} withIcon>{String(error)}</Alert>}
+            <div style={{display: 'flex', gap: '0.5rem'}}>
+                {!isFirst && <Button variant={'OUTLINE'} onClick={goPrevStep}>Назад</Button>}
+                <Button loading={pending} onClick={goNextStep}>{isLast ? 'Отправить' : 'Дальше'}</Button>
+            </div>
+        </div>
+    );
+}
+
+function FlowCity() {
+    const {data, setData} = useFlow<Application>();
+
+    return (
+        <>
+            <Typography as={'h3'}>Откуда вы?</Typography>
+            <Select
+                label={'Город'} items={['Душанбе', 'Худжанд', 'Бохтар']} defaultValue={data.city}
+                onChange={value => setData(was => ({...was, city: value ?? ''}))}
+            />
+            <Switch
+                checked={data.expired}
+                onChange={event => setData(was => ({...was, expired: event.currentTarget.checked}))}
+            >
+                Сделать вид, что заявка просрочена
+            </Switch>
+        </>
+    );
+}
+
+function FlowSum() {
+    const {data, setData} = useFlow<Application>();
+
+    return (
+        <>
+            <Typography as={'h3'}>Сколько нужно?</Typography>
+            <Input
+                label={'Сумма'} inputMode={'numeric'} value={data.sum}
+                onChange={value => setData(was => ({...was, sum: value}))}
+            />
+        </>
+    );
+}
+
+function FlowCheck() {
+    const {data} = useFlow<Application>();
+
+    return (
+        <>
+            <Typography as={'h3'}>Проверьте заявку</Typography>
+            <Typography as={'p'}>Город: {data.city || '—'}</Typography>
+            <Typography as={'p'}>Сумма: {data.sum || '—'}</Typography>
+        </>
+    );
+}
+
+/**
+ * Итоговый экран. Один на обе концовки: что показать, решает status,
+ * а не отдельный шаг на каждый случай.
+ */
+function FlowResult() {
+    const {status} = useFlow<Application>();
+
+    return (
+        <div className="block" style={{display: 'grid', gap: '1rem'}}>
+            {status?.ok === true
+                ? (
+                    <Alert variant={'SUCCESS'} withIcon>
+                        Заявка принята. Мы позвоним в течение дня.
+                    </Alert>
+                )
+                : <Alert variant={'ERROR'} withIcon>{String(status?.reason ?? 'Что-то пошло не так.')}</Alert>}
+            <div>
+                <Button variant={'OUTLINE'} onClick={() => window.location.assign(window.location.pathname + '#FLOW')}>
+                    Начать заново
+                </Button>
+            </div>
+        </div>
+    );
+}
+
+const FLOW: FlowStep<Application>[] = [
+    {name: 'city', component: FlowCity},
+    {
+        name: 'sum',
+        component: FlowSum,
+        /*
+         * Здесь шаг уходит на сервер. Проверка срока — неудача
+         * окончательная: finish(false, …) уводит на итоговый экран,
+         * а не оставляет человека жать «дальше» без толку.
+         */
+        onLeave: async (data, flow) => {
+            const answer = await checkApplication(data);
+
+            if (!answer.ok) flow.finish(false, answer.message);
+        },
+    },
+    {name: 'check', component: FlowCheck},
+    {name: 'result', component: FlowResult, result: true},
+];
+
 function App() {
     /*  DIALOG  */
     const [dialog, setDialog] = useState<'firstType' | null>(null);
@@ -221,6 +377,20 @@ function App() {
                             <Accordion.Content>{item.body}</Accordion.Content>
                         </Accordion>
                     ))}
+                </section>
+                <section id={'FLOW'} className='section'>
+                    <Typography as={'h2'}>FLOW</Typography>
+                    <Typography as={'p'}>Процесс на несколько страниц: шаг лежит в адресе,
+                        «назад» у браузера ходит по шагам, перезагрузка возвращает туда же —
+                        данные и место хранит черновик. Проверок внутри нет: их делает
+                        onLeave у шага, он же отправляет шаг на сервер.</Typography>
+                    <Flow
+                        steps={FLOW} initial={APPLICATION} draft={'demo-application'}
+                        /* Рамка одна на все шаги. Итоговый экран в неё
+                           не попадает: процесс там кончился. */
+                        layout={FlowFrame}
+                        onFinish={() => {}}
+                    />
                 </section>
                 <section id={'ALERT'} className='section'>
                     <Typography as={'h2'}>ALERT</Typography>

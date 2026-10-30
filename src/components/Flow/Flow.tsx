@@ -54,7 +54,7 @@
  */
 /* -------------------------------------------------------------------------- */
 
-import {createElement, useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {createElement, useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction} from 'react';
 import {FlowContext} from './Flow.context.ts';
 import {dropDraft, readDraft, writeDraft} from './Flow.draft.ts';
 import {onUrlStep, stepFromUrl, stepToUrl} from './Flow.url.ts';
@@ -83,7 +83,7 @@ function Flow<T extends object>({
      * запись, по которой «назад» возвращало в никуда.
      */
     const [begin] = useState(() => start(steps, initial, draft, param));
-    const [data, setData] = useState<T>(begin.data);
+    const [data, write] = useState<T>(begin.data);
     const [name, setName] = useState<string | undefined>(begin.name);
     const [reached, setReached] = useState<string[]>(begin.reached);
     const [pending, setPending] = useState(false);
@@ -92,11 +92,32 @@ function Flow<T extends object>({
     /*
      * Зеркало данных для асинхронных переходов: пока идёт onLeave,
      * состояние в замыкании успевает устареть, а решать, какой шаг
-     * следующий, нужно по самым свежим данным. Пишется эффектом —
-     * трогать ref во время отрисовки нельзя.
+     * следующий, нужно по самым свежим данным.
+     *
+     * Пишется дважды, и оба раза не во время отрисовки: сразу в setData —
+     * потому что состояние React доедет только к следующей отрисовке,
+     * а шаг зовёт setData и переход подряд в одном обработчике, — и
+     * эффектом, чтобы не разойтись с состоянием, пришедшим со стороны.
+     *
+     * Без первой записи это стоило целого шага: замерено на живой
+     * заявке — форма отправляла сумму и тут же звала переход, а onLeave
+     * получал данные ДО отправки, сервер отвечал «сумма не дошла»,
+     * и процесс уходил на экран ошибки вместо следующего шага.
      */
     const latest = useRef(data);
     const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+    /*
+     * Данные меняются только через это: состояние для отрисовки
+     * и зеркало для переходов обязаны меняться вместе, иначе шаг,
+     * сохранивший значения и сразу позвавший переход, уедет со старыми.
+     */
+    const setData = useCallback<Dispatch<SetStateAction<T>>>(value => {
+        latest.current = typeof value === 'function'
+            ? (value as (prev: T) => T)(latest.current)
+            : value;
+
+        write(latest.current);
+    }, []);
     /* Внутри колбэка могли позвать finish(). Тогда переходить дальше
        уже некуда: процесс закончился. */
     const over = useRef(false);

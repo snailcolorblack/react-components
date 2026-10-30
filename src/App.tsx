@@ -11,6 +11,7 @@ import {Dropdown} from "./components/Dropdown/Dropdown.tsx";
 import {Fieldset} from "./components/Fieldset/Fieldset.tsx";
 import {useFlow} from "./components/Flow/Flow.context.ts";
 import {Flow} from "./components/Flow/Flow.tsx";
+import {Form} from "./components/Form/Form.tsx";
 import {Input} from "./components/Input/Input.tsx";
 import {Popover} from "./components/Popover/Popover.tsx";
 import {Progress} from "./components/Progress/Progress.tsx";
@@ -22,6 +23,7 @@ import {Textarea} from "./components/Textarea/Textarea.tsx";
 import {Toast} from "./components/Toast/Toast.tsx";
 import {Tooltip} from "./components/Tooltip/Tooltip.tsx";
 import {Typography} from "./components/Typography/Typography.tsx";
+import {Wrapper} from "./components/Wrapper/Wrapper.tsx";
 import type {AccordionProps} from "./components/Accoridon/Accordion.interface.ts";
 import type {AlertProps} from "./components/Alert/Alert.interface.ts";
 import type {ButtonProps} from "./components/Button/Button.interface.ts";
@@ -195,9 +197,22 @@ const APPLICATION: Application = {city: '', sum: '', expired: false};
 /** Запрос, который «проверяет срок» заявки. */
 function checkApplication(data: Application) {
     return new Promise<{ok: boolean, message: string}>(resolve => {
-        setTimeout(() => resolve(data.expired
-            ? {ok: false, message: 'Срок заявки истёк: ссылка действовала 24 часа.'}
-            : {ok: true, message: ''}), 600);
+        setTimeout(() => {
+            if (data.expired) {
+                resolve({ok: false, message: 'Срок заявки истёк: ссылка действовала 24 часа.'});
+
+                return;
+            }
+
+            /*
+             * Сервер видит ровно те данные, что дошли. Если шаг отправил
+             * форму и тут же позвал переход, а данные ещё не успели
+             * дойти — это станет видно здесь, а не позже и не молча.
+             */
+            resolve(data.sum === ''
+                ? {ok: false, message: 'Сумма не дошла до сервера: шаг ушёл вперёд раньше данных.'}
+                : {ok: true, message: ''});
+        }, 600);
     });
 }
 
@@ -209,11 +224,18 @@ function checkApplication(data: Application) {
  * Вид здесь целиком свой: Flow не рисует ни кнопок, ни счётчика
  * и даже обёртки — в разметке остаётся ровно то, что нарисовали мы.
  */
+/**
+ * Имя формы шага. Кнопка «Дальше» живёт в рамке, снаружи формы,
+ * и ссылается на неё атрибутом form — так платформа разрешает
+ * отправлять форму кнопкой, которая в ней не лежит.
+ */
+const stepForm = (name: string) => `flow-${name}`;
+
 function FlowFrame({children}: {children: ReactNode}) {
-    const {currentStepIndex, stepsLength, isFirst, isLast, goPrevStep, goNextStep, pending, error} = useFlow<Application>();
+    const {step, currentStepIndex, stepsLength, isFirst, isLast, goPrevStep, goNextStep, pending, error} = useFlow<Application>();
 
     return (
-        <div className="block" style={{display: 'grid', gap: '1rem'}}>
+        <Wrapper style={{display: 'grid', gap: '1rem'}}>
             <Progress
                 label="Заполнение заявки" showLabel
                 value={currentStepIndex + 1} max={stepsLength}
@@ -224,46 +246,100 @@ function FlowFrame({children}: {children: ReactNode}) {
             {error !== undefined && <Alert variant={'ERROR'} withIcon>{String(error)}</Alert>}
             <div style={{display: 'flex', gap: '0.5rem'}}>
                 {!isFirst && <Button variant={'OUTLINE'} onClick={goPrevStep}>Назад</Button>}
-                <Button loading={pending} onClick={goNextStep}>{isLast ? 'Отправить' : 'Дальше'}</Button>
+                {/*
+                  * Кнопка отправляет форму шага, а переход делает уже сам шаг
+                  * из своего onSubmit: так между проверкой и переходом
+                  * не остаётся зазора. Шаг без формы (сводка) ссылку
+                  * не находит — тогда переходим прямо отсюда.
+                  */}
+                <Button
+                    type="submit"
+                    form={stepForm(step.name)}
+                    loading={pending}
+                    onClick={event => {
+                        if ((event.currentTarget as HTMLButtonElement).form === null) void goNextStep();
+                    }}
+                >
+                    {isLast ? 'Отправить' : 'Дальше'}
+                </Button>
             </div>
-        </div>
+        </Wrapper>
     );
 }
 
+/**
+ * Шаг — форма. Значения не живут в состоянии React: они лежат в самих
+ * полях, а собираются один раз, на отправке. Перерисовок на нажатие
+ * клавиши нет вовсе, и это главное, ради чего так.
+ *
+ * Проверка здесь написана руками — ровно то место, куда встанет Zod
+ * или любая другая библиотека.
+ */
 function FlowCity() {
-    const {data, setData} = useFlow<Application>();
+    const {data, setData, goNextStep} = useFlow<Application>();
 
     return (
-        <>
-            <Typography as={'h3'}>Откуда вы?</Typography>
-            <Select
-                label={'Город'} items={['Душанбе', 'Худжанд', 'Бохтар']} defaultValue={data.city}
-                onChange={value => setData(was => ({...was, city: value ?? ''}))}
-            />
-            <Switch
-                checked={data.expired}
-                onChange={event => setData(was => ({...was, expired: event.currentTarget.checked}))}
-            >
-                Сделать вид, что заявка просрочена
-            </Switch>
-        </>
+        <Form
+            id={stepForm('city')}
+            style={{display: 'grid', gap: '1rem'}}
+            validate={values => (String(values.city ?? '') === '' ? {city: 'Выберите город'} : undefined)}
+            onSubmit={values => {
+                setData(was => ({...was, city: String(values.city), expired: values.expired !== undefined}));
+
+                return goNextStep();
+            }}
+        >
+            {({errors}) => (
+                <>
+                    <Typography as={'h3'}>Откуда вы?</Typography>
+                    <Select
+                        label={'Город'} name={'city'} items={['Душанбе', 'Худжанд', 'Бохтар']}
+                        defaultValue={data.city} error={errors.city}
+                    />
+                    <Switch name={'expired'} defaultChecked={data.expired}>
+                        Сделать вид, что заявка просрочена
+                    </Switch>
+                </>
+            )}
+        </Form>
     );
 }
 
 function FlowSum() {
-    const {data, setData} = useFlow<Application>();
+    const {data, setData, goNextStep} = useFlow<Application>();
 
     return (
-        <>
-            <Typography as={'h3'}>Сколько нужно?</Typography>
-            <Input
-                label={'Сумма'} inputMode={'numeric'} value={data.sum}
-                onChange={value => setData(was => ({...was, sum: value}))}
-            />
-        </>
+        <Form
+            id={stepForm('sum')}
+            style={{display: 'grid', gap: '1rem'}}
+            /* Место под Zod: форме нужна только карта «поле → ошибка». */
+            validate={values => {
+                const sum = String(values.sum ?? '').trim();
+
+                return /^\d+$/.test(sum) && Number(sum) >= 1000
+                    ? undefined
+                    : {sum: 'Сумма — число не меньше 1000'};
+            }}
+            onSubmit={values => {
+                setData(was => ({...was, sum: String(values.sum).trim()}));
+
+                return goNextStep();
+            }}
+        >
+            {({errors}) => (
+                <>
+                    <Typography as={'h3'}>Сколько нужно?</Typography>
+                    <Input
+                        label={'Сумма'} name={'sum'} inputMode={'numeric'}
+                        defaultValue={data.sum} error={errors.sum}
+                    />
+                </>
+            )}
+        </Form>
     );
 }
 
+/** Сводка: формы здесь нет, и кнопка «Дальше» переходит сама. */
 function FlowCheck() {
     const {data} = useFlow<Application>();
 
@@ -284,7 +360,7 @@ function FlowResult() {
     const {status} = useFlow<Application>();
 
     return (
-        <div className="block" style={{display: 'grid', gap: '1rem'}}>
+        <Wrapper style={{display: 'grid', gap: '1rem'}}>
             {status?.ok === true
                 ? (
                     <Alert variant={'SUCCESS'} withIcon>
@@ -297,7 +373,7 @@ function FlowResult() {
                     Начать заново
                 </Button>
             </div>
-        </div>
+        </Wrapper>
     );
 }
 

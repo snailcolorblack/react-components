@@ -9,14 +9,21 @@
 
     Button  Popover  Typography  Scroll  Alert  Dialog  Accordion  Fieldset
     Progress
+    Wrapper (коробка вместо <div>: отступы, скругление, фон и снятие
+             собственных стилей тега, которым она отрисовалась)
     Flow    (процесс на несколько страниц: состояние, адрес и черновик,
              вида у него нет вовсе — рисует только текущий шаг)
+    JsonViewer
     Control (только стили и типы, компонента нет)
     Field   (только стили, типы, Field.focus.ts, Field.validity.ts)
     Scroll.wheel.ts (перехват колеса, живёт отдельно от самого Scroll)
 
 Ярус 1 — берут один ярус 0:
 
+    Form      → Wrapper (сбор значений, проверка и отправка; своей
+                проверки нет — её подключают пропом validate)
+    Container → Wrapper (предел ширины, середина страницы и поля
+                до краёв экрана; отступ только у верхнего)
     Input    → Field
     Textarea → Field
     Checkbox → Field, Control
@@ -26,6 +33,7 @@
     Toast    → Alert
     Dropdown → Popover, Button
     Pagination → Button
+    Breadcrumbs → Button
     ButtonGroup → Scroll.wheel.ts
 
 Ярус 2 — берут ярус 1:
@@ -46,11 +54,12 @@
 | `Field.validity.ts`    | Input, Textarea, Select, Range, Checkbox, Radio, Switch |
 | `Control.module.css`   | Checkbox, Radio, Switch (частично) |
 | `Popover`              | Select, Dropdown               |
-| `Button`               | Dropdown, Tabs, Pagination     |
+| `Button`               | Dropdown, Tabs, Pagination, Breadcrumbs |
 | `Scroll`               | Select (список)                |
 | `Scroll.wheel.ts`      | Scroll, ButtonGroupShell       |
 | `ButtonGroupShell`     | ButtonGroup, Tabs.Buttons      |
 | `Alert`                | Toast                          |
+| `Wrapper`              | Form, Container                |
 
 ## Что остаётся сделать
 
@@ -192,6 +201,16 @@ Switch уже берёт у Control `.group` и `.message`, но держит с
 а разговором: либо шкала одна и компоненты берут её переменные, либо
 Typography остаётся только для текста страниц. До решения ничего
 не менять.
+
+### 9. Сокращение по ширине: один приём в двух местах
+
+`Pagination` и `Breadcrumbs` прячут лишнее одинаково: что лишнее
+на узком месте, помечено `data-far` (у крошек есть ещё `data-mid` —
+порог пошире), что появляется на его месте — `data-when` с именем
+порога, и всё решает `@container`, без замеров в JS.
+Кода там на два правила, и общего файла он не стоит; но приём один,
+и третий компонент с тем же поведением стоит делать так же,
+а не заводить третью его разновидность.
 
 ## Мёртвое
 

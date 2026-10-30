@@ -1,0 +1,252 @@
+/* -------------------------------------------------------------------------- */
+/*  Просмотр JSON                                                             */
+/*                                                                            */
+/*  Весь вид свёрнутого и раскрытого узла держится на details[open] —         */
+/*  состояния в React для этого нет. Поэтому раскрытие не вызывает            */
+/*  перерисовки: браузер меняет атрибут, CSS меняет вид.                      */
+/* -------------------------------------------------------------------------- */
+
+.viewer {
+    --json-bg: var(--base-color-200);
+    --json-fg: var(--contrast-alpha-60, currentColor);
+    --json-string: var(--accent-color-soft, #ff9d47);
+    --json-number: var(--warning-color-soft, #4760ff);
+    --json-boolean: var(--danger-color-soft, #c678dd);
+    --json-null: var(--contrast-alpha-40, #888);
+    --json-indent: 1.25rem;
+    --json-radius: var(--base-gap, 4px);
+
+    box-sizing: border-box;
+    display: grid;
+    gap: var(--base-gap);
+    min-inline-size: 0;
+    color: var(--json-fg);
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Кнопки                                                                    */
+/* -------------------------------------------------------------------------- */
+
+.toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--base-gap);
+}
+
+.action {
+    min-block-size: 1.75rem;
+    padding-inline: calc(var(--base-gap) * 2);
+
+    border: 1px solid var(--contrast-alpha-20);
+    border-radius: var(--json-radius);
+    font: inherit;
+    font-size: var(--font-size-12, 0.75rem);
+    color: inherit;
+    background-color: transparent;
+    cursor: pointer;
+
+    transition: background-color 0.12s var(--ease-in-out);
+}
+
+.action:hover {
+    background-color: var(--contrast-alpha-10);
+}
+
+.action:focus-visible {
+    outline: 2px solid var(--accent-color-soft);
+    outline-offset: 2px;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Дерево                                                                    */
+/* -------------------------------------------------------------------------- */
+
+.tree {
+    box-sizing: border-box;
+    margin: 0;
+    padding: var(--base-size, 1rem);
+    overflow: auto;
+
+    border-radius: calc(var(--json-radius) * 2);
+    background-color: var(--json-bg);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: var(--font-size-14, 0.875rem);
+    line-height: 1.5;
+    /* Длинная строка не растягивает коробку, а переносится. */
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    tab-size: 4;
+}
+
+/*
+ * Место под треугольник — в самой строке, отдельной колонкой слева.
+ * Раньше он вытягивался наружу отрицательным полем и у корня вылезал
+ * за край коробки: отступать там было некуда. Теперь строки с узлом
+ * и без него начинаются одинаково, а треугольник стоит в своём поле.
+ */
+.row {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0;
+    min-inline-size: 0;
+    padding-inline-start: var(--json-indent);
+}
+
+/*
+ * Отступ уровня — на содержимом, а не на самом узле: закрывающая скобка
+ * обязана стоять по левому краю родителя, как в тексте.
+ */
+.children {
+    padding-inline-start: var(--json-indent);
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Сворачивание                                                              */
+/*                                                                            */
+/*  Треугольник у <summary> снимается, вместо него свой значок: так он        */
+/*  одинаков во всех движках и поворачивается своим правилом.                 */
+/* -------------------------------------------------------------------------- */
+
+.node > summary {
+    cursor: pointer;
+    list-style: none;
+}
+
+.node > summary::-webkit-details-marker {
+    display: none;
+}
+
+/*
+ * Треугольник не поворачивается, а перерисовывается: коробка у него
+ * квадратная и неподвижная, меняется только срез clip-path. Знак ▸
+ * и поворот оба съезжали вверх — у знака свои припуски и своя высота
+ * относительно базовой линии, а повёрнутый слой растр кладёт заново
+ * и округляет уже после поворота. Замерено по пикселям: и у знака,
+ * и у повёрнутой фигуры из бордюров середина уезжала (3px и 1.5px);
+ * у среза коробка одна и та же в обоих состояниях, и середина
+ * стоит на 10px от верха строки в закрытом и в раскрытом виде.
+ *
+ * Переход между двумя тройками точек clip-path считает сам браузер,
+ * так что стрелка по-прежнему разворачивается плавно.
+ */
+.node > summary::before {
+    content: '';
+    position: absolute;
+    inset-inline-start: 0.3em;
+    /* По середине строки: половина высоты строки минус половина фигуры. */
+    inset-block-start: calc(0.75em - 0.25em);
+    inline-size: 0.5em;
+    block-size: 0.5em;
+
+    background-color: var(--json-null);
+    clip-path: polygon(0 0, 100% 50%, 0 100%);
+
+    transition: clip-path 0.12s var(--ease-out);
+}
+
+.node[open] > summary::before {
+    clip-path: polygon(0 0, 50% 100%, 100% 0);
+}
+
+/*
+ * Срез в физических координатах, логических у него нет: в правописьменной
+ * раскладке закрытая стрелка обязана смотреть влево. Селектор по атрибуту,
+ * а не :dir() — Lightning CSS переписывает его в :lang() и теряет смысл.
+ */
+[dir="rtl"] .node > summary::before {
+    clip-path: polygon(100% 0, 0 50%, 100% 100%);
+}
+
+[dir="rtl"] .node[open] > summary::before {
+    clip-path: polygon(0 0, 50% 100%, 100% 0);
+}
+
+.node > summary:focus-visible {
+    outline: 2px solid var(--accent-color-soft);
+    outline-offset: 2px;
+    border-radius: var(--json-radius);
+}
+
+/*
+ * Свёрнутый вид: «{ 12 полей }» в одну строку. Раскрытый прячет этот
+ * кусок и показывает закрывающую скобку отдельной строкой — её рисует
+ * разметка, а здесь она просто скрыта у закрытого узла вместе со всем
+ * содержимым <details>.
+ */
+.node[open] > summary .peek {
+    display: none;
+}
+
+.count {
+    margin-inline: 0.5ch;
+    color: var(--json-null);
+}
+
+/*
+ * Закрывающая скобка раскрытого узла стоит ровно под открывающей:
+ * общее поле под треугольник у неё такое же, как у summary.
+ */
+
+/* -------------------------------------------------------------------------- */
+/*  Цвета значений                                                            */
+/* -------------------------------------------------------------------------- */
+
+.name {
+    color: var(--json-fg);
+}
+
+.colon,
+.comma,
+.brace {
+    color: var(--json-null);
+}
+
+.value[data-type="string"] {
+    color: var(--json-string);
+}
+
+.value[data-type="number"] {
+    color: var(--json-number);
+}
+
+.value[data-type="boolean"] {
+    color: var(--json-boolean);
+}
+
+.value[data-type="null"] {
+    color: var(--json-null);
+    font-style: italic;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Высокий контраст и уменьшенное движение                                   */
+/* -------------------------------------------------------------------------- */
+
+@media (forced-colors: active) {
+    .tree {
+        border: 1px solid CanvasText;
+    }
+
+    /*
+     * Цвета типов система выбрасывает, и значения перестают отличаться
+     * от ключей. Возвращаем разницу начертанием: оно переживает
+     * подмену палитры (WCAG 1.4.1).
+     */
+    .value[data-type="string"] {
+        font-style: italic;
+    }
+
+    .value[data-type="number"],
+    .value[data-type="boolean"] {
+        font-weight: 700;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .node > summary::before,
+    .action {
+        transition: none;
+    }
+}

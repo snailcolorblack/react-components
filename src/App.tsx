@@ -17,6 +17,7 @@ import {Popover} from "./components/Popover/Popover.tsx";
 import {Progress} from "./components/Progress/Progress.tsx";
 import {Radio} from "./components/Radio/Radio.tsx";
 import {Select} from "./components/Select/Select.tsx";
+import {Steps} from "./components/Steps/Steps.tsx";
 import {Switch} from "./components/Switch/Switch.tsx";
 import {Tabs} from "./components/Tabs/Tabs.tsx";
 import {Textarea} from "./components/Textarea/Textarea.tsx";
@@ -235,7 +236,13 @@ function FlowFrame({children}: {children: ReactNode}) {
     const {step, currentStepIndex, stepsLength, isFirst, isLast, goPrevStep, goNextStep, pending, error} = useFlow<Application>();
 
     return (
-        <Wrapper style={{display: 'grid', gap: '1rem'}}>
+        <Wrapper style={{display: 'grid', gap: '1.5rem'}}>
+            {/*
+              * Шкала шагов внутри процесса обходится без пропсов: шаги,
+              * текущий и пройденный путь она берёт у Flow сама. Подписи
+              * лежат в объявлении шагов — полями title и description.
+              */}
+            <Steps clickable/>
             <Progress
                 label="Заполнение заявки" showLabel
                 value={currentStepIndex + 1} max={stepsLength}
@@ -378,10 +385,12 @@ function FlowResult() {
 }
 
 const FLOW: FlowStep<Application>[] = [
-    {name: 'city', component: FlowCity},
+    {name: 'city', component: FlowCity, title: 'Город', description: 'Где вы живёте'},
     {
         name: 'sum',
         component: FlowSum,
+        title: 'Сумма',
+        description: 'Сколько нужно',
         /*
          * Здесь шаг уходит на сервер. Проверка срока — неудача
          * окончательная: finish(false, …) уводит на итоговый экран,
@@ -393,7 +402,7 @@ const FLOW: FlowStep<Application>[] = [
             if (!answer.ok) flow.finish(false, answer.message);
         },
     },
-    {name: 'check', component: FlowCheck},
+    {name: 'check', component: FlowCheck, title: 'Проверка', description: 'Всё ли верно'},
     {name: 'result', component: FlowResult, result: true},
 ];
 

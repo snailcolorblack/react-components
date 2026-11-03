@@ -151,6 +151,8 @@ function Flow<T extends object>({
     const tools: FlowTools<T> = {finish, setData};
     const value: FlowState<T> = {
         step,
+        steps: visible,
+        reached,
         currentStepIndex: index,
         stepsLength: visible.length,
         data,

@@ -34,6 +34,8 @@
     Dropdown → Popover, Button
     Pagination → Button
     Breadcrumbs → Button
+    Steps     → Flow.context (читает процесс, если он рядом; снаружи
+                работает от пропсов)
     ButtonGroup → Scroll.wheel.ts
 
 Ярус 2 — берут ярус 1:
@@ -59,6 +61,7 @@
 | `Scroll.wheel.ts`      | Scroll, ButtonGroupShell       |
 | `ButtonGroupShell`     | ButtonGroup, Tabs.Buttons      |
 | `Alert`                | Toast                          |
+| `Flow` (контекст)      | Steps                          |
 | `Wrapper`              | Form, Container                |
 
 ## Что остаётся сделать

@@ -78,6 +78,23 @@ export const errorIcon = (
 );
 
 /*
+ * Крест без кружка. У errorIcon кружок свой, и внутри круглой отметки
+ * шага выходило два круга один в другом; здесь нужен только силуэт.
+ * Он же отличает ошибку от галочки, когда палитры нет вовсе
+ * (высокий контраст, WCAG 1.4.1).
+ */
+export const crossIcon = (
+    <svg
+        width="24" height="24" viewBox="0 0 24 24"
+        fill="none" aria-hidden="true" focusable="false"
+        xmlns="http://www.w3.org/2000/svg"
+    >
+        <path d="M7 7L17 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+        <path d="M17 7L7 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+);
+
+/*
  * Двойной шеврон вниз: «в самое начало» и «в самый конец» у пагинации.
  * Нарисован вниз, как и одинарный, и поворачивается тем же правилом —
  * так у обеих стрелок один центр вращения и одинаковый вид на краях.

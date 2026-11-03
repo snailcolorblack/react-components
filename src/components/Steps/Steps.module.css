@@ -1,0 +1,366 @@
+/* -------------------------------------------------------------------------- */
+/*  Шкала шагов                                                               */
+/*                                                                            */
+/*  Два положения и два вида деления. Положение задаёт data-orientation,      */
+/*  вид — data-ident: кружок с номером или отрезок полосы.                    */
+/* -------------------------------------------------------------------------- */
+
+.steps {
+    --steps-size: 2rem;
+    --steps-line: 2px;
+    --steps-gap: var(--base-gap);
+    --steps-done: var(--accent-color, #22c55e);
+    --steps-current: var(--accent-color, #22c55e);
+    --steps-next: var(--contrast-alpha-40, #888);
+    --steps-error: var(--danger-color-soft, #ef4444);
+    --steps-label: var(--contrast-color, currentColor);
+    --steps-note: var(--contrast-alpha-60, currentColor);
+
+    container: steps / inline-size;
+    box-sizing: border-box;
+    inline-size: 100%;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--font-size-14, 0.875rem);
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Горизонтально                                                             */
+/*                                                                            */
+/*  Деления равной ширины: только так линия между кружками получается         */
+/*  одинаковой, а подписи не прыгают при смене шага.                          */
+/* -------------------------------------------------------------------------- */
+
+.steps[data-orientation="HORIZONTAL"] {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    align-items: start;
+}
+
+.steps[data-orientation="VERTICAL"] {
+    display: grid;
+    gap: calc(var(--base-size) * 1.5);
+}
+
+.item {
+    position: relative;
+    display: flex;
+    min-inline-size: 0;
+}
+
+.steps[data-orientation="HORIZONTAL"] .item {
+    justify-content: center;
+}
+
+/*
+ * Нажимаемое и ненажимаемое деление — один и тот же класс: вид
+ * не должен зависеть от того, кнопка это или нет. У кнопки снимаются
+ * её собственные стили браузера (шрифт, рамка, выравнивание).
+ */
+.hit {
+    display: grid;
+    gap: var(--steps-gap);
+    box-sizing: border-box;
+    inline-size: 100%;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font: inherit;
+    text-align: inherit;
+    color: inherit;
+    background-color: transparent;
+}
+
+button.hit {
+    appearance: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+button.hit:focus-visible {
+    outline: 2px solid var(--accent-color-soft);
+    outline-offset: 4px;
+    border-radius: var(--base-gap);
+}
+
+.steps[data-orientation="HORIZONTAL"] .hit {
+    justify-items: center;
+    text-align: center;
+}
+
+/* Вертикально: кружок слева, подпись справа — две колонки. */
+.steps[data-orientation="VERTICAL"] .hit {
+    grid-template-columns: var(--steps-size) 1fr;
+    align-items: start;
+    gap: var(--base-size);
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Кружок                                                                    */
+/* -------------------------------------------------------------------------- */
+
+.mark {
+    display: grid;
+    place-items: center;
+    box-sizing: border-box;
+    inline-size: var(--steps-size);
+    block-size: var(--steps-size);
+
+    border: var(--steps-line) solid var(--steps-next);
+    border-radius: 50%;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    color: var(--steps-next);
+
+    transition:
+        color 0.16s var(--ease-in-out),
+        border-color 0.16s var(--ease-in-out),
+        background-color 0.16s var(--ease-in-out);
+}
+
+.mark > svg {
+    inline-size: 62%;
+    block-size: 62%;
+}
+
+.item[data-state="done"] .mark {
+    border-color: var(--steps-done);
+    color: var(--base-color, #000);
+    background-color: var(--steps-done);
+}
+
+.item[data-state="current"] .mark {
+    border-color: var(--steps-current);
+    color: var(--steps-current);
+}
+
+.item[data-state="error"] .mark {
+    border-color: var(--steps-error);
+    color: var(--steps-error);
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Линия между делениями                                                     */
+/*                                                                            */
+/*  Рисуется у каждого деления, кроме первого, и тянется от середины          */
+/*  соседнего кружка до середины своего. Поэтому она одинаковой длины         */
+/*  при любой ширине колонки и не зависит от длины подписи.                   */
+/*                                                                            */
+/*  Цвет берётся от состояния ПРЕДЫДУЩЕГО деления: закрашенный отрезок        */
+/*  показывает пройденный путь, а не будущий.                                 */
+/* -------------------------------------------------------------------------- */
+
+.steps[data-ident="mark"] .item:not(:first-child)::before {
+    content: '';
+    position: absolute;
+    /* По середине кружка, который стоит выше подписи. */
+    inset-block-start: calc(var(--steps-size) / 2 - var(--steps-line) / 2);
+    /* От середины предыдущей колонки до середины своей, минус кружки. */
+    inset-inline-end: calc(50% + var(--steps-size) / 2 + var(--base-gap));
+    inset-inline-start: calc(-50% + var(--steps-size) / 2 + var(--base-gap));
+    block-size: var(--steps-line);
+
+    background-color: var(--steps-next);
+}
+
+.steps[data-ident="mark"] .item[data-state="done"]::before,
+.steps[data-ident="mark"] .item[data-state="current"]::before,
+.steps[data-ident="mark"] .item[data-state="error"]::before {
+    background-color: var(--steps-done);
+}
+
+/* Вертикально линия идёт сверху вниз по середине кружка. */
+.steps[data-orientation="VERTICAL"][data-ident="mark"] .item:not(:first-child)::before {
+    inset-block-start: auto;
+    inset-inline-start: calc(var(--steps-size) / 2 - var(--steps-line) / 2);
+    inset-inline-end: auto;
+    /*
+     * От низа предыдущего кружка до верха своего: отрезок занимает
+     * весь зазор списка, кроме двух пикселей воздуха по краям.
+     * Замерено — с меньшей длиной линия висела в стороне от кружков
+     * и читалась как отдельная чёрточка, а не как связь.
+     */
+    inset-block-end: calc(100% + 2px);
+    block-size: calc(var(--base-size) * 1.5 - 4px);
+    inline-size: var(--steps-line);
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Полосы вместо кружков                                                     */
+/*                                                                            */
+/*  ident={false}: деление становится отрезком полосы, как отметки            */
+/*  историй. Подписи остаются — они и так под делением.                       */
+/* -------------------------------------------------------------------------- */
+
+.steps[data-ident="bar"] {
+    gap: var(--base-gap);
+}
+
+.steps[data-ident="bar"] .hit::before {
+    content: '';
+    display: block;
+    inline-size: 100%;
+    block-size: var(--steps-line);
+    border-radius: var(--steps-line);
+    background-color: var(--steps-next);
+
+    transition: background-color 0.16s var(--ease-in-out);
+}
+
+.steps[data-ident="bar"] .item[data-state="done"] .hit::before,
+.steps[data-ident="bar"] .item[data-state="current"] .hit::before {
+    background-color: var(--steps-done);
+}
+
+.steps[data-ident="bar"] .item[data-state="error"] .hit::before {
+    background-color: var(--steps-error);
+}
+
+/* Вертикально полоса стоит столбиком слева от подписи. */
+.steps[data-orientation="VERTICAL"][data-ident="bar"] .hit {
+    grid-template-columns: var(--steps-line) 1fr;
+}
+
+.steps[data-orientation="VERTICAL"][data-ident="bar"] .hit::before {
+    inline-size: var(--steps-line);
+    block-size: 100%;
+    min-block-size: var(--base-size);
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Подписи                                                                   */
+/* -------------------------------------------------------------------------- */
+
+.text {
+    display: grid;
+    gap: calc(var(--base-gap) / 2);
+    min-inline-size: 0;
+}
+
+.label {
+    font-weight: 600;
+    color: var(--steps-label);
+    overflow-wrap: anywhere;
+}
+
+.note {
+    font-size: var(--font-size-12, 0.75rem);
+    color: var(--steps-note);
+    overflow-wrap: anywhere;
+}
+
+.item[data-state="next"] .label {
+    color: var(--steps-note);
+}
+
+.item[data-state="error"] .label,
+.item[data-state="error"] .note {
+    color: var(--steps-error);
+}
+
+/*
+ * Состояние словом. Спрятано от глаз, но не от скринридера: цвет
+ * и фигура его не заменяют.
+ */
+.sr {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Узкое место                                                               */
+/*                                                                            */
+/*  Подписи горизонтальной шкалы на узком экране не помещаются: четыре        */
+/*  колонки по 80px режут слова по буквам. Тогда остаются кружки и линия,     */
+/*  а подпись — только у текущего шага: она отвечает на вопрос «где я»,       */
+/*  а остальные на узком месте всё равно не прочитать.                        */
+/* -------------------------------------------------------------------------- */
+
+@container steps (inline-size < 30rem) {
+    /*
+     * Место под подпись, которая вышла из потока. Без него коробка
+     * считалась по одним кружкам, и подпись оказывалась за её краем —
+     * замерено, она просто не попадала в кадр.
+     *
+     * Поле на делении, а не на самой шкале: правило из @container
+     * не может оформить тот элемент, который этот контейнер и объявил, —
+     * иначе его размер зависел бы от собственного запроса. Замерено:
+     * padding на .steps внутри запроса не применяется вовсе.
+     */
+    .steps[data-orientation="HORIZONTAL"][data-ident="mark"] .item {
+        padding-block-end: calc(var(--base-size) * 2.5);
+    }
+
+    /*
+     * Пояснение на узком месте убирается вместе с чужими подписями.
+     * Оно отвечает на вопрос «что тут заполнять», а на 360px сначала
+     * нужен ответ на «где я»: замерено, с пояснением подпись текущего
+     * занимала три строки и вылезала за нижний край шкалы.
+     */
+    .steps[data-orientation="HORIZONTAL"][data-ident="mark"] .note {
+        display: none;
+    }
+
+    .steps[data-orientation="HORIZONTAL"][data-ident="mark"] .item:not([data-state="current"]) .text {
+        display: none;
+    }
+
+    /*
+     * Подпись текущего шире своей колонки — и это нарочно: соседние
+     * подписи спрятаны, занимать их место можно. Она вынута из потока,
+     * чтобы не растягивать колонку и не двигать кружки.
+     */
+    .steps[data-orientation="HORIZONTAL"][data-ident="mark"] .item[data-state="current"] .text {
+        position: absolute;
+        inset-block-start: calc(var(--steps-size) + var(--steps-gap));
+        inset-inline-start: 50%;
+        translate: -50% 0;
+        inline-size: max-content;
+        max-inline-size: 16ch;
+        text-align: center;
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Высокий контраст и уменьшенное движение                                   */
+/* -------------------------------------------------------------------------- */
+
+@media (forced-colors: active) {
+    .mark {
+        border-color: CanvasText;
+        color: CanvasText;
+    }
+
+    /* Заливка пройденного система выбрасывает — остаётся галочка,
+       и этого достаточно: силуэт у каждого состояния свой. */
+    .item[data-state="done"] .mark {
+        color: CanvasText;
+        background-color: Canvas;
+    }
+
+    .item[data-state="current"] .mark {
+        outline: 2px solid CanvasText;
+        outline-offset: 2px;
+    }
+
+    .steps[data-ident="mark"] .item::before,
+    .steps[data-ident="bar"] .hit::before {
+        background-color: CanvasText;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mark,
+    .steps[data-ident="bar"] .hit::before {
+        transition: none;
+    }
+}

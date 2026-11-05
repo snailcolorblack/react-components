@@ -11,6 +11,10 @@
  * же элементе, и без него победа зависела бы от порядка загрузки модулей.
  */
 .menu[popover] {
+    /* Настройка: задаётся на самом компоненте, через style или свой класс. */
+    --dropdown-item-size: 2.25rem;
+    --dropdown-icon-color: currentColor;
+
     /*
      * Перебить можно на самом меню:
      *   <Dropdown style={{'--dropdown-item-hover': 'var(--accent-color)'}} />
@@ -88,12 +92,17 @@
 
 /*
  * Не уже кнопки: меню под широким триггером, которое короче него,
- * выглядит оторванным. anchor-size() работает только при привязке
- * к якорю — там, где её нет, меню просто остаётся по содержимому.
+ * выглядит оторванным. Без якорей ширину кнопки приносит Popover.fallback.ts.
  */
 @supports (inline-size: anchor-size(inline)) {
     .menu[popover] {
         min-inline-size: anchor-size(inline);
+    }
+}
+
+@supports not (inline-size: anchor-size(inline)) {
+    .menu[popover] {
+        min-inline-size: var(--anchor-width);
     }
 }
 
@@ -127,7 +136,7 @@
     gap: calc(var(--base-gap) * 2);
     inline-size: 100%;
     /* WCAG 2.5.8: цель нажатия не меньше 24×24, с запасом под палец. */
-    min-block-size: 2.25rem;
+    min-block-size: var(--dropdown-item-size);
     padding: var(--dropdown-item-padding);
 
     border: 0;
@@ -139,7 +148,7 @@
     background-color: transparent;
     cursor: pointer;
 
-    transition: background-color 0.12s var(--ease-in-out);
+    transition: background-color var(--duration-fast, 0.12s) var(--ease-in-out);
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
 }
@@ -156,8 +165,8 @@
 }
 
 .item:where(:focus-visible) {
-    outline: 2px solid var(--dropdown-ring);
-    outline-offset: -2px;
+    outline: var(--ring-width, 2px) solid var(--dropdown-ring);
+    outline-offset: calc(var(--ring-width, 2px) * -1);
 }
 
 .danger {
@@ -182,7 +191,7 @@
 .icon {
     display: inline-flex;
     flex-shrink: 0;
-    color: var(--dropdown-icon-color, currentColor);
+    color: var(--dropdown-icon-color);
 }
 
 .label {

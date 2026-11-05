@@ -1,4 +1,8 @@
 .button {
+    /* Настройка: задаётся на самом компоненте, через style или свой класс. */
+    --button-spinner-width: 2px;
+    --button-spin-duration: 0.7s;
+
     /*
      * Акцент приходит парой: заливка и цвет текста на ней. Раньше подпись
      * была прибита к светлому --font-color, и на любом ярком акценте
@@ -8,7 +12,7 @@
      *                   '--button-accent-contrast': 'var(--contrast-color)'}} />
      */
     --button-accent: var(--accent-color);
-    --button-accent-contrast: var(--contrast-color);
+    --button-accent-contrast: var(--contrast-color-100);
     /* Тот же тон, поднятый по светлоте: им пишут по тёмному фону, где сама
        заливка была бы слишком тёмной для текста. */
     --button-accent-text: var(--accent-color-soft);
@@ -31,7 +35,7 @@
     place-items: center;
 
     padding: var(--button-padding);
-    border: 1px solid var(--button-border);
+    border: var(--border-width, 1px) solid var(--button-border);
     border-radius: var(--button-radius);
     cursor: pointer;
     font: inherit;
@@ -197,8 +201,8 @@
 }
 
 .button:focus-visible {
-    outline: 2px solid var(--button-ring);
-    outline-offset: 2px;
+    outline: var(--ring-width, 2px) solid var(--button-ring);
+    outline-offset: var(--ring-offset, 2px);
 }
 
 .button:disabled:not([aria-busy="true"]),
@@ -221,16 +225,19 @@
     display: inline-flex;
     align-items: center;
     gap: var(--base-gap);
+    /* При крупном тексте или разрядке длинное слово не выталкивает кнопку за край. */
+    min-inline-size: 0;
+    overflow-wrap: anywhere;
 }
 
 .spinner {
     grid-area: content;
     inline-size: 1em;
     block-size: 1em;
-    border: 2px solid currentColor;
+    border: var(--button-spinner-width) solid currentColor;
     border-block-start-color: transparent;
     border-radius: 50%;
-    animation: button-spin 0.7s linear infinite;
+    animation: button-spin var(--button-spin-duration) linear infinite;
 }
 
 /* opacity, а не visibility: скрытый visibility текст выпадает из дерева

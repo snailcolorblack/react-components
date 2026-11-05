@@ -111,8 +111,8 @@ export const ВУзкойКолонке: Story = {
     render: args => (
         <div style={{display: 'grid', gap: '2rem'}}>
             <div style={{inlineSize: '100%'}}><Pagination {...args}/></div>
-            <div style={{inlineSize: '28rem'}}><Pagination {...args}/></div>
-            <div style={{inlineSize: '22rem'}}><Pagination {...args}/></div>
+            <div style={{inlineSize: '28rem', maxInlineSize: '100%'}}><Pagination {...args}/></div>
+            <div style={{inlineSize: '22rem', maxInlineSize: '100%'}}><Pagination {...args}/></div>
         </div>
     ),
 };

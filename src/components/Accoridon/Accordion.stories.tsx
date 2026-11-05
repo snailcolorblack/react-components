@@ -55,7 +55,7 @@ export const Открытый: Story = {
  */
 export const ТолькоОдинОткрыт: Story = {
     render: () => (
-        <div style={{display: 'grid', gap: '0.5rem', minInlineSize: '28rem'}}>
+        <div style={{display: 'grid', gap: '0.5rem', inlineSize: 'min(28rem, calc(100vw - 2rem))'}}>
             {['Первый', 'Второй', 'Третий'].map(title => (
                 <Accordion key={title} name="faq">
                     <Accordion.Header>{title} раздел</Accordion.Header>

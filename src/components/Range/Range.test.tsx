@@ -165,7 +165,7 @@ describe('Range: притяжка к точкам', () => {
             <Range
                 label="Срок" min={0} max={10} marks={[2, 4, 8]} snap
                 value={value}
-                onChange={next => { setValue(next); onChange?.(next); }}
+                onChange={(next: number) => { setValue(next); onChange?.(next); }}
             />
         );
     }
@@ -243,7 +243,7 @@ describe('Range: пара значений', () => {
             <Range
                 label="Цена" min={0} max={100} name="price"
                 value={value}
-                onChange={next => { setValue(next); onChange?.(next); }}
+                onChange={(next: [number, number]) => { setValue(next); onChange?.(next); }}
             />
         );
     }
@@ -408,7 +408,7 @@ describe('Range: наименьший промежуток между шарик
             <Range
                 label="Цена" min={0} max={100} minDifference={difference}
                 value={value}
-                onChange={next => { setValue(next); onChange?.(next); }}
+                onChange={(next: [number, number]) => { setValue(next); onChange?.(next); }}
             />
         );
     }

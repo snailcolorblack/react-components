@@ -6,6 +6,9 @@
 /* -------------------------------------------------------------------------- */
 
 .steps {
+    /* Настройка: задаётся на самом компоненте, через style или свой класс. */
+    --steps-duration: 0.16s;
+
     --steps-size: 2rem;
     --steps-line: 2px;
     --steps-gap: var(--base-gap);
@@ -80,8 +83,8 @@ button.hit {
 }
 
 button.hit:focus-visible {
-    outline: 2px solid var(--accent-color-soft);
-    outline-offset: 4px;
+    outline: var(--ring-width, 2px) solid var(--accent-color-soft);
+    outline-offset: calc(var(--ring-offset, 2px) * 2);
     border-radius: var(--base-gap);
 }
 
@@ -111,7 +114,7 @@ button.hit:focus-visible {
     border: var(--steps-line) solid var(--steps-next);
     border-radius: 50%;
     font-variant-numeric: tabular-nums;
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold, 600);
     color: var(--steps-next);
 
     transition:
@@ -206,7 +209,7 @@ button.hit:focus-visible {
     border-radius: var(--steps-line);
     background-color: var(--steps-next);
 
-    transition: background-color 0.16s var(--ease-in-out);
+    transition: background-color var(--steps-duration) var(--ease-in-out);
 }
 
 .steps[data-ident="bar"] .item[data-state="done"] .hit::before,
@@ -240,7 +243,7 @@ button.hit:focus-visible {
 }
 
 .label {
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold, 600);
     color: var(--steps-label);
     overflow-wrap: anywhere;
 }
@@ -249,6 +252,11 @@ button.hit:focus-visible {
     font-size: var(--font-size-12, 0.75rem);
     color: var(--steps-note);
     overflow-wrap: anywhere;
+}
+
+/* Цифра будущего шага — это текст, ему нужно 4.5:1, а не 3:1 как линии и рамке. */
+.item[data-state="next"] .mark {
+    color: var(--steps-note);
 }
 
 .item[data-state="next"] .label {
@@ -349,7 +357,7 @@ button.hit:focus-visible {
 
     .item[data-state="current"] .mark {
         outline: 2px solid CanvasText;
-        outline-offset: 2px;
+        outline-offset: var(--ring-offset, 2px);
     }
 
     .steps[data-ident="mark"] .item::before,

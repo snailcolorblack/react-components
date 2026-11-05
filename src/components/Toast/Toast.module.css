@@ -26,6 +26,9 @@
     display: grid;
     gap: var(--toast-gap);
     inline-size: min(calc(var(--toast-width) + var(--toast-inset) * 2), 100%);
+    /* Явно, а не fit-content из UA-стилей: у grid-контейнера Safari 18 раздувает
+       его до max-block-size, и плашка вытягивалась на весь экран (замерено: 668px). */
+    block-size: auto;
     max-block-size: 100dvb;
 
     /*
@@ -36,6 +39,11 @@
 }
 
 .toast {
+    /* Настройка: задаётся на самом компоненте, через style или свой класс. */
+    --toast-shadow: 0 4px 16px var(--contrast-alpha-20);
+    --toast-close-size: 1.5rem;
+    --toast-close-font-size: 1.25rem;
+
     pointer-events: auto;
 }
 
@@ -92,7 +100,7 @@
     inline-size: 100%;
     max-inline-size: var(--toast-width);
     padding: calc(var(--base-gap) * 3);
-    box-shadow: 0 4px 16px var(--contrast-alpha-20);
+    box-shadow: var(--toast-shadow);
 }
 
 .icon {
@@ -117,15 +125,15 @@
     display: grid;
     place-items: center;
     /* WCAG 2.5.8: цель нажатия не меньше 24×24. */
-    inline-size: 1.5rem;
-    block-size: 1.5rem;
+    inline-size: var(--toast-close-size);
+    block-size: var(--toast-close-size);
     margin-inline-start: calc(var(--base-gap) * -1);
 
     padding: 0;
     border: 0;
     border-radius: var(--base-gap);
     font: inherit;
-    font-size: 1.25rem;
+    font-size: var(--toast-close-font-size);
     line-height: 1;
     color: inherit;
     background-color: transparent;
@@ -139,8 +147,8 @@
 }
 
 .close:focus-visible {
-    outline: 2px solid var(--alert-tint);
-    outline-offset: 2px;
+    outline: var(--ring-width, 2px) solid var(--alert-tint);
+    outline-offset: var(--ring-offset, 2px);
 }
 
 /* -------------------------------------------------------------------------- */

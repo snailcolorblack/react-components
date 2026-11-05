@@ -33,7 +33,7 @@ export const Группа: Story = {
 
 export const Чипсами: Story = {
     render: args => (
-        <div style={{display: 'flex', gap: '0.5rem'}}>
+        <div style={{display: 'flex', flexWrap: 'wrap', gap: '0.5rem'}}>
             <Radio {...args} variant="CHIP" value="free" defaultChecked>Бесплатный</Radio>
             <Radio {...args} variant="CHIP" value="pro">Профессиональный</Radio>
         </div>

@@ -6,6 +6,9 @@
 /* -------------------------------------------------------------------------- */
 
 .breadcrumbs {
+    /* Настройка: задаётся на самом компоненте, через style или свой класс. */
+    --breadcrumbs-icon-size: 1rem;
+
     --breadcrumbs-gap: var(--base-gap);
     /* Высота цели нажатия. WCAG 2.5.8 требует не меньше 24×24. */
     --breadcrumbs-size: 1.75rem;
@@ -107,7 +110,7 @@
  */
 .current {
     color: var(--breadcrumbs-current);
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold, 600);
 }
 
 /*
@@ -125,8 +128,8 @@
     display: grid;
     flex: none;
     place-items: center;
-    inline-size: 1rem;
-    block-size: 1rem;
+    inline-size: var(--breadcrumbs-icon-size);
+    block-size: var(--breadcrumbs-icon-size);
 }
 
 .icon > svg {
@@ -231,6 +234,6 @@
     /* Цвета система выбрасывает, и текущая страница сливается с соседями.
        Отличие остаётся начертанием — оно подмену палитры переживает. */
     .current {
-        font-weight: 700;
+        font-weight: var(--font-weight-bold, 700);
     }
 }

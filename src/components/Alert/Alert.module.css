@@ -31,7 +31,7 @@
     gap: calc(var(--base-gap) * 2);
     padding: calc(var(--base-gap) * 2);
     border-radius: var(--base-gap);
-    border: 1px solid color-mix(in oklab, var(--alert-accent) var(--alert-border), transparent);
+    border: var(--border-width, 1px) solid color-mix(in oklab, var(--alert-accent) var(--alert-border), transparent);
     background-color: color-mix(in oklab, var(--alert-accent) var(--alert-fill), var(--alert-base));
     color: var(--alert-fg);
 }
@@ -129,7 +129,7 @@
         margin: 0;
         overflow: visible;
         clip-path: none;
-        font-weight: 600;
+        font-weight: var(--font-weight-semibold, 600);
     }
 }
 

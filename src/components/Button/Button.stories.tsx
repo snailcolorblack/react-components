@@ -31,7 +31,7 @@ export const Обычная: Story = {};
 
 export const Варианты: Story = {
     render: args => (
-        <div style={{display: 'flex', gap: '1rem', alignItems: 'center'}}>
+        <div style={{display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center'}}>
             <Button {...args} variant="DEFAULT">Основная</Button>
             <Button {...args} variant="CONTRAST">Контрастная</Button>
             <Button {...args} variant="OUTLINE">Контурная</Button>
@@ -65,7 +65,7 @@ export const ВФорме: Story = {
     render: () => (
         <form
             action={() => new Promise(resolve => setTimeout(resolve, 1500))}
-            style={{display: 'flex', gap: '1rem', alignItems: 'center'}}
+            style={{display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center'}}
         >
             <Button type="submit">Отправить</Button>
             <Button>Кнопка рядом</Button>

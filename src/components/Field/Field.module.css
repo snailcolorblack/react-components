@@ -31,7 +31,7 @@
 .field {
     --field-bg: var(--base-color-200);
     --field-fg: var(--contrast-color);
-    --field-border: var(--contrast-alpha-20);
+    --field-border: var(--border-strong);
     --field-border-active: var(--accent-color-soft);
     --field-label: var(--contrast-alpha-60);
     --field-label-active: var(--accent-color-soft);
@@ -70,7 +70,7 @@
     min-inline-size: fit-content;
     padding: var(--field-padding-block) var(--field-padding-inline);
 
-    border: 1px solid var(--field-border);
+    border: var(--border-width, 1px) solid var(--field-border);
     border-radius: var(--field-radius);
     color: var(--field-fg);
     background-color: var(--field-bg);
@@ -93,8 +93,8 @@
  * платформа его для того и придумала.
  */
 .field:has(.control:focus-visible) {
-    outline: 2px solid var(--field-ring);
-    outline-offset: 2px;
+    outline: var(--ring-width, 2px) solid var(--field-ring);
+    outline-offset: var(--ring-offset, 2px);
 }
 
 /*

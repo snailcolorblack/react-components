@@ -12,6 +12,22 @@
 /* -------------------------------------------------------------------------- */
 
 .popover {
+    /* Настройка: задаётся на самом компоненте, через style или свой класс. */
+    --popover-max-width: 20rem;
+    --popover-min-width: 12rem;
+    --popover-min-height: 8rem;
+
+    /* Служебные: значение выставляет компонент инлайном, снаружи не задавать. */
+    --popover-area: block-end span-inline-end;
+    --popover-origin: top center;
+    --popover-margin-block: var(--popover-gap) 0;
+    --popover-margin-inline: 0;
+    --anchor-x: 50%;
+    --anchor-y: 50%;
+    --anchor-sign-x: 0;
+    --anchor-sign-y: 0;
+    --anchor-width: auto;
+
     /*
      * Цвета компонента объявлены здесь и только здесь. Перебить любой из них
      * можно на самом элементе:
@@ -24,11 +40,19 @@
     --popover-fg: var(--contrast-color);
     --popover-border: var(--contrast-alpha-20);
 
+    /*
+     * Якорь по умолчанию — неявный, его назначает браузер. Объявлен здесь, а не
+     * фолбэком в var(): кастомные свойства наследуются, и поповер внутри другого
+     * поповера с пропом anchor иначе привязался бы к чужому якорю.
+     */
+    --popover-anchor: auto;
+
     /* Отступ до кнопки. */
     --popover-gap: calc(var(--base-gap) * 2);
     /* Отступ до края экрана: окно не должно липнуть к границе вьюпорта. */
     --popover-inset: var(--base-size);
     --popover-duration: 0.24s;
+    --popover-fade: 0.18s;
     --popover-scale: 0.85;
 
     /*
@@ -39,7 +63,7 @@
      * margin в блоке позиционирования ниже.
      */
     padding: var(--base-size);
-    border: 1px solid var(--popover-border);
+    border: var(--border-width, 1px) solid var(--popover-border);
     border-radius: var(--base-gap);
     color: var(--popover-fg);
     background-color: var(--popover-bg);
@@ -48,10 +72,26 @@
     scale: var(--popover-scale);
 
     transition:
-            opacity 0.18s var(--ease-in-out),
-            scale   var(--popover-duration) var(--ease-in-out),
-            display var(--popover-duration) allow-discrete,
-            overlay var(--popover-duration) allow-discrete;
+            opacity var(--popover-fade) var(--ease-in-out),
+            scale   var(--popover-duration) var(--ease-in-out);
+}
+
+/*
+ * Анимация закрытия — только вместе с overlay. Он держит окно в верхнем слое,
+ * пока идёт переход. Без него браузер выносит окно из слоя сразу, а display
+ * продолжает его показывать: всё время перехода оно рисуется в обычном потоке,
+ * уже без верхнего слоя (замерено в Safari 18.2, у диалога прыжок 78px).
+ * Поэтому там, где overlay нет (Firefox, Safari), окно закрывается сразу:
+ * появление анимируется везде, это даёт @starting-style.
+ */
+@supports (overlay: auto) {
+    .popover {
+        transition:
+                opacity var(--popover-fade) var(--ease-in-out),
+                scale   var(--popover-duration) var(--ease-in-out),
+                display var(--popover-duration) allow-discrete,
+                overlay var(--popover-duration) allow-discrete;
+    }
 }
 
 .popover:popover-open {
@@ -76,17 +116,22 @@
 /*  привязаться надо не к триггеру.                                           */
 /*                                                                            */
 /*  Всё внутри @supports намеренно: там, где anchor positioning не            */
-/*  поддерживается, правила целиком не применяются, и поповер остаётся        */
-/*  отцентрированным по экрану — как ведёт себя UA. Это рабочий запасной      */
-/*  вариант, а не поломка: окно видно, оно закрывается, просто стоит          */
-/*  не у кнопки.                                                              */
+/*  поддерживается, координаты считает Popover.fallback.ts, а применяет       */
+/*  блок @supports not ниже.                                                  */
 /* -------------------------------------------------------------------------- */
 
 @supports (position-area: block-end) {
     .popover {
-        position: absolute;
-        position-anchor: var(--popover-anchor, auto);
-        position-area: var(--popover-area, block-end span-inline-end);
+        /*
+         * fixed, а не absolute. У absolute привязка расходится между движками
+         * (замерено): Firefox 157 теряет якорь внутри position: fixed, то есть
+         * меню из фиксированной шапки уезжает в угол экрана, а Safari 27
+         * на прокрученной странице сдвигает окно на 140px от кнопки.
+         * С fixed все три движка стоят у триггера и следуют за ним при прокрутке.
+         */
+        position: fixed;
+        position-anchor: var(--popover-anchor);
+        position-area: var(--popover-area);
 
         /*
          * Куда перевернуться, если с выбранной стороны не хватает места.
@@ -125,8 +170,8 @@
          * так что отступ переезжает на нужную сторону сам.
          */
         margin: 0;
-        margin-block: var(--popover-margin-block, var(--popover-gap) 0);
-        margin-inline: var(--popover-margin-inline, 0);
+        margin-block: var(--popover-margin-block);
+        margin-inline: var(--popover-margin-inline);
 
         /*
          * Ширина по содержимому, но не больше того, что осталось на выбранной
@@ -143,50 +188,50 @@
          * Здесь оно вместо этого сжимается.
          */
         inline-size: max-content;
-        max-inline-size: min(20rem, calc(100% - var(--popover-gap) - var(--popover-inset)));
+        max-inline-size: min(var(--popover-max-width), calc(100% - var(--popover-gap) - var(--popover-inset)));
+
+        /*
+         * Минимум вместо брейкпоинта по ширине экрана. Без него окно «влезает»
+         * куда угодно, потому что умеет сжаться, и браузер не переходит к
+         * следующему варианту из списка: выходила полоса с буквой в строке.
+         * С минимумом узкая сторона честно не подходит, и окно уходит туда, где
+         * есть место, на любом экране, при любом размере текста и в любом
+         * контейнере. Второй аргумент не даёт минимуму превысить сам экран.
+         */
+        min-inline-size: min(var(--popover-min-width), calc(100vw - var(--popover-inset) * 2));
+
+        /*
+         * То же по высоте. На низком экране (400% зума на ноутбуке это 320×256)
+         * длинное окно иначе уходило за нижний край без прокрутки. Потолок —
+         * область из position-area, и прокручивается окно: UA-стиль поповера
+         * уже даёт overflow: auto. Но потолок не ниже --popover-min-height:
+         * иначе окно сжималось бы в щель под кнопкой у края экрана и никогда
+         * не переворачивалось. Короткое окно этот потолок не задевает.
+         */
+        max-block-size: max(
+                calc(100% - var(--popover-gap) - var(--popover-inset)),
+                min(var(--popover-min-height), calc(100dvb - var(--popover-inset) * 2))
+        );
 
         /* Растёт от того края, которым прижат к триггеру. */
-        transform-origin: var(--popover-origin, top center);
+        transform-origin: var(--popover-origin);
     }
+}
 
-    /*
-     * На узком экране боковая раскладка отменяется целиком: окно всегда
-     * уходит под кнопку, где доступна вся ширина страницы.
-     *
-     * Почему жёстко, а не через position-try-order: most-width, который
-     * тоже это умеет. Замерено: браузер выбирает вариант из списка один
-     * раз, при открытии, и при изменении размера окна выбор не
-     * пересматривает — пересчитывает только ширину уже выбранного.
-     * Открытый сбоку поповер при сужении окна до 380px превращался
-     * в вертикальную полосу шириной 34px с одной буквой в строке,
-     * хотя достаточно было переехать под кнопку. Стоило закрыть и
-     * открыть заново — вставал правильно.
-     *
-     * Медиавыражение от этого не зависит: смена раскладки применяется
-     * сразу, открыт поповер или нет.
-     */
-    @media (max-width: 48rem) {
-        .popover {
-            position-area: block-end span-inline-end;
-            margin-block: var(--popover-gap) 0;
-            margin-inline: 0;
-            transform-origin: top center;
-
-            /*
-             * И приоритет ширины вместо «первый подходящий». Из-за
-             * max-inline-size ниже подходящим оказывается любой вариант:
-             * окно всегда может ужаться. Браузер берёт первый и на том
-             * успокаивается, даже если рядом есть место втрое больше.
-             *
-             * Замерено на 420px для кнопки у правого края: без этой строки
-             * поповер получал 122px, с ней — 320px.
-             *
-             * На широком экране most-width включать нельзя: он игнорирует
-             * placement и уводит окно туда, где просто просторнее. Здесь,
-             * где раскладка и так уже принудительная, это ровно то, что нужно.
-             */
-            position-try-order: most-width;
-        }
+/*
+ * Без anchor positioning: координаты приносит Popover.fallback.ts, зазор и
+ * ограничения остаются здесь. Знак говорит, в какую сторону откладывать зазор.
+ */
+@supports not (position-area: block-end) {
+    .popover {
+        position: fixed;
+        inset: auto;
+        top: calc(var(--anchor-y) + var(--popover-gap) * var(--anchor-sign-y));
+        left: calc(var(--anchor-x) + var(--popover-gap) * var(--anchor-sign-x));
+        margin: 0;
+        inline-size: max-content;
+        max-inline-size: min(var(--popover-max-width), calc(100vw - var(--popover-inset) * 2));
+        max-block-size: calc(100dvb - var(--popover-inset) * 2);
     }
 }
 

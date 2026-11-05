@@ -21,7 +21,13 @@
     --accordion-accent-hover: var(--accent-color-soft);
     --accordion-ring: var(--accent-color-soft);
 
-    interpolate-size: allow-keywords;
+    --accordion-duration: 0.3s;
+    --accordion-fade-out: 0.15s;
+    --accordion-fade-in: 0.25s;
+    --accordion-hover-duration: 0.2s;
+    --accordion-title-size: clamp(calc(var(--base-size) * 1.25), 4vw, calc(var(--base-size) * 2));
+    --accordion-title-weight: var(--font-weight-medium, 500);
+
     display: block;
     inline-size: 100%;
     padding-block: calc(var(--base-gap) * 3);
@@ -29,7 +35,7 @@
 }
 
 .accordion:not(:last-child) {
-    border-bottom: 1px solid var(--accordion-divider);
+    border-bottom: var(--border-width, 1px) solid var(--accordion-divider);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -45,10 +51,10 @@
     justify-content: space-between;
     gap: var(--base-gap);
     text-align: start;
-    font-size: clamp(calc(var(--base-size) * 1.25), 4vw, calc(var(--base-size) * 2));
-    font-weight: 500;
+    font-size: var(--accordion-title-size);
+    font-weight: var(--accordion-title-weight);
     color: var(--accordion-title);
-    transition: color 0.2s var(--ease-in-out);
+    transition: color var(--accordion-hover-duration) var(--ease-in-out);
 
     .accordion_header__title {
         margin: 0;
@@ -68,7 +74,7 @@
 .icon {
     flex: 0 0 auto;
     rotate: 0deg;
-    transition: rotate 0.3s var(--ease-in-out);
+    transition: rotate var(--accordion-duration) var(--ease-in-out);
 }
 
 /*
@@ -86,26 +92,33 @@
 
 /* -------------------------------------------------------------------------- */
 /*  Раскрытие                                                                 */
+/*                                                                            */
+/*  Высоту ведёт строка сетки 0fr → 1fr, а не block-size: 0 → auto. Переход   */
+/*  к auto требует interpolate-size, он есть только в Chromium, и в Firefox   */
+/*  и Safari блок раскрывался скачком (замерено: 2 значения высоты против 14).*/
+/*  Строка сетки анимируется во всех трёх; где нет ::details-content,         */
+/*  остаётся родное раскрытие без анимации.                                   */
 /* -------------------------------------------------------------------------- */
 
 .accordion::details-content {
+    display: grid;
+    grid-template-rows: 0fr;
     opacity: 0;
-    block-size: 0;
     overflow: clip;
     overflow-clip-margin: 2px;
     transition:
-            opacity            0.15s var(--ease-in-out),
-            block-size         0.3s  var(--ease-in-out),
-            content-visibility 0.3s  allow-discrete;
+            opacity            var(--accordion-fade-out) var(--ease-in-out),
+            grid-template-rows var(--accordion-duration) var(--ease-in-out),
+            content-visibility var(--accordion-duration) allow-discrete;
 }
 
 .accordion[open]::details-content {
+    grid-template-rows: 1fr;
     opacity: 1;
-    block-size: auto;
     transition:
-            opacity            0.25s var(--ease-out) 0.05s,
-            block-size         0.3s  var(--ease-out),
-            content-visibility 0.3s  allow-discrete;
+            opacity            var(--accordion-fade-in) var(--ease-out) 0.05s,
+            grid-template-rows var(--accordion-duration) var(--ease-out),
+            content-visibility var(--accordion-duration) allow-discrete;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -115,6 +128,9 @@
 .accordion_content {
     display: flex;
     flex-direction: column;
+    /* Без этого элемент сетки не сжимается ниже содержимого, и строка 0fr
+       остаётся высотой с него. Обрезает ::details-content. */
+    min-block-size: 0;
     padding-block-start: var(--base-gap);
     color: var(--accordion-content);
 }
@@ -124,8 +140,8 @@
 /* -------------------------------------------------------------------------- */
 
 .accordion:has(> .accordion_header:focus-visible) {
-    outline: 2px solid var(--accordion-ring);
-    outline-offset: -1px;
+    outline: var(--ring-width, 2px) solid var(--accordion-ring);
+    outline-offset: calc(var(--ring-width, 2px) * -0.5);
 }
 
 @media (hover: hover) and (pointer: fine) {

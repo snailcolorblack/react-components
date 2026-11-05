@@ -32,16 +32,21 @@
  *  поэтому две группы на странице не перетягивают индикатор друг у друга —
  *  замерено.
  *
- *  Где anchor positioning не поддержан (Safari, Firefox) индикатора нет,
+ *  Где anchor positioning не поддержан (Safari < 26, Firefox < 147) индикатора нет,
  *  а его работу берёт на себя сама активная кнопка: фон в PILL,
  *  подчёркивание тенью в LINE.
  */
 /* -------------------------------------------------------------------------- */
 
 .group {
+    /* Служебные: значение выставляет компонент инлайном, снаружи не задавать. */
+    --group-pill: none;
+
     --group-accent: var(--accent-color);
     --group-bg: var(--base-color-200);
     --group-pill-bg: var(--base-color);
+    /* По заливке выбранное отличается всего на 1.27:1, состояние держит граница. */
+    --group-pill-border: var(--border-strong);
     --group-line: var(--contrast-alpha-20);
     --group-fg: var(--contrast-alpha-60);
     --group-fg-active: var(--contrast-color);
@@ -91,12 +96,12 @@
     --group-item-padding: calc(var(--base-gap) * 2) calc(var(--base-gap) * 3);
 
     gap: var(--base-gap);
-    border-block-end: 1px solid var(--group-line);
+    border-block-end: var(--border-width, 1px) solid var(--group-line);
 }
 
 .line[aria-orientation="vertical"] {
     border-block-end: 0;
-    border-inline-end: 1px solid var(--group-line);
+    border-inline-end: var(--border-width, 1px) solid var(--group-line);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -142,7 +147,7 @@
 }
 
 .pill .item {
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold, 600);
 }
 
 .line .item {
@@ -200,8 +205,8 @@
 /* Кольцо на кнопке, а не на поле: поле прозрачное и своего контура не имеет. */
 .item:has(.input:focus-visible),
 .item:focus-visible {
-    outline: 2px solid var(--group-ring);
-    outline-offset: -2px;
+    outline: var(--ring-width, 2px) solid var(--group-ring);
+    outline-offset: calc(var(--ring-width, 2px) * -1);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -240,6 +245,7 @@
 
     /* Таблетка повторяет кнопку целиком. */
     .pill .indicator {
+        box-shadow: inset 0 0 0 var(--border-width, 1px) var(--group-pill-border);
         left: anchor(left);
         top: anchor(top);
         width: anchor-size(width);
@@ -279,6 +285,7 @@
 
     .pill [aria-selected="true"],
     .pill .item:has(.input:checked) {
+        box-shadow: inset 0 0 0 var(--border-width, 1px) var(--group-pill-border);
         background-color: var(--group-pill-bg);
     }
 
@@ -317,7 +324,7 @@
     padding: 0;
     color: var(--contrast-color);
     font-size: var(--font-size-14, 0.875rem);
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold, 600);
 }
 
 .hiddenLegend {

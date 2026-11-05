@@ -20,7 +20,7 @@
      */
     --switch-accent: var(--accent-color);
     --switch-track-off: var(--contrast-alpha-20);
-    --switch-track-border: var(--contrast-alpha-40);
+    --switch-track-border: var(--border-strong);
     --switch-thumb: var(--contrast-color);
     --switch-ring: var(--accent-color-soft);
 
@@ -101,8 +101,8 @@
 }
 
 .input:focus-visible {
-    outline: 2px solid var(--switch-ring);
-    outline-offset: 2px;
+    outline: var(--ring-width, 2px) solid var(--switch-ring);
+    outline-offset: var(--ring-offset, 2px);
 }
 
 /* -------------------------------------------------------------------------- */

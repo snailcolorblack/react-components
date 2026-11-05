@@ -82,7 +82,7 @@
     flex: none;
     inline-size: var(--control-size);
     block-size: var(--control-size);
-    border: 1px solid var(--control-border);
+    border: var(--border-width, 1px) solid var(--control-border);
     background-color: var(--control-bg);
     cursor: inherit;
 
@@ -125,8 +125,8 @@
 }
 
 .input:focus-visible {
-    outline: 2px solid var(--control-ring);
-    outline-offset: 2px;
+    outline: var(--ring-width, 2px) solid var(--control-ring);
+    outline-offset: var(--ring-offset, 2px);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -183,7 +183,7 @@
 .chip {
     position: relative;
     padding: calc(var(--base-gap) * 2) var(--base-size);
-    border: 1px solid var(--control-border);
+    border: var(--border-width, 1px) solid var(--control-border);
     border-radius: var(--control-radius);
 
     transition:
@@ -214,8 +214,8 @@
 
 /* Фокус рисуется на чипе: сам input невидим, и его контур показать негде. */
 .chip:has(.input:focus-visible) {
-    outline: 2px solid var(--control-ring);
-    outline-offset: 2px;
+    outline: var(--ring-width, 2px) solid var(--control-ring);
+    outline-offset: var(--ring-offset, 2px);
 }
 
 /* -------------------------------------------------------------------------- */

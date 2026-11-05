@@ -6,6 +6,9 @@
 /* -------------------------------------------------------------------------- */
 
 .pagination {
+    /* Настройка: задаётся на самом компоненте, через style или свой класс. */
+    --pagination-icon-size: 1.25rem;
+
     --pagination-gap: var(--base-gap);
     /* Сторона кнопки. WCAG 2.5.8 требует цель не меньше 24×24; берём
        с запасом под палец. */
@@ -105,8 +108,8 @@
 .icon {
     display: grid;
     place-items: center;
-    inline-size: 1.25rem;
-    block-size: 1.25rem;
+    inline-size: var(--pagination-icon-size);
+    block-size: var(--pagination-icon-size);
 }
 
 .icon > svg {
@@ -196,7 +199,7 @@
 @media (forced-colors: active) {
     .page[aria-current="page"] {
         outline: 2px solid CanvasText;
-        outline-offset: -2px;
+        outline-offset: calc(var(--ring-width, 2px) * -1);
     }
 
     .status,

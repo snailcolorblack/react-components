@@ -23,7 +23,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Варианты: Story = {
     render: args => (
-        <div style={{display: 'grid', gap: '0.75rem', minInlineSize: '24rem'}}>
+        <div style={{display: 'grid', gap: '0.75rem', inlineSize: 'min(24rem, calc(100vw - 2rem))'}}>
             <Alert {...args}>Нейтральная плашка</Alert>
             <Alert {...args} variant="SUCCESS">Данные сохранены</Alert>
             <Alert {...args} variant="WARNING">Срок действия ключа истекает</Alert>

@@ -24,6 +24,15 @@
 }
 
 .range {
+    /* Настройка: задаётся на самом компоненте, через style или свой класс. */
+    --range-radius: 999px;
+    --range-thumb-border: 2px;
+
+    /* Служебные: значение выставляет компонент инлайном, снаружи не задавать. */
+    --range-from: 0;
+    --range-to: 0;
+    --range-at: 0;
+
     --range-track: 4px;
     --range-thumb: 1.25rem;
     --range-tick: 4px;
@@ -35,7 +44,7 @@
      */
     --range-min: 16rem;
 
-    --range-track-bg: var(--contrast-alpha-20);
+    --range-track-bg: var(--border-strong);
     --range-fill: var(--accent-color-soft);
     --range-thumb-bg: var(--accent-color-soft);
     --range-thumb-ring: var(--base-color-200);
@@ -99,7 +108,7 @@
     inset-block-start: 50%;
     block-size: var(--range-track);
     translate: 0 -50%;
-    border-radius: 999px;
+    border-radius: var(--range-radius);
     pointer-events: none;
 }
 
@@ -179,7 +188,7 @@
     block-size: var(--range-thumb);
     translate: 0 -50%;
 
-    border: 2px solid var(--range-thumb-ring);
+    border: var(--range-thumb-border) solid var(--range-thumb-ring);
     border-radius: 50%;
     background-color: var(--range-thumb-bg);
     pointer-events: none;
@@ -208,8 +217,8 @@
  */
 .range:has([data-input="0"]:focus-visible) [data-thumb="0"],
 .range:has([data-input="1"]:focus-visible) [data-thumb="1"] {
-    outline: 2px solid var(--range-ring);
-    outline-offset: 2px;
+    outline: var(--ring-width, 2px) solid var(--range-ring);
+    outline-offset: var(--ring-offset, 2px);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -358,11 +367,15 @@
  * «дёшево» начиналось левее начала дорожки).
  */
 .mark[data-edge="start"] {
-    justify-items: start;
+    inset-inline-start: 0;
+    inline-size: max-content;
 }
 
+/* От конца дорожки, а не от точки: так подпись не вылезает за ползунок
+   при любой длине и размере текста, и логические стороны работают и в RTL. */
 .mark[data-edge="end"] {
-    justify-items: end;
+    inset-inline: auto 0;
+    inline-size: max-content;
 }
 
 /* -------------------------------------------------------------------------- */

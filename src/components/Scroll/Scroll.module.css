@@ -10,6 +10,9 @@
 /* -------------------------------------------------------------------------- */
 
 .scroll {
+    /* Служебные: значение выставляет компонент инлайном, снаружи не задавать. */
+    --scroll-bleed: 0px;
+
     /* Отступ, на котором прицепленный элемент встаёт от края. */
     --scroll-padding: var(--base-size, 1rem);
     /*
@@ -41,7 +44,7 @@
      */
     --scroll-pull: var(--scroll-inset);
     /* Край ленты: запас плюс выход за отступы родителя, если он включён. */
-    --scroll-edge: calc(var(--scroll-inset) + var(--scroll-bleed, 0px));
+    --scroll-edge: calc(var(--scroll-inset) + var(--scroll-bleed));
     --scroll-thumb: var(--contrast-alpha-20);
     --scroll-ring: var(--accent-color-soft);
 
@@ -54,14 +57,17 @@
     --scroll-arrow-size: 2rem;
     --scroll-arrow-bg: var(--base-color-200);
     --scroll-arrow-fg: var(--contrast-color);
+    --scroll-arrow-border: var(--contrast-alpha-20);
+    --scroll-arrow-radius: 50%;
     --scroll-arrow-start-label: 'Назад';
     --scroll-arrow-end-label: 'Вперёд';
 
     /*
      * Полоса тонкая и бледная, но не спрятанная: scrollbar-width: none
      * убрало бы единственный признак того, что лента вообще едет.
-     * Вендорные ::-webkit-scrollbar не нужны — Chromium понимает
-     * стандартные свойства, а Firefox понимал их всегда.
+     * Вендорные ::-webkit-scrollbar не нужны: scrollbar-width есть во всех
+     * трёх движках, scrollbar-color — в Safari с 26.2, а до этого полоса
+     * там просто тонкая и системного цвета.
      */
     scrollbar-width: thin;
     scrollbar-color: var(--scroll-thumb) transparent;
@@ -193,6 +199,9 @@
 /*  которой ведёт scroll-driven анимация. Ни обработчика прокрутки,           */
 /*  ни перерисовок React — «сейчас» у этой шкалы равно положению полосы.      */
 /*                                                                            */
+/*  Маска стоит вне @supports: без scroll-driven анимаций (Firefox) те же две */
+/*  переменные пишет Scroll.fallback.ts, а вид остаётся один.                 */
+/*                                                                            */
 /*  Растушёвка появляется только с той стороны, где есть продолжение:         */
 /*  у непрокрученной ленты начало непрозрачно, а конец растворён.             */
 /*  fill-mode: both обязателен — без него значения за пределами отрезка       */
@@ -215,47 +224,58 @@
     initial-value: 1;
 }
 
-@supports (animation-timeline: scroll()) and (mask-image: linear-gradient(#000, #000)) {
-    .scroll[data-fade][data-axis="inline"] {
-        mask-image: linear-gradient(
-                to right,
-                rgb(0 0 0 / var(--scroll-fade-start)) 0,
-                #000 var(--scroll-fade),
-                #000 calc(100% - var(--scroll-fade)),
-                rgb(0 0 0 / var(--scroll-fade-end)) 100%
-        );
+/* Тип нужен запасному пути: вычисленная длина приходит в px, а не строкой «2.5rem». */
+@property --scroll-fade {
+    syntax: '<length>';
+    inherits: false;
+    initial-value: 40px;
+}
 
+.scroll[data-fade][data-axis="inline"] {
+    mask-image: linear-gradient(
+            to right,
+            rgb(0 0 0 / var(--scroll-fade-start)) 0,
+            #000 var(--scroll-fade),
+            #000 calc(100% - var(--scroll-fade)),
+            rgb(0 0 0 / var(--scroll-fade-end)) 100%
+    );
+}
+
+/*
+ * Направление заливки у градиента физическое, логического у него нет.
+ * В арабской вёрстке начало ленты справа, поэтому градиент
+ * переворачивается. Селектор по атрибуту, а не :dir(rtl): замерено,
+ * сборка переписывает :dir() в список :lang() и правило перестаёт
+ * срабатывать на обычном dir="rtl".
+ */
+[dir="rtl"] .scroll[data-fade][data-axis="inline"] {
+    mask-image: linear-gradient(
+            to left,
+            rgb(0 0 0 / var(--scroll-fade-start)) 0,
+            #000 var(--scroll-fade),
+            #000 calc(100% - var(--scroll-fade)),
+            rgb(0 0 0 / var(--scroll-fade-end)) 100%
+    );
+}
+
+.scroll[data-fade][data-axis="block"] {
+    mask-image: linear-gradient(
+            to bottom,
+            rgb(0 0 0 / var(--scroll-fade-start)) 0,
+            #000 var(--scroll-fade),
+            #000 calc(100% - var(--scroll-fade)),
+            rgb(0 0 0 / var(--scroll-fade-end)) 100%
+    );
+}
+
+@supports (animation-timeline: scroll()) {
+    .scroll[data-fade][data-axis="inline"] {
         animation: scroll-fade-start linear both, scroll-fade-end linear both;
         animation-timeline: scroll(self inline), scroll(self inline);
         animation-range: 0 var(--scroll-fade), calc(100% - var(--scroll-fade)) 100%;
     }
 
-    /*
-     * Направление заливки у градиента физическое, логического у него нет.
-     * В арабской вёрстке начало ленты справа, поэтому градиент
-     * переворачивается. Селектор по атрибуту, а не :dir(rtl): замерено,
-     * сборка переписывает :dir() в список :lang() и правило перестаёт
-     * срабатывать на обычном dir="rtl".
-     */
-    [dir="rtl"] .scroll[data-fade][data-axis="inline"] {
-        mask-image: linear-gradient(
-                to left,
-                rgb(0 0 0 / var(--scroll-fade-start)) 0,
-                #000 var(--scroll-fade),
-                #000 calc(100% - var(--scroll-fade)),
-                rgb(0 0 0 / var(--scroll-fade-end)) 100%
-        );
-    }
-
     .scroll[data-fade][data-axis="block"] {
-        mask-image: linear-gradient(
-                to bottom,
-                rgb(0 0 0 / var(--scroll-fade-start)) 0,
-                #000 var(--scroll-fade),
-                #000 calc(100% - var(--scroll-fade)),
-                rgb(0 0 0 / var(--scroll-fade-end)) 100%
-        );
-
         animation: scroll-fade-start linear both, scroll-fade-end linear both;
         animation-timeline: scroll(self block), scroll(self block);
         animation-range: 0 var(--scroll-fade), calc(100% - var(--scroll-fade)) 100%;
@@ -302,8 +322,9 @@
 /*  прокручиваемого блока уезжает вместе с содержимым, а привязанный          */
 /*  fixed остаётся у края.                                                    */
 /*                                                                            */
-/*  Где ::scroll-button() ещё нет, не появляется ничего: лента остаётся       */
-/*  прокручиваемой колесом, пальцем, полосой и клавишами.                     */
+/*  Где ::scroll-button() ещё нет, компонент рисует настоящие кнопки .arrow   */
+/*  (Scroll.tsx), с теми же переменными и местом. Без anchor positioning      */
+/*  стрелок нет, лента листается колесом, пальцем, полосой и клавишами.       */
 /* -------------------------------------------------------------------------- */
 
 @supports selector(::scroll-button(*)) {
@@ -322,13 +343,13 @@
         inline-size: var(--scroll-arrow-size);
         block-size: var(--scroll-arrow-size);
 
-        border: 1px solid var(--contrast-alpha-20);
-        border-radius: 50%;
+        border: var(--border-width, 1px) solid var(--scroll-arrow-border);
+        border-radius: var(--scroll-arrow-radius);
         font: inherit;
         color: var(--scroll-arrow-fg);
         background-color: var(--scroll-arrow-bg);
         cursor: pointer;
-        transition: opacity 0.12s var(--ease-in-out);
+        transition: opacity var(--duration-fast, 0.12s) var(--ease-in-out);
     }
 
     /* Дальше ехать некуда — кнопка не нужна. Браузер выключает её сам. */
@@ -338,8 +359,8 @@
     }
 
     .scroll[data-arrows]::scroll-button(*):focus-visible {
-        outline: 2px solid var(--scroll-ring);
-        outline-offset: 2px;
+        outline: var(--ring-width, 2px) solid var(--scroll-ring);
+        outline-offset: var(--ring-offset, 2px);
     }
 
     .scroll[data-arrows][data-axis="inline"]::scroll-button(inline-start) {
@@ -360,6 +381,80 @@
     .scroll[data-arrows][data-axis="block"]::scroll-button(block-end) {
         content: '⌄' / var(--scroll-arrow-end-label);
         align-self: end;
+    }
+}
+
+/* Те же стрелки там, где браузер своих не рисует. */
+.arrow {
+    /* Служебные: значение выставляет компонент инлайном, снаружи не задавать. */
+    --scroll-anchor: auto;
+
+    display: none;
+}
+
+@supports (position-area: center) {
+    .arrow {
+        position: fixed;
+        position-anchor: var(--scroll-anchor);
+        position-area: center center;
+        align-self: center;
+
+        display: grid;
+        place-items: center;
+        inline-size: var(--scroll-arrow-size, 2rem);
+        block-size: var(--scroll-arrow-size, 2rem);
+        margin: 0;
+        padding: 0;
+
+        border: var(--border-width, 1px) solid var(--scroll-arrow-border, var(--contrast-alpha-20));
+        border-radius: var(--scroll-arrow-radius, 50%);
+        font: inherit;
+        color: var(--scroll-arrow-fg, var(--contrast-color));
+        background-color: var(--scroll-arrow-bg, var(--base-color-200));
+        cursor: pointer;
+        transition: opacity var(--duration-fast, 0.12s) var(--ease-in-out);
+    }
+
+    .arrow:disabled {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .arrow:focus-visible {
+        outline: var(--ring-width, 2px) solid var(--scroll-ring, var(--accent-color-soft));
+        outline-offset: var(--ring-offset, 2px);
+    }
+
+    .arrow[data-axis="inline"][data-side="start"] {
+        justify-self: start;
+    }
+
+    .arrow[data-axis="inline"][data-side="end"] {
+        justify-self: end;
+    }
+
+    .arrow[data-axis="block"][data-side="start"] {
+        align-self: start;
+    }
+
+    .arrow[data-axis="block"][data-side="end"] {
+        align-self: end;
+    }
+
+    .arrow[data-axis="inline"][data-side="start"]::before {
+        content: '‹';
+    }
+
+    .arrow[data-axis="inline"][data-side="end"]::before {
+        content: '›';
+    }
+
+    .arrow[data-axis="block"][data-side="start"]::before {
+        content: '⌃';
+    }
+
+    .arrow[data-axis="block"][data-side="end"]::before {
+        content: '⌄';
     }
 }
 
@@ -392,8 +487,8 @@
 /* -------------------------------------------------------------------------- */
 
 .scroll:focus-visible {
-    outline: 2px solid var(--scroll-ring);
-    outline-offset: 2px;
+    outline: var(--ring-width, 2px) solid var(--scroll-ring);
+    outline-offset: var(--ring-offset, 2px);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -434,7 +529,8 @@
         scroll-behavior: auto;
     }
 
-    .scroll[data-arrows]::scroll-button(*) {
+    .scroll[data-arrows]::scroll-button(*),
+    .arrow {
         transition: none;
     }
 }

@@ -32,7 +32,8 @@
  */
 /* -------------------------------------------------------------------------- */
 
-import {useCallback, useLayoutEffect, useRef, useState, type ElementType, type Ref} from 'react';
+import {useCallback, useId, useLayoutEffect, useRef, useState, type CSSProperties, type ElementType, type Ref} from 'react';
+import {page, useScrollFallback} from './Scroll.fallback.ts';
 import {useWheel} from './Scroll.wheel.ts';
 import type {ScrollProps} from './Scroll.interface.ts';
 import styles from './Scroll.module.css';
@@ -79,6 +80,9 @@ function Scroll<T extends ElementType = 'div'>({
         else if (ref) (ref as {current: HTMLElement | null}).current = node;
     }, [ref]);
     const attach = useWheel(fanout as Ref<HTMLElement>);
+
+    const {edges, needArrows} = useScrollFallback(nodeRef, axis, Boolean(fade), Boolean(arrows));
+    const anchor = `--scroll-${useId().replace(/[^\w-]/g, '-')}`;
 
     const Component = (as ?? 'div') as ElementType;
     const tag = typeof Component === 'string' ? Component : '';
@@ -135,7 +139,7 @@ function Scroll<T extends ElementType = 'div'>({
         node.style.setProperty('--scroll-bleed', padding);
     }, [axis, bleed, children]);
 
-    return (
+    const strip = (
         <Component
             {...props}
             ref={attach}
@@ -145,6 +149,9 @@ function Scroll<T extends ElementType = 'div'>({
              */
             data-axis={axis}
             data-mode={mode}
+            style={needArrows
+                ? {...(given as {style?: CSSProperties}).style, anchorName: anchor} as CSSProperties
+                : (given as {style?: CSSProperties}).style}
             data-trap={trap || undefined}
             data-fade={fade || undefined}
             data-arrows={arrows || undefined}
@@ -157,6 +164,45 @@ function Scroll<T extends ElementType = 'div'>({
         >
             {children}
         </Component>
+    );
+
+    if (!needArrows) return strip;
+
+    /*
+     * Настоящие кнопки только там, где нет ::scroll-button(). Рядом с лентой,
+     * а не внутри неё: внутри они стали бы её детьми, то есть точками привязки
+     * и остановками для обхода по карточкам. Подписи и вид берутся из тех же
+     * переменных, что и у кнопок браузера.
+     */
+    const anchorStyle = {'--scroll-anchor': anchor} as CSSProperties;
+    const scroll = (direction: 1 | -1) => {
+        if (nodeRef.current) page(nodeRef.current, axis, direction);
+    };
+
+    return (
+        <>
+            {strip}
+            <button
+                type="button"
+                className={styles.arrow}
+                data-side="start"
+                data-axis={axis}
+                aria-label={edges.startLabel}
+                disabled={edges.start}
+                style={anchorStyle}
+                onClick={() => scroll(-1)}
+            />
+            <button
+                type="button"
+                className={styles.arrow}
+                data-side="end"
+                data-axis={axis}
+                aria-label={edges.endLabel}
+                disabled={edges.end}
+                style={anchorStyle}
+                onClick={() => scroll(1)}
+            />
+        </>
     );
 }
 

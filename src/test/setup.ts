@@ -14,6 +14,31 @@ if (!('ResizeObserver' in globalThis)) {
 }
 
 /*
+ * В jsdom нет matchMedia, а прокрутка колесом спрашивает prefers-reduced-motion.
+ * Ответ «движение убрано»: лента встаёт на место сразу, и тест видит результат
+ * без ожидания кадров. Сама анимация проверяется в браузере.
+ */
+if (typeof window !== 'undefined' && !window.matchMedia) {
+    window.matchMedia = (query: string) => ({
+        matches: query.includes('prefers-reduced-motion: reduce'),
+        media: query,
+        onchange: null,
+        addEventListener() {},
+        removeEventListener() {},
+        addListener() {},
+        removeListener() {},
+        dispatchEvent: () => false,
+    });
+}
+
+/* jsdom не реализует прокрутку программно; геометрия проверяется в браузере. */
+if (typeof Element !== 'undefined' && !Element.prototype.scrollTo) {
+    Element.prototype.scrollTo = function scrollTo(this: Element, options?: ScrollToOptions | number) {
+        if (typeof options === 'object' && options.left !== undefined) this.scrollLeft = options.left;
+    };
+}
+
+/*
  * jsdom не реализует showModal/close у <dialog>. Заглушка повторяет только
  * наблюдаемую часть контракта: атрибут open и событие close. Настоящую
  * модальность — top layer, ловушку фокуса, ::backdrop — проверяем в браузере.

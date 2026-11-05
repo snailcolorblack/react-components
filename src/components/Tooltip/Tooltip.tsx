@@ -80,6 +80,7 @@
 import {cloneElement, useEffect, useId, useRef, type PointerEvent, type FocusEvent, type CSSProperties} from 'react';
 import type {TooltipPlacement, TooltipProps} from './Tooltip.interface.ts';
 import styles from './Tooltip.module.css';
+import '../Popover/Popover.fallback.ts';
 
 /*
  * area — куда встать относительно триггера, origin — от какого края растёт

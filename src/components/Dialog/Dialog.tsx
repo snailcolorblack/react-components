@@ -53,9 +53,8 @@
  *  это предупреждение в консоли, в production тишина, потому что там такие
  *  проверки вырезаны. В нижнем регистре React отдаёт атрибут в DOM как есть.
  *
- *  Осторожно: команды новее popovertarget, поддержка между движками
- *  неравномерная, и там, где их нет, кнопка молча ничего не делает.
- *  Для критичных сценариев берите вариант 1.
+ *  Команды новее popovertarget (Chrome 135, Firefox 144, Safari 26.2).
+ *  В движках старше их исполняет Button, голый <button> там ничего не сделает.
  *
  *  Типы атрибутов добавлены в src/types/invoker.d.ts.
  */
@@ -89,15 +88,14 @@
  *
  *  Любое из них поднимает событие close, то есть вызывает ваш onClose.
  *
- *  Про closedBy честно: всё это делает сам атрибут closedby, и там, где
- *  движок его ещё не знает, компонент подменяет ТОЛЬКО клик мимо при
- *  closedBy="any" — остальное остаётся браузерным по умолчанию. То есть
- *  в старом движке closedBy="none" и "closerequest" не удержат Esc.
+ *  Про closedBy: всё это делает сам атрибут closedby, и там, где
+ *  движок его ещё не знает, компонент подменяет клик мимо при closedBy="any"
+ *  и запрет Esc при closedBy="none" (через родное событие cancel).
  */
 /* -------------------------------------------------------------------------- */
 
 import {useCallback, useEffect, useRef} from "react";
-import type {MouseEvent} from "react";
+import type {MouseEvent, SyntheticEvent} from "react";
 import type {DialogProps} from "./Dialog.interface.ts";
 import styles from './Dialog.module.css';
 
@@ -147,9 +145,17 @@ function Dialog({
             closedby={closedBy}
             className={`${styles.dialog} ${className}`.trim()}
             onClick={handleClick}
+            onCancel={handleCancel}
         />
     );
 
+
+    /* Где closedby нет, Esc закрывал бы и диалог с closedBy="none". Сам атрибут
+       там ничего не значит, поэтому запрет повторён через родной cancel. */
+    function handleCancel(event: SyntheticEvent<HTMLDialogElement>) {
+        props.onCancel?.(event);
+        if (!SUPPORTS_CLOSED_BY && closedBy === 'none') event.preventDefault();
+    }
 
     function handleClick(event: MouseEvent<HTMLDialogElement>) {
         props.onClick?.(event);

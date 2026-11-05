@@ -1,5 +1,10 @@
 .dialog {
+    /* Настройка: задаётся на самом компоненте, через style или свой класс. */
+    --dialog-width: 32rem;
+
     --dialog-duration: 0.24s;
+    --dialog-fade: 0.18s;
+    --dialog-scale: 0.85;
 
     /*
      * Цвета компонента объявлены здесь и только здесь. Перебить любой из них
@@ -12,14 +17,14 @@
     --dialog-backdrop: rgb(0 0 0 / 0.6);
 
 
-    inline-size: min(32rem, 100% - var(--base-size) * 2);
+    inline-size: min(var(--dialog-width), 100% - var(--base-size) * 2);
     max-block-size: min(85dvb, 100% - var(--base-size) * 2);
     overflow: auto;
     overscroll-behavior: contain;
 
     margin: auto;
     padding: var(--base-size);
-    border: 1px solid var(--dialog-border);
+    border: var(--border-width, 1px) solid var(--dialog-border);
     border-radius: var(--base-gap);
     color: var(--dialog-fg);
     /* Приподнятая поверхность, а не цвет страницы: диалог держится на
@@ -27,14 +32,30 @@
     background-color: var(--dialog-bg);
 
     opacity: 0;
-    scale: 0.85;
+    scale: var(--dialog-scale);
     transform-origin: center center;
 
     transition:
-            opacity 0.18s var(--ease-in-out),
-            scale   var(--dialog-duration) var(--ease-in-out),
-            display var(--dialog-duration) allow-discrete,
-            overlay var(--dialog-duration) allow-discrete;
+            opacity var(--dialog-fade) var(--ease-in-out),
+            scale   var(--dialog-duration) var(--ease-in-out);
+}
+
+/* Закрытие анимируется только вместе с overlay: причина описана в Popover. */
+@supports (overlay: auto) {
+    .dialog {
+        transition:
+                opacity var(--dialog-fade) var(--ease-in-out),
+                scale   var(--dialog-duration) var(--ease-in-out),
+                display var(--dialog-duration) allow-discrete,
+                overlay var(--dialog-duration) allow-discrete;
+    }
+
+    .dialog::backdrop {
+        transition:
+                background-color var(--dialog-duration) var(--ease-in-out),
+                display          var(--dialog-duration) allow-discrete,
+                overlay          var(--dialog-duration) allow-discrete;
+    }
 }
 
 .dialog[open] {
@@ -45,7 +66,7 @@
 @starting-style {
     .dialog[open] {
         opacity: 0;
-        scale: 0.85;
+        scale: var(--dialog-scale);
     }
 }
 
@@ -54,11 +75,8 @@
 /* -------------------------------------------------------------------------- */
 
 .dialog::backdrop {
-    background-color: rgb(0 0 0 / 0);
-    transition:
-            background-color var(--dialog-duration) var(--ease-in-out),
-            display          var(--dialog-duration) allow-discrete,
-            overlay          var(--dialog-duration) allow-discrete;
+    background-color: transparent;
+    transition: background-color var(--dialog-duration) var(--ease-in-out);
 }
 
 .dialog[open]::backdrop {
@@ -67,7 +85,7 @@
 
 @starting-style {
     .dialog[open]::backdrop {
-        background-color: rgb(0 0 0 / 0);
+        background-color: transparent;
     }
 }
 
@@ -94,13 +112,8 @@ html:has(.dialog:modal) {
 @media (prefers-reduced-motion: reduce) {
     .dialog {
         --dialog-duration: 0.01ms;
-        scale: 1;
+        --dialog-scale: 1;
         transition-duration: 0.01ms;
     }
 
-    @starting-style {
-        .dialog[open] {
-            scale: 1;
-        }
-    }
 }

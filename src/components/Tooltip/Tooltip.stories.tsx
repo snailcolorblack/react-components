@@ -62,7 +62,7 @@ export const ДлиннаяЗадержка: Story = {
 /** Сторона — предпочтение: не хватит места, браузер перевернёт подсказку сам. */
 export const Стороны: Story = {
     render: args => (
-        <div style={{display: 'flex', gap: '1rem'}}>
+        <div style={{display: 'flex', flexWrap: 'wrap', gap: '1rem'}}>
             <Tooltip {...args} placement="block-start" text="Сверху"><Button variant="OUTLINE">Сверху</Button></Tooltip>
             <Tooltip {...args} placement="block-end" text="Снизу"><Button variant="OUTLINE">Снизу</Button></Tooltip>
             <Tooltip {...args} placement="inline-end" text="Справа"><Button variant="OUTLINE">Справа</Button></Tooltip>

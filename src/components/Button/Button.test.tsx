@@ -407,3 +407,30 @@ describe('Button: нажатое состояние слышно', () => {
         expect(screen.getByRole('button')).toHaveAttribute('data-state', 'active');
     });
 });
+
+/* В jsdom нет CommandEvent, то есть это ровно случай старого движка. */
+describe('Button: команды там, где нет Invoker Commands', () => {
+    it('command="show-modal" открывает диалог, command="close" закрывает', async () => {
+        render(<>
+            <Button commandfor="cmd-dialog" command="show-modal">Открыть</Button>
+            <dialog id="cmd-dialog"><Button commandfor="cmd-dialog" command="close">Закрыть</Button></dialog>
+        </>);
+        const dialog = document.getElementById('cmd-dialog') as HTMLDialogElement;
+
+        await userEvent.click(screen.getByRole('button', {name: 'Открыть'}));
+        expect(dialog.open).toBe(true);
+
+        await userEvent.click(screen.getByRole('button', {name: 'Закрыть'}));
+        expect(dialog.open).toBe(false);
+    });
+
+    it('preventDefault в onClick отменяет команду, как и у родной кнопки', async () => {
+        render(<>
+            <Button commandfor="cmd-off" command="show-modal" onClick={event => event.preventDefault()}>Открыть</Button>
+            <dialog id="cmd-off"/>
+        </>);
+
+        await userEvent.click(screen.getByRole('button', {name: 'Открыть'}));
+        expect((document.getElementById('cmd-off') as HTMLDialogElement).open).toBe(false);
+    });
+});

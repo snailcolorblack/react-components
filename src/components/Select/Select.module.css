@@ -24,6 +24,9 @@
 /* -------------------------------------------------------------------------- */
 
 .field {
+    /* Настройка: задаётся на самом компоненте, через style или свой класс. */
+    --select-option-size: 2.25rem;
+
     /*
      * Ручки для начинки. Внутренние классы захешированы модулем и снаружи
      * недоступны, поэтому вид чипса и пункта списка меняется отсюда:
@@ -175,6 +178,19 @@
     }
 }
 
+/* Список сжимается вместе с окном: на низком экране прокручивается он, а не окно. */
+.popup[popover]:popover-open {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Без якорей ширину поля приносит Popover.fallback.ts. */
+@supports not (inline-size: anchor-size(inline)) {
+    .popup[popover] {
+        min-inline-size: var(--anchor-width);
+    }
+}
+
 /* -------------------------------------------------------------------------- */
 /*  Длинный список                                                            */
 /*                                                                            */
@@ -232,12 +248,12 @@
     gap: var(--select-option-gap);
     inline-size: 100%;
     /* WCAG 2.5.8: цель нажатия не меньше 24×24. */
-    min-block-size: 2.25rem;
+    min-block-size: var(--select-option-size);
     padding: var(--select-option-padding);
 
     border-radius: var(--select-option-radius);
     cursor: pointer;
-    transition: background-color 0.12s var(--ease-in-out);
+    transition: background-color var(--duration-fast, 0.12s) var(--ease-in-out);
 }
 
 /*
@@ -253,8 +269,8 @@
 }
 
 .option:where(:focus-visible) {
-    outline: 2px solid var(--field-ring);
-    outline-offset: -2px;
+    outline: var(--ring-width, 2px) solid var(--field-ring);
+    outline-offset: calc(var(--ring-width, 2px) * -1);
 }
 
 /*
@@ -314,8 +330,8 @@
 }
 
 .chip:focus-visible {
-    outline: 2px solid var(--field-ring);
-    outline-offset: 2px;
+    outline: var(--ring-width, 2px) solid var(--field-ring);
+    outline-offset: var(--ring-offset, 2px);
 }
 
 .chipRemove {

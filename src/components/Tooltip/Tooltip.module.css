@@ -7,6 +7,20 @@
 /* -------------------------------------------------------------------------- */
 
 .tooltip {
+    /* Настройка: задаётся на самом компоненте, через style или свой класс. */
+    --tooltip-max-width: 16rem;
+
+    /* Служебные: значение выставляет компонент инлайном, снаружи не задавать. */
+    --tooltip-anchor: auto;
+    --tooltip-area: block-start span-inline-end;
+    --tooltip-origin: bottom center;
+    --tooltip-margin-block: 0 var(--tooltip-gap);
+    --tooltip-margin-inline: 0;
+    --anchor-x: 50%;
+    --anchor-y: 50%;
+    --anchor-sign-x: 0;
+    --anchor-sign-y: 0;
+
     /*
      * Цвета объявлены здесь и только здесь. Перебить можно на элементе:
      *   <Tooltip style={{'--tooltip-bg': 'var(--base-color-500)'}} …/>
@@ -20,7 +34,7 @@
     --tooltip-duration: 0.14s;
 
     padding: var(--base-gap) calc(var(--base-gap) * 2);
-    border: 1px solid var(--tooltip-border);
+    border: var(--border-width, 1px) solid var(--tooltip-border);
     border-radius: var(--base-gap);
     color: var(--tooltip-fg);
     background-color: var(--tooltip-bg);
@@ -35,9 +49,17 @@
 
     opacity: 0;
     transition:
-            opacity var(--tooltip-duration) var(--ease-in-out),
-            display var(--tooltip-duration) allow-discrete,
-            overlay var(--tooltip-duration) allow-discrete;
+            opacity var(--tooltip-duration) var(--ease-in-out);
+}
+
+/* Закрытие анимируется только вместе с overlay: причина описана в Popover. */
+@supports (overlay: auto) {
+    .tooltip {
+        transition:
+                opacity var(--tooltip-duration) var(--ease-in-out),
+                display var(--tooltip-duration) allow-discrete,
+                overlay var(--tooltip-duration) allow-discrete;
+    }
 }
 
 /*
@@ -67,21 +89,35 @@
 
 @supports (position-area: block-start) {
     .tooltip {
-        position: absolute;
+        /* fixed, а не absolute: причина описана в Popover. */
+        position: fixed;
         position-anchor: var(--tooltip-anchor);
-        position-area: var(--tooltip-area, block-start span-inline-end);
+        position-area: var(--tooltip-area);
         position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline;
 
         margin: 0;
-        margin-block: var(--tooltip-margin-block, 0 var(--tooltip-gap));
-        margin-inline: var(--tooltip-margin-inline, 0);
+        margin-block: var(--tooltip-margin-block);
+        margin-inline: var(--tooltip-margin-inline);
 
         /* Подсказка короткая по определению: шире 16rem это уже не подсказка.
            Вычитание зазора и отступа не даёт ей прилипнуть к краю экрана. */
         inline-size: max-content;
-        max-inline-size: min(16rem, calc(100% - var(--tooltip-gap) - var(--tooltip-inset)));
+        max-inline-size: min(var(--tooltip-max-width), calc(100% - var(--tooltip-gap) - var(--tooltip-inset)));
 
-        transform-origin: var(--tooltip-origin, bottom center);
+        transform-origin: var(--tooltip-origin);
+    }
+}
+
+/* Без anchor positioning координаты приносит Popover.fallback.ts. */
+@supports not (position-area: block-start) {
+    .tooltip {
+        position: fixed;
+        inset: auto;
+        top: calc(var(--anchor-y) + var(--tooltip-gap) * var(--anchor-sign-y));
+        left: calc(var(--anchor-x) + var(--tooltip-gap) * var(--anchor-sign-x));
+        margin: 0;
+        inline-size: max-content;
+        max-inline-size: min(var(--tooltip-max-width), calc(100vw - var(--tooltip-inset) * 2));
     }
 }
 

@@ -72,6 +72,11 @@
     --contrast-alpha-20: color-mix(in oklab, var(--contrast-color) 20%, transparent);
     --contrast-alpha-10: color-mix(in oklab, var(--contrast-color) 10%, transparent);
 
+    /* Граница, по которой опознают элемент управления: рамка поля, дорожка.
+       WCAG 1.4.11 требует 3:1, и 50% даёт это и на странице, и на приподнятой
+       поверхности (диалог, поповер). --contrast-alpha-20 — только для украшений. */
+    --border-strong: color-mix(in oklab, var(--contrast-color) 50%, transparent);
+
     /* ---------------------------------------------------------------------- */
     /*  Семантика                                                             */
     /*                                                                        */
@@ -111,15 +116,38 @@
     --base-size: 1rem;
     --base-gap: .25rem;
 
+    /* Общая настройка штрихов и шрифта. У компонентов значения по умолчанию
+       те же самые, так что без этих строк ничего не развалится. */
+    --border-width: 1px;
+    --ring-width: 2px;
+    --ring-offset: 2px;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    --duration-fast: .12s;
+
     --ease-out: cubic-bezier(0, 0, .2, 1);
     --ease-in-out: cubic-bezier(.4, 0, .2, 1);
 }
 
-.atan {
-    width: calc(1px * tan(atan2(100vw, 2px)));
-    background-color: white;
-    height: 2px;
+/*
+ * Просьба системы о большем контрасте. Компоненты красятся через эти токены,
+ * поэтому менять надо только их: полупрозрачное становится плотнее, вторичный
+ * текст приближается к основному, тонкие штрихи толще.
+ */
+@media (prefers-contrast: more) {
+    :root {
+        --contrast-alpha-60: color-mix(in oklab, var(--contrast-color) 90%, transparent);
+        --contrast-alpha-40: color-mix(in oklab, var(--contrast-color) 80%, transparent);
+        --contrast-alpha-20: color-mix(in oklab, var(--contrast-color) 60%, transparent);
+        --border-strong: var(--contrast-color);
+        --contrast-color-300: var(--contrast-color);
+        --contrast-color-400: var(--contrast-color-200);
+        --border-width: 2px;
+        --ring-width: 3px;
+    }
 }
+
 #root {
     display: flex;
     align-items: center;

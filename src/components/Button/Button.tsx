@@ -167,6 +167,7 @@
 
 import {useFormStatus} from "react-dom";
 import type {ElementType, MouseEvent} from "react";
+import {runCommand} from './Button.command.ts';
 import type {ButtonProps, ButtonSize, ButtonTag, ButtonVariant} from "./Button.interface.ts";
 import styles from './Button.module.css'
 
@@ -243,6 +244,10 @@ function Button<T extends ButtonTag = 'button'>(props: ButtonProps<T>) {
             return;
         }
         onClick?.(event as MouseEvent<HTMLButtonElement>);
+
+        if (!event.defaultPrevented) {
+            runCommand(rest.command, rest.commandfor, event.currentTarget);
+        }
     }
 
 }

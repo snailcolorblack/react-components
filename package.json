@@ -49,5 +49,12 @@
     "vite": "^8.3.4",
     "vitest": "^5.0.4",
     "wait-on": "^9.5.1"
-  }
+  },
+  "browserslist": [
+    "chrome >= 121",
+    "edge >= 121",
+    "firefox >= 134",
+    "safari >= 18.2",
+    "ios_saf >= 18.2"
+  ]
 }

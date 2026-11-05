@@ -7,12 +7,18 @@
 /* -------------------------------------------------------------------------- */
 
 .viewer {
+    /* Настройка: задаётся на самом компоненте, через style или свой класс. */
+    --json-action-size: 1.75rem;
+    --json-action-border: var(--contrast-alpha-20);
+    --json-row-size: 1.5rem;
+
     --json-bg: var(--base-color-200);
     --json-fg: var(--contrast-alpha-60, currentColor);
     --json-string: var(--accent-color-soft, #ff9d47);
     --json-number: var(--warning-color-soft, #4760ff);
     --json-boolean: var(--danger-color-soft, #c678dd);
-    --json-null: var(--contrast-alpha-40, #888);
+    /* 40% даёт на приподнятом фоне дерева 3.64:1, а текст требует 4.5:1. */
+    --json-null: var(--contrast-alpha-60, #aaa);
     --json-indent: 1.25rem;
     --json-radius: var(--base-gap, 4px);
 
@@ -34,10 +40,10 @@
 }
 
 .action {
-    min-block-size: 1.75rem;
+    min-block-size: var(--json-action-size);
     padding-inline: calc(var(--base-gap) * 2);
 
-    border: 1px solid var(--contrast-alpha-20);
+    border: var(--border-width, 1px) solid var(--json-action-border);
     border-radius: var(--json-radius);
     font: inherit;
     font-size: var(--font-size-12, 0.75rem);
@@ -45,7 +51,7 @@
     background-color: transparent;
     cursor: pointer;
 
-    transition: background-color 0.12s var(--ease-in-out);
+    transition: background-color var(--duration-fast, 0.12s) var(--ease-in-out);
 }
 
 .action:hover {
@@ -53,8 +59,8 @@
 }
 
 .action:focus-visible {
-    outline: 2px solid var(--accent-color-soft);
-    outline-offset: 2px;
+    outline: var(--ring-width, 2px) solid var(--accent-color-soft);
+    outline-offset: var(--ring-offset, 2px);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -112,6 +118,8 @@
 .node > summary {
     cursor: pointer;
     list-style: none;
+    /* WCAG 2.5.8: строка дерева — цель для нажатия, не меньше 24px. */
+    min-block-size: var(--json-row-size);
 }
 
 .node > summary::-webkit-details-marker {
@@ -143,7 +151,7 @@
     background-color: var(--json-null);
     clip-path: polygon(0 0, 100% 50%, 0 100%);
 
-    transition: clip-path 0.12s var(--ease-out);
+    transition: clip-path var(--duration-fast, 0.12s) var(--ease-out);
 }
 
 .node[open] > summary::before {
@@ -164,8 +172,8 @@
 }
 
 .node > summary:focus-visible {
-    outline: 2px solid var(--accent-color-soft);
-    outline-offset: 2px;
+    outline: var(--ring-width, 2px) solid var(--accent-color-soft);
+    outline-offset: var(--ring-offset, 2px);
     border-radius: var(--json-radius);
 }
 
@@ -229,6 +237,12 @@
         border: 1px solid CanvasText;
     }
 
+    /* Значок нарисован фоном, а фоны система заменяет на Canvas: он исчезал. */
+    .node > summary::before {
+        forced-color-adjust: none;
+        background-color: CanvasText;
+    }
+
     /*
      * Цвета типов система выбрасывает, и значения перестают отличаться
      * от ключей. Возвращаем разницу начертанием: оно переживает
@@ -240,7 +254,7 @@
 
     .value[data-type="number"],
     .value[data-type="boolean"] {
-        font-weight: 700;
+        font-weight: var(--font-weight-bold, 700);
     }
 }
 

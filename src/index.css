@@ -13,7 +13,13 @@
 
 html {
   scrollbar-gutter: stable;
-  scroll-behavior: smooth;
+}
+
+/* Плавная прокрутка страницы — только тем, кто не просил убрать движение. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 body {

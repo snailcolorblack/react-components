@@ -1,6 +1,6 @@
 import {useState} from 'react';
-import type {Meta, StoryObj} from '@storybook/react-vite';
 import {Range} from './Range';
+import type {Meta, StoryObj} from '@storybook/react-vite';
 
 const meta = {
     title: 'Формы/Range',

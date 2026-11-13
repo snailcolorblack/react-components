@@ -78,9 +78,9 @@
 /* -------------------------------------------------------------------------- */
 
 import {cloneElement, useEffect, useId, useRef, type PointerEvent, type FocusEvent, type CSSProperties} from 'react';
+import {FOCUSABLE} from '../focusable.ts';
 import type {TooltipPlacement, TooltipProps} from './Tooltip.interface.ts';
 import styles from './Tooltip.module.css';
-import '../Popover/Popover.fallback.ts';
 
 /*
  * area — куда встать относительно триггера, origin — от какого края растёт
@@ -110,8 +110,6 @@ const PLACEMENT = {
    подсказку, не потеряв её. Требование WCAG 1.4.13 о наводимости. */
 const HIDE_DELAY = 150;
 
-/* Что умеет получать фокус само, без tabindex. */
-const FOCUSABLE = 'a[href], area[href], button, input, select, textarea, summary, [tabindex]:not([tabindex^="-"])';
 
 function Tooltip({
                      text,
@@ -149,6 +147,7 @@ function Tooltip({
         '--tooltip-margin-block': PLACEMENT[placement].block,
         '--tooltip-margin-inline': PLACEMENT[placement].inline,
     } as CSSProperties;
+    const classes = [styles.tooltip, className].filter(Boolean).join(' ');
 
     /* Таймеры переживают размонтирование, если их не снять: поповера уже
        нет, а отложенный show дёрнет showPopover() на оторванном узле. */
@@ -186,7 +185,7 @@ function Tooltip({
                 ref={tooltipRef}
                 popover="hint"
                 role="tooltip"
-                className={`${styles.tooltip} ${className}`.trim()}
+                className={classes}
                 style={tooltipStyle}
                 onPointerEnter={cancelHide}
                 onPointerLeave={hideSoon}

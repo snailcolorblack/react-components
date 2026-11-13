@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react';
-import type {Meta, StoryObj} from '@storybook/react-vite';
 import {Progress} from './Progress';
+import type {Meta, StoryObj} from '@storybook/react-vite';
 import type {ProgressProps} from './Progress.interface.ts';
 
 const meta = {

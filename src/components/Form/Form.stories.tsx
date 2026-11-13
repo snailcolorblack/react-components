@@ -1,9 +1,9 @@
-import type {Meta, StoryObj} from '@storybook/react-vite';
 import {Button} from '../Button/Button';
 import {Input} from '../Input/Input';
 import {Select} from '../Select/Select';
 import {Typography} from '../Typography/Typography';
 import {Form} from './Form';
+import type {Meta, StoryObj} from '@storybook/react-vite';
 import type {FormValues} from './Form.interface.ts';
 
 const meta = {

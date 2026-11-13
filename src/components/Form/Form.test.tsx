@@ -1,6 +1,6 @@
-import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import axe from 'axe-core';
+import {render, screen, waitFor} from '@testing-library/react';
 import {describe, expect, it, vi} from 'vitest';
 import {Form} from './Form';
 import {useForm} from './Form.context.ts';
@@ -18,7 +18,7 @@ describe('Form: значения', () => {
         const onSubmit = vi.fn();
         render(
             <Form onSubmit={onSubmit}>
-                <input name="город" defaultValue="Душанбе"/>
+                <input name="city" defaultValue="Душанбе"/>
                 <button type="submit">Дальше</button>
             </Form>,
         );
@@ -30,7 +30,7 @@ describe('Form: значения', () => {
         await user.click(screen.getByRole('button'));
 
         expect(onSubmit).toHaveBeenCalledTimes(1);
-        expect(onSubmit.mock.calls[0][0]).toEqual({город: 'Душанбе!'});
+        expect(onSubmit.mock.calls[0][0]).toEqual({city: 'Душанбе!'});
     });
 
     it('повторяющееся имя приходит массивом', async () => {
@@ -40,22 +40,22 @@ describe('Form: значения', () => {
         const onSubmit = vi.fn();
         render(
             <Form onSubmit={onSubmit}>
-                <input type="checkbox" name="валюта" value="KZT" defaultChecked aria-label="KZT"/>
-                <input type="checkbox" name="валюта" value="USD" defaultChecked aria-label="USD"/>
+                <input type="checkbox" name="currency" value="KZT" defaultChecked aria-label="KZT"/>
+                <input type="checkbox" name="currency" value="USD" defaultChecked aria-label="USD"/>
                 <button type="submit">Дальше</button>
             </Form>,
         );
 
         await user.click(screen.getByRole('button'));
 
-        expect(onSubmit.mock.calls[0][0]).toEqual({валюта: ['KZT', 'USD']});
+        expect(onSubmit.mock.calls[0][0]).toEqual({currency: ['KZT', 'USD']});
     });
 
     it('инструменты дают саму форму и очистку', async () => {
         const user = userEvent.setup();
         render(
             <Form onSubmit={(_values, tools) => tools.reset()}>
-                <input name="сумма" defaultValue="" aria-label="Сумма"/>
+                <input name="sum" defaultValue="" aria-label="Сумма"/>
                 <button type="submit">Дальше</button>
             </Form>,
         );
@@ -73,8 +73,8 @@ describe('Form: проверка', () => {
 
         return (
             <>
-                <input name="сумма" aria-label="Сумма" aria-invalid={errors.сумма !== undefined}/>
-                <span role="status">{errors.сумма}</span>
+                <input name="sum" aria-label="Сумма" aria-invalid={errors.sum !== undefined}/>
+                <span role="status">{errors.sum}</span>
             </>
         );
     }
@@ -83,7 +83,7 @@ describe('Form: проверка', () => {
         const user = userEvent.setup();
         const onSubmit = vi.fn();
         render(
-            <Form validate={() => ({сумма: 'Не меньше 1000'})} onSubmit={onSubmit}>
+            <Form validate={() => ({sum: 'Не меньше 1000'})} onSubmit={onSubmit}>
                 <Sum/>
                 <button type="submit">Дальше</button>
             </Form>,
@@ -114,7 +114,7 @@ describe('Form: проверка', () => {
         const onSubmit = vi.fn();
         render(
             <Form
-                validate={() => Promise.resolve({сумма: 'Занято'})}
+                validate={() => Promise.resolve({sum: 'Занято'})}
                 onSubmit={onSubmit}
             >
                 <Sum/>
@@ -163,9 +163,9 @@ describe('Form: проверка', () => {
          */
         const user = userEvent.setup();
         render(
-            <Form validate={() => ({б: 'плохо'})}>
-                <input name="а" aria-label="А"/>
-                <input name="б" aria-label="Б"/>
+            <Form validate={() => ({b: 'плохо'})}>
+                <input name="a" aria-label="А"/>
+                <input name="b" aria-label="Б"/>
                 <button type="submit">Дальше</button>
             </Form>,
         );
@@ -178,16 +178,16 @@ describe('Form: проверка', () => {
     it('focusInvalid={false} оставляет фокус на месте', async () => {
         const user = userEvent.setup();
         render(
-            <Form validate={() => ({а: 'плохо'})} focusInvalid={false}>
-                <input name="а" aria-label="А"/>
+            <Form validate={() => ({a: 'плохо'})} focusInvalid={false}>
+                <input name="a" aria-label="А"/>
                 <button type="submit">Дальше</button>
             </Form>,
         );
 
-        const кнопка = screen.getByRole('button');
-        await user.click(кнопка);
+        const button = screen.getByRole('button');
+        await user.click(button);
 
-        expect(document.activeElement).toBe(кнопка);
+        expect(document.activeElement).toBe(button);
     });
 });
 
@@ -201,8 +201,8 @@ describe('Form: отправка', () => {
             </Form>,
         );
 
-        const кнопка = screen.getByRole('button');
-        await Promise.all([user.click(кнопка), user.click(кнопка), user.click(кнопка)]);
+        const button = screen.getByRole('button');
+        await Promise.all([user.click(button), user.click(button), user.click(button)]);
 
         await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
     });
@@ -228,11 +228,11 @@ describe('Form: отправка', () => {
     it('ошибки сервера возвращаются через инструменты', async () => {
         const user = userEvent.setup();
         render(
-            <Form onSubmit={(_values, tools) => tools.setErrors({логин: 'Логин занят'})}>
+            <Form onSubmit={(_values, tools) => tools.setErrors({login: 'Логин занят'})}>
                 {({errors}) => (
                     <>
-                        <input name="логин" aria-label="Логин"/>
-                        <span role="status">{errors.логин}</span>
+                        <input name="login" aria-label="Логин"/>
+                        <span role="status">{errors.login}</span>
                         <button type="submit">Дальше</button>
                     </>
                 )}
@@ -247,10 +247,10 @@ describe('Form: отправка', () => {
     it('ошибки снаружи складываются с найденными', async () => {
         const user = userEvent.setup();
         render(
-            <Form validate={() => ({а: 'из проверки'})} errors={{б: 'снаружи'}}>
+            <Form validate={() => ({a: 'из проверки'})} errors={{b: 'снаружи'}}>
                 {({errors}) => (
                     <>
-                        <span role="status">{`${errors.а ?? '—'}/${errors.б ?? '—'}`}</span>
+                        <span role="status">{`${errors.a ?? '—'}/${errors.b ?? '—'}`}</span>
                         <button type="submit">Дальше</button>
                     </>
                 )}
@@ -282,8 +282,8 @@ describe('Form: отправка', () => {
     it('resetOnSubmit очищает поля только после удачной отправки', async () => {
         const user = userEvent.setup();
         render(
-            <Form resetOnSubmit validate={values => (values.имя === '' ? {имя: 'Пусто'} : undefined)}>
-                <input name="имя" aria-label="Имя" defaultValue=""/>
+            <Form resetOnSubmit validate={values => (values.name === '' ? {name: 'Пусто'} : undefined)}>
+                <input name="name" aria-label="Имя" defaultValue=""/>
                 <button type="submit">Дальше</button>
             </Form>,
         );
@@ -298,7 +298,7 @@ describe('Form: отправка', () => {
 
 describe('Form: платформа', () => {
     it('по умолчанию проверяет сама: у формы стоит noValidate', () => {
-        const {container} = render(<Form><input name="а" required/></Form>);
+        const {container} = render(<Form><input name="a" required/></Form>);
 
         expect(container.querySelector('form')).toHaveAttribute('novalidate');
     });
@@ -313,7 +313,7 @@ describe('Form: платформа', () => {
         const onSubmit = vi.fn();
         const {container} = render(
             <Form native onSubmit={onSubmit}>
-                <input name="а" required aria-label="А"/>
+                <input name="a" required aria-label="А"/>
                 <button type="submit">Дальше</button>
             </Form>,
         );
@@ -331,7 +331,7 @@ describe('Form: платформа', () => {
     });
 
     it('это обычный <form>: пропсы тега доходят', () => {
-        const {container} = render(<Form id="шаг" aria-label="Заявка"><input name="а"/></Form>);
+        const {container} = render(<Form id="шаг" aria-label="Заявка"><input name="a"/></Form>);
         const form = container.querySelector('form')!;
 
         expect(form.id).toBe('шаг');
@@ -356,8 +356,8 @@ describe('Form: разное', () => {
     it('проходит axe', async () => {
         const {container} = render(
             <Form>
-                <label htmlFor="сумма">Сумма</label>
-                <input id="сумма" name="сумма"/>
+                <label htmlFor="sum">Сумма</label>
+                <input id="sum" name="sum"/>
                 <button type="submit">Дальше</button>
             </Form>,
         );
@@ -367,7 +367,7 @@ describe('Form: разное', () => {
 
     it('не шумит предупреждениями React', () => {
         const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-        render(<Form><input name="а"/></Form>);
+        render(<Form><input name="a"/></Form>);
 
         expect(error).not.toHaveBeenCalled();
         error.mockRestore();

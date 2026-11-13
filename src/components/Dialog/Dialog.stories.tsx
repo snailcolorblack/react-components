@@ -1,8 +1,8 @@
 import {useRef, useState} from 'react';
-import type {Meta, StoryObj} from '@storybook/react-vite';
 import {Button} from '../Button/Button';
 import {Typography} from '../Typography/Typography';
 import {Dialog} from './Dialog';
+import type {Meta, StoryObj} from '@storybook/react-vite';
 
 const meta = {
     title: 'Слои/Dialog',

@@ -1,7 +1,7 @@
-import {render, screen} from '@testing-library/react';
+import {Profiler} from 'react';
 import userEvent from '@testing-library/user-event';
 import axe from 'axe-core';
-import {Profiler} from 'react';
+import {render, screen} from '@testing-library/react';
 import {describe, expect, it, vi} from 'vitest';
 import {Dropdown} from './Dropdown';
 import type {DropdownItem} from './Dropdown.interface.ts';

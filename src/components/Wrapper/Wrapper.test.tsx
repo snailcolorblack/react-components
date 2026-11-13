@@ -1,7 +1,7 @@
-import {render, screen} from '@testing-library/react';
+import {createRef} from 'react';
 import userEvent from '@testing-library/user-event';
 import axe from 'axe-core';
-import {createRef} from 'react';
+import {render, screen} from '@testing-library/react';
 import {describe, expect, it, vi} from 'vitest';
 import {Wrapper} from './Wrapper';
 
@@ -108,22 +108,22 @@ describe('Wrapper: оформление', () => {
     });
 
     it('PLAIN и CARD — разные наборы классов', () => {
-        const карточка = render(<Wrapper>Блок</Wrapper>);
-        const пустая = render(<Wrapper variant="PLAIN">Блок</Wrapper>);
+        const card = render(<Wrapper>Блок</Wrapper>);
+        const plain = render(<Wrapper variant="PLAIN">Блок</Wrapper>);
 
-        const первый = (карточка.container.firstElementChild as HTMLElement).className;
-        const второй = (пустая.container.firstElementChild as HTMLElement).className;
+        const one = (card.container.firstElementChild as HTMLElement).className;
+        const two = (plain.container.firstElementChild as HTMLElement).className;
 
-        expect(первый).not.toBe(второй);
+        expect(one).not.toBe(two);
         /* Общий класс остаётся у обоих: раскладка и контейнер — не вариант. */
-        expect(первый.split(' ')[0]).toBe(второй.split(' ')[0]);
+        expect(one.split(' ')[0]).toBe(two.split(' ')[0]);
     });
 });
 
 describe('Wrapper: доступность', () => {
     it('проходит axe в каждом из тегов', async () => {
-        for (const тег of ['div', 'article', 'section', 'form'] as const) {
-            const {container, unmount} = render(<Wrapper as={тег}>Блок</Wrapper>);
+        for (const tag of ['div', 'article', 'section', 'form'] as const) {
+            const {container, unmount} = render(<Wrapper as={tag}>Блок</Wrapper>);
 
             expect((await axe.run(container, {rules: {'color-contrast': {enabled: false}}})).violations).toEqual([]);
             unmount();

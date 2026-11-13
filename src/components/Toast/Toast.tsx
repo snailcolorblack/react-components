@@ -147,32 +147,62 @@ function Toast({
 /*  Одна плашка: свой таймер и своя пауза                                     */
 /* -------------------------------------------------------------------------- */
 
+/* -------------------------------------------------------------------------- */
+/*  Отсчёт жизни плашки держит CSS                                            */
+/*                                                                            */
+/*  Анимация здесь — не движение, а таймер: она ничего не рисует и ничего     */
+/*  не двигает (@keyframes life состоит из одного и того же значения).        */
+/*  Взята она ради единственной способности, которой у setTimeout нет, —      */
+/*  браузер умеет приостанавливать её сам, по :hover и :focus-within.         */
+/*                                                                            */
+/*  Было: состояние paused, засечка времени, остаток в ref и эффект,          */
+/*  который на каждую паузу снимал таймер и вычитал прошедшее, чтобы          */
+/*  наведением нельзя было продлить сообщение навечно.                        */
+/*                                                                            */
+/*  Замерено в Chromium 141: animationend по 300мс приходит на 294мс;         */
+/*  под курсором состояние анимации paused и currentTime замирает на 367мс    */
+/*  при 400мс наведения; курсор убран — running, и через 100мс currentTime    */
+/*  467мс. То есть остаток считает сам движок, точнее нашей арифметики.       */
+/*                                                                            */
+/*  Отдельно: таймер не выключается под prefers-reduced-motion (замерено:     */
+/*  animationend приходит на 292мс), и так и должно быть. Просьба о покое —   */
+/*  про движение, а не про то, чтобы сообщения висели вечно.                  */
+/* -------------------------------------------------------------------------- */
+
 function Plate({item, duration, closeLabel, className, onDismiss}: PlateProps) {
-    const [paused, setPaused] = useState(false);
-    const rest = useRef(duration);
-    const since = useRef(0);
     const dismiss = useRef(onDismiss);
+
+    /*
+     * Слушатель вешается на узел, а не через onAnimationEnd: синтетические
+     * события React для animationend в jsdom не доставляются вовсе
+     * (у jsdom нет конструктора AnimationEvent), и весь путь закрытия
+     * остался бы без единого теста. Нативный слушатель работает и там,
+     * и в браузере, а убирает его за собой сам React 19 — по функции,
+     * возвращённой из ref-коллбэка.
+     */
+    const attach = useCallback((node: HTMLDivElement | null) => {
+        if (node === null) return;
+
+        node.addEventListener('animationend', end);
+
+        return () => node.removeEventListener('animationend', end);
+
+        function end(event: AnimationEvent) {
+            /*
+             * Содержимое чужое: анимация внутри него всплывает до плашки.
+             * Поэтому сверяется и источник, и имя — своё имя у отсчёта одно.
+             */
+            if (event.target === node && event.animationName === styles.life) dismiss.current();
+        }
+    }, []);
+
+    const classes = [styles.toast, className].filter(Boolean).join(' ');
+    /* duration <= 0 — плашка без срока: атрибута нет, анимации тоже. */
+    const life = duration > 0 && !item.closing ? `${duration}ms` : undefined;
 
     useEffect(() => {
         dismiss.current = onDismiss;
     });
-
-    useEffect(() => {
-        if (item.closing || duration <= 0 || paused) return;
-
-        since.current = Date.now();
-        const timer = setTimeout(() => dismiss.current(), rest.current);
-
-        /*
-         * Пауза — это снятый таймер плюс запомненный остаток, а не
-         * перезапуск с нуля: иначе достаточно было бы водить курсором,
-         * чтобы сообщение висело вечно.
-         */
-        return () => {
-            clearTimeout(timer);
-            rest.current -= Date.now() - since.current;
-        };
-    }, [item.closing, paused, duration]);
 
     return (
         <Alert
@@ -190,11 +220,10 @@ function Plate({item, duration, closeLabel, className, onDismiss}: PlateProps) {
             withIcon
             icon={item.icon}
             data-state={item.closing ? 'closed' : 'open'}
-            className={`${styles.toast} ${className}`.trim()}
-            onPointerEnter={() => setPaused(true)}
-            onPointerLeave={() => setPaused(false)}
-            onFocus={() => setPaused(true)}
-            onBlur={() => setPaused(false)}
+            data-life={life === undefined ? undefined : ''}
+            style={{'--toast-life': life}}
+            className={classes}
+            ref={attach}
         >
             <span className={styles.text}>{item.content}</span>
             <button

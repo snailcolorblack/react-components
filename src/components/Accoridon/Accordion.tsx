@@ -83,8 +83,10 @@ function Accordion({
                        ...props
                    }: AccordionProps) {
 
+    const classes = [styles.accordion, className].filter(Boolean).join(' ');
+
     return (
-        <details className={`${styles.accordion} ${className}`.trim()} {...props}>
+        <details className={classes} {...props}>
             {children}
         </details>
     )
@@ -98,8 +100,10 @@ function AccordionHeader({
                              ...props
                          }: AccordionHeaderProps) {
 
+    const classes = [styles.accordion_header, className].filter(Boolean).join(' ');
+
     return (
-        <summary className={`${styles.accordion_header} ${className}`.trim()} {...props}>
+        <summary className={classes} {...props}>
             <Typography as={Title} className={styles.accordion_header__title}>{children}</Typography>
             <div className={styles.icon} aria-hidden="true">
                 {icon ?? plusIcon}
@@ -114,8 +118,10 @@ function AccordionContent({
                               ...props
                           }: AccordionContentProps) {
 
+    const classes = [styles.accordion_content, className].filter(Boolean).join(' ');
+
     return (
-        <div className={`${styles.accordion_content} ${className}`.trim()} {...props}>
+        <div className={classes} {...props}>
             {children}
         </div>
     );

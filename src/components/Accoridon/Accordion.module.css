@@ -125,14 +125,33 @@
 /*  Тело контента                                                             */
 /* -------------------------------------------------------------------------- */
 
+/*
+ * Отступ сверху тоже сворачивается, и это не украшение.
+ *
+ * min-block-size: 0 обнуляет только содержимое; внутренний отступ
+ * прибавляется поверх него и ставит строке сетки пол. Замерено
+ * в Chromium 141: высота шла 214 → 70 за 259 мс, замирала на 70,
+ * а на 309 мс падала до 66 — это content-visibility в конце перехода
+ * убирал те самые 4px отступа. Снаружи читалось как второй рывок
+ * «дозакрытия» уже после закрытия.
+ *
+ * Теперь отступа у закрытого нет вовсе, и он приезжает вместе
+ * с раскрытием: строка сетки доходит до нуля, и убирать в конце нечего.
+ */
 .accordion_content {
     display: flex;
     flex-direction: column;
     /* Без этого элемент сетки не сжимается ниже содержимого, и строка 0fr
        остаётся высотой с него. Обрезает ::details-content. */
     min-block-size: 0;
-    padding-block-start: var(--base-gap);
+    padding-block-start: 0;
     color: var(--accordion-content);
+    transition: padding-block-start var(--accordion-duration) var(--ease-in-out);
+}
+
+.accordion[open] .accordion_content {
+    padding-block-start: var(--base-gap);
+    transition: padding-block-start var(--accordion-duration) var(--ease-out);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -162,6 +181,8 @@
 /* -------------------------------------------------------------------------- */
 
 @media (prefers-reduced-motion: reduce) {
+    .accordion_content,
+    .accordion[open] .accordion_content,
     .accordion::details-content,
     .accordion[open]::details-content,
     .icon,

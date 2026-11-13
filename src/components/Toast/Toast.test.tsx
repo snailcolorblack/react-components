@@ -1,9 +1,10 @@
-import {act, fireEvent, render, screen} from '@testing-library/react';
-import axe from 'axe-core';
 import {createRef} from 'react';
+import axe from 'axe-core';
+import {act, fireEvent, render, screen} from '@testing-library/react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {Toast} from './Toast';
 import type {ToastHandle} from './Toast.interface.ts';
+import styles from './Toast.module.css';
 
 /*
  * Очередь, роли, таймеры и пауза. Геометрии нет: верхний слой, углы экрана
@@ -23,6 +24,17 @@ function mount(props: Partial<Parameters<typeof Toast>[0]> = {}) {
     render(<Toast ref={ref} {...props}/>);
 
     return ref as {current: ToastHandle};
+}
+
+/*
+ * Конец отсчёта. Шлём нативное событие: конструктора AnimationEvent
+ * в jsdom нет вовсе, а fireEvent.animationEnd до React не доходит.
+ */
+function finish(plate: Element, name: string) {
+    const event = new Event('animationend', {bubbles: true});
+
+    Object.defineProperty(event, 'animationName', {value: name});
+    plate.dispatchEvent(event);
 }
 
 function plates() {
@@ -197,23 +209,28 @@ describe('Toast: плашка', () => {
     });
 });
 
-describe('Toast: таймер', () => {
-    it('сообщение закрывается само через duration области', () => {
-        vi.useFakeTimers();
+describe('Toast: отсчёт жизни', () => {
+    /*
+     * Отсчёт держит CSS: у плашки анимация-таймер, которую браузер сам
+     * приостанавливает по :hover и :focus-within, а в конце шлёт
+     * animationend. В jsdom анимаций нет вовсе, поэтому здесь проверяется
+     * проводка — атрибуты, срок у каждой плашки свой, реакция на
+     * animationend, — а сам ход времени и пауза замерены в браузере
+     * (числа в шапке Toast.tsx).
+     */
+    const life = (plate: Element) => (plate as HTMLElement).style.getPropertyValue('--toast-life');
+
+
+    it('у плашки есть срок и он равен duration области', () => {
         const toast = mount({duration: 5000});
 
         act(() => void toast.current.show('Сохранено'));
 
-        act(() => vi.advanceTimersByTime(4999));
-        expect(plates()).toHaveLength(1);
-
-        act(() => vi.advanceTimersByTime(1 + 200));
-        expect(plates()).toHaveLength(0);
-        vi.useRealTimers();
+        expect(plates()[0]).toHaveAttribute('data-life');
+        expect(life(plates()[0])).toBe('5000ms');
     });
 
-    it('у сообщения может быть свой duration', () => {
-        vi.useFakeTimers();
+    it('у сообщения может быть свой срок', () => {
         const toast = mount({duration: 5000});
 
         act(() => {
@@ -221,87 +238,72 @@ describe('Toast: таймер', () => {
             toast.current.show('Обычное');
         });
 
-        act(() => vi.advanceTimersByTime(1200));
-        expect(plates().map(plate => plate.textContent?.replace('×', ''))).toEqual(['Обычное']);
-        vi.useRealTimers();
+        expect(plates().map(life)).toEqual(['1000ms', '5000ms']);
     });
 
-    it('duration 0 не закрывает', () => {
-        vi.useFakeTimers();
+    it('duration 0 не заводит отсчёта вовсе', () => {
         const toast = mount({duration: 0});
 
         act(() => void toast.current.show('Висит'));
-        act(() => vi.advanceTimersByTime(60000));
 
-        expect(plates()).toHaveLength(1);
-        vi.useRealTimers();
+        expect(plates()[0]).not.toHaveAttribute('data-life');
+        expect(life(plates()[0])).toBe('');
     });
 
-    it('каждое сообщение живёт своим таймером', () => {
-        vi.useFakeTimers();
-        const toast = mount({duration: 5000});
-
-        act(() => void toast.current.show('Первое'));
-        act(() => vi.advanceTimersByTime(3000));
-        act(() => void toast.current.show('Второе'));
-
-        act(() => vi.advanceTimersByTime(2200));
-        expect(plates().map(plate => plate.textContent?.replace('×', ''))).toEqual(['Второе']);
-
-        act(() => vi.advanceTimersByTime(3000));
-        expect(plates()).toHaveLength(0);
-        vi.useRealTimers();
-    });
-
-    it('курсор останавливает отсчёт и не сбрасывает его', () => {
+    it('конец отсчёта закрывает плашку', () => {
         vi.useFakeTimers();
         const toast = mount({duration: 5000});
 
         act(() => void toast.current.show('Сохранено'));
-        const plate = plates()[0];
+        act(() => void finish(plates()[0], styles.life));
 
-        act(() => vi.advanceTimersByTime(4000));
-        fireEvent.pointerEnter(plate);
-
-        /* Под курсором время стоит. */
-        act(() => vi.advanceTimersByTime(60000));
-        expect(plates()).toHaveLength(1);
-
-        fireEvent.pointerLeave(plate);
-        /* Остаток — секунда, а не полные пять: отсчёт не начался заново. */
-        act(() => vi.advanceTimersByTime(999));
-        expect(plates()).toHaveLength(1);
-
-        act(() => vi.advanceTimersByTime(1 + 200));
+        /* Уход плашки — переход, на него оставлен свой запас. */
+        act(() => vi.advanceTimersByTime(200));
         expect(plates()).toHaveLength(0);
         vi.useRealTimers();
     });
 
-    it('фокус внутри тоже останавливает отсчёт', () => {
-        vi.useFakeTimers();
-        const toast = mount({duration: 5000});
-
-        act(() => void toast.current.show('Сохранено'));
-        fireEvent.focusIn(screen.getByRole('button', {name: 'Закрыть'}));
-
-        act(() => vi.advanceTimersByTime(60000));
-        expect(plates()).toHaveLength(1);
-        vi.useRealTimers();
-    });
-
-    it('пауза одного сообщения не держит остальные', () => {
+    it('закрывается ровно та плашка, у которой кончился отсчёт', () => {
         vi.useFakeTimers();
         const toast = mount({duration: 5000});
 
         act(() => {
-            toast.current.show('Под курсором');
-            toast.current.show('Само по себе');
+            toast.current.show('Первое');
+            toast.current.show('Второе');
         });
 
-        fireEvent.pointerEnter(plates()[0]);
-        act(() => vi.advanceTimersByTime(6000));
+        act(() => void finish(plates()[0], styles.life));
+        act(() => vi.advanceTimersByTime(200));
 
-        expect(plates().map(plate => plate.textContent?.replace('×', ''))).toEqual(['Под курсором']);
+        expect(plates().map(plate => plate.textContent?.replace('×', ''))).toEqual(['Второе']);
+        vi.useRealTimers();
+    });
+
+    /*
+     * Появление и уход сделаны переходами, своих анимаций у плашки нет.
+     * Но содержимое чужое: анимация внутри него всплывает до плашки,
+     * и без сверки имени любая такая анимация закрывала бы сообщение.
+     */
+    it('чужая анимация плашку не закрывает', () => {
+        vi.useFakeTimers();
+        const toast = mount({duration: 5000});
+
+        act(() => void toast.current.show('Сохранено'));
+        act(() => void finish(plates()[0], 'spin'));
+        act(() => vi.advanceTimersByTime(200));
+
+        expect(plates()).toHaveLength(1);
+        vi.useRealTimers();
+    });
+
+    it('уходящая плашка отсчёт не ведёт', () => {
+        vi.useFakeTimers();
+        const toast = mount({duration: 5000});
+
+        act(() => void toast.current.show('Сохранено'));
+        act(() => void fireEvent.click(screen.getByRole('button', {name: 'Закрыть'})));
+
+        expect(plates()[0]).not.toHaveAttribute('data-life');
         vi.useRealTimers();
     });
 });

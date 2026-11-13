@@ -70,12 +70,13 @@ function Wrapper<T extends ElementType = 'div'>(props: WrapperProps<T>) {
      * Переданный снаружи сильнее: type="submit" никто не запрещает.
      */
     const type = as === 'button' ? (rest.type ?? 'button') : rest.type;
+    const classes = [styles.wrapper, VARIANT_CLASS[variant], className].filter(Boolean).join(' ');
 
     return (
         <Component
             {...rest}
             type={type}
-            className={[styles.wrapper, VARIANT_CLASS[variant], className].filter(Boolean).join(' ')}
+            className={classes}
         />
     );
 }

@@ -1,5 +1,5 @@
-import {render, screen} from '@testing-library/react';
 import {createRef} from 'react';
+import {render, screen} from '@testing-library/react';
 import {describe, expect, it} from 'vitest';
 import {Dialog} from '../Dialog/Dialog';
 import {Popover} from '../Popover/Popover';
@@ -116,14 +116,14 @@ describe('Alert: значок', () => {
 
     it('withIcon показывает стандартный значок варианта', () => {
         const {container, rerender} = render(<Alert withIcon variant="SUCCESS">Сохранено</Alert>);
-        const первый = container.querySelector('svg')?.innerHTML;
+        const first = container.querySelector('svg')?.innerHTML;
 
-        expect(первый).toBeDefined();
+        expect(first).toBeDefined();
 
         /* У каждого варианта свой силуэт: цвет в высоком контрасте
            подменяет система, а форма остаётся. */
         rerender(<Alert withIcon variant="ERROR">Не сохранилось</Alert>);
-        expect(container.querySelector('svg')?.innerHTML).not.toBe(первый);
+        expect(container.querySelector('svg')?.innerHTML).not.toBe(first);
     });
 
     it('withIcon={false} оставляет плашку без значка', () => {

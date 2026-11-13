@@ -51,13 +51,14 @@ function Alert({
      * раз его передали, значок нужен.
      */
     const shown = icon ?? (withIcon ? mark?.icon : undefined);
+    const classes = [styles.alert, className].filter(Boolean).join(' ');
 
     return (
         <div
             role={role}
             {...props}
             data-variant={variant}
-            className={className ? `${styles.alert} ${className}` : styles.alert}
+            className={classes}
         >
             {shown !== undefined && <span className={styles.icon} aria-hidden="true">{shown}</span>}
             {mark !== undefined && <span className={styles.word}>{mark.word} </span>}

@@ -1,6 +1,6 @@
-import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {createRef} from 'react';
+import userEvent from '@testing-library/user-event';
+import {render, screen} from '@testing-library/react';
 import {describe, expect, it} from 'vitest';
 import {Accordion} from './Accordion';
 

@@ -115,6 +115,8 @@ function Progress({
      * Условие смотрит на пропсы, а не на DOM, — имя может прийти и через
      * aria-labelledby на элемент, которого в этот момент ещё нет.
      */
+    const classes = [styles.progress, VARIANT_CLASS[variant], className].filter(Boolean).join(' ');
+
     useEffect(() => {
         if (!import.meta.env.DEV || named) return;
 
@@ -127,7 +129,7 @@ function Progress({
 
     return (
         <div
-            className={[styles.progress, VARIANT_CLASS[variant], className].filter(Boolean).join(' ')}
+            className={classes}
             style={style}
         >
             {/*

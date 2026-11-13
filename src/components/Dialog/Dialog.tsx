@@ -53,8 +53,9 @@
  *  это предупреждение в консоли, в production тишина, потому что там такие
  *  проверки вырезаны. В нижнем регистре React отдаёт атрибут в DOM как есть.
  *
- *  Команды новее popovertarget (Chrome 135, Firefox 144, Safari 26.2).
- *  В движках старше их исполняет Button, голый <button> там ничего не сделает.
+ *  Осторожно: команды новее popovertarget, поддержка между движками
+ *  неравномерная, и там, где их нет, кнопка молча ничего не делает.
+ *  Для критичных сценариев берите вариант 1.
  *
  *  Типы атрибутов добавлены в src/types/invoker.d.ts.
  */
@@ -88,15 +89,17 @@
  *
  *  Любое из них поднимает событие close, то есть вызывает ваш onClose.
  *
- *  Про closedBy: всё это делает сам атрибут closedby, и там, где
- *  движок его ещё не знает, компонент подменяет клик мимо при closedBy="any"
- *  и запрет Esc при closedBy="none" (через родное событие cancel).
+ *  Про closedBy честно: всё это делает сам атрибут closedby, и там, где
+ *  движок его ещё не знает, компонент подменяет ТОЛЬКО клик мимо при
+ *  closedBy="any" — остальное остаётся браузерным по умолчанию. То есть
+ *  в старом движке closedBy="none" и "closerequest" не удержат Esc.
  */
 /* -------------------------------------------------------------------------- */
 
 import {useCallback, useEffect, useRef} from "react";
-import type {MouseEvent, SyntheticEvent} from "react";
+import type {MouseEvent} from "react";
 import type {DialogProps} from "./Dialog.interface.ts";
+import {useLinger} from "../../hooks/useLinger.ts";
 import styles from './Dialog.module.css';
 
 const SUPPORTS_CLOSED_BY = typeof HTMLDialogElement !== 'undefined' && 'closedBy' in HTMLDialogElement.prototype;
@@ -108,6 +111,7 @@ function Dialog({
                     label,
                     closedBy = 'any',
                     ref,
+                    children,
                     ...props
                 }: DialogProps) {
 
@@ -117,6 +121,16 @@ function Dialog({
         if (typeof ref === 'function') ref(node);
         else if (ref) ref.current = node;
     }, [ref]);
+
+    /*
+     * Содержимое закрытого окна в разметке не держим: оно приходит
+     * с открытием и уходит по конце перехода. Неуправляемым окном
+     * (open не передан) распоряжается разметка, про открытие React
+     * не знает — там содержимое рисуется всегда.
+     */
+    const live = useLinger(open, dialogRef);
+
+    const classes = [styles.dialog, className].filter(Boolean).join(' ');
 
     useEffect(() => {
         const dialog = dialogRef.current;
@@ -143,19 +157,13 @@ function Dialog({
             ref={setDialogRef}
             aria-label={typeof label === 'string' ? label : props['aria-label']}
             closedby={closedBy}
-            className={`${styles.dialog} ${className}`.trim()}
+            className={classes}
             onClick={handleClick}
-            onCancel={handleCancel}
-        />
+        >
+            {live && children}
+        </dialog>
     );
 
-
-    /* Где closedby нет, Esc закрывал бы и диалог с closedBy="none". Сам атрибут
-       там ничего не значит, поэтому запрет повторён через родной cancel. */
-    function handleCancel(event: SyntheticEvent<HTMLDialogElement>) {
-        props.onCancel?.(event);
-        if (!SUPPORTS_CLOSED_BY && closedBy === 'none') event.preventDefault();
-    }
 
     function handleClick(event: MouseEvent<HTMLDialogElement>) {
         props.onClick?.(event);

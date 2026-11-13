@@ -1,7 +1,7 @@
-import {render, screen} from '@testing-library/react';
+import {useState} from 'react';
 import userEvent from '@testing-library/user-event';
 import axe from 'axe-core';
-import {useState} from 'react';
+import {render, screen} from '@testing-library/react';
 import {describe, expect, it, vi} from 'vitest';
 import {Tabs} from './Tabs';
 
@@ -197,13 +197,28 @@ describe('Tabs: клавиатура', () => {
         expect(screen.getByRole('tab', {name: 'Отзывы'})).toHaveFocus();
     });
 
-    it('после кнопок Tab ведёт в панель, а не по остальным вкладкам', async () => {
+    /*
+     * Полоса — одна остановка на всю: по вкладкам ходят стрелками, а Tab
+     * уводит из неё наружу. Это роверинг: открытая кнопка держит tabindex="0",
+     * остальные — "-1".
+     *
+     * Куда именно попадёт фокус дальше, решает содержимое панели и движок
+     * (см. разбор в Tabs.tsx), и в jsdom этого не видно: прокрутки он
+     * не считает. Поэтому здесь проверяется то, за что отвечают вкладки, —
+     * что Tab не пошёл по остальным кнопкам.
+     */
+    it('полоса — одна остановка: Tab уводит из неё наружу', async () => {
         render(<Sample/>);
 
-        await userEvent.tab();
-        await userEvent.tab();
+        const tabs = screen.getAllByRole('tab');
 
-        expect(screen.getByRole('tabpanel')).toHaveFocus();
+        expect(tabs.map(node => node.getAttribute('tabindex'))).toEqual(['0', '-1', '-1']);
+
+        await userEvent.tab();
+        expect(tabs[0]).toHaveFocus();
+
+        await userEvent.tab();
+        expect(tabs.some(node => node === document.activeElement)).toBe(false);
     });
 });
 
@@ -384,5 +399,185 @@ describe('Tabs: смена панели', () => {
 
         const results = await axe.run(container, {rules: {'color-contrast': {enabled: false}}});
         expect(results.violations).toEqual([]);
+    });
+});
+
+describe('Tabs: значения не на латинице', () => {
+    /*
+     * Поймано на вложенности табов в аккордеон. Старый slug выбрасывал
+     * всё, что не ASCII, и «первая» с «вторая» давали один и тот же id:
+     * две кнопки с одинаковым id, обе aria-controls на первую панель.
+     */
+    it('русские значения дают разные id и верные связи', () => {
+        const {container} = render(
+            <Tabs defaultValue="первая">
+                <Tabs.Buttons label="Вкладки">
+                    <Tabs.Button value="первая">Первая</Tabs.Button>
+                    <Tabs.Button value="вторая">Вторая</Tabs.Button>
+                </Tabs.Buttons>
+                <Tabs.Content value="первая">Раз</Tabs.Content>
+                <Tabs.Content value="вторая">Два</Tabs.Content>
+            </Tabs>,
+        );
+
+        const tabs = [...container.querySelectorAll('[role="tab"]')];
+        const panels = [...container.querySelectorAll('[role="tabpanel"]')];
+
+        expect(new Set(tabs.map(node => node.id)).size).toBe(2);
+        expect(new Set(panels.map(node => node.id)).size).toBe(2);
+
+        for (const tab of tabs) {
+            const panel = document.getElementById(tab.getAttribute('aria-controls')!);
+
+            expect(panel).not.toBeNull();
+            expect(panel!.getAttribute('aria-labelledby')).toBe(tab.id);
+        }
+    });
+
+    it('пробелы и знаки из id уходят, буквы остаются', () => {
+        const {container} = render(
+            <Tabs defaultValue="Счёт №1">
+                <Tabs.Buttons label="Счета">
+                    <Tabs.Button value="Счёт №1">Первый</Tabs.Button>
+                    <Tabs.Button value="Счёт №2">Второй</Tabs.Button>
+                </Tabs.Buttons>
+                <Tabs.Content value="Счёт №1">Раз</Tabs.Content>
+                <Tabs.Content value="Счёт №2">Два</Tabs.Content>
+            </Tabs>,
+        );
+
+        const id = [...container.querySelectorAll('[role="tab"]')].map(node => node.id);
+
+        expect(new Set(id).size).toBe(2);
+        /* IDREF не терпит пробела: он там разделяет ссылки. */
+        expect(id.every(name => !name.includes(' '))).toBe(true);
+        expect(id[0]).toContain('Счёт');
+    });
+});
+
+describe('Tabs: панель в обходе табуляцией', () => {
+    /*
+     * Своего tabindex панель не ставит: условие APG («панель в обходе, только
+     * когда внутри нет фокусируемого») движок выполняет сам — фокусируемыми
+     * становятся прокручиваемые области, и только те, внутри которых нечего
+     * фокусировать. Замеры браузера лежат в Tabs.tsx; jsdom прокрутки
+     * не считает, поэтому здесь проверяется ровно разметка.
+     */
+    it('своего tabindex у панели нет', () => {
+        render(
+            <Tabs defaultValue="about">
+                <Tabs.Buttons label="Раздел">
+                    <Tabs.Button value="about">Описание</Tabs.Button>
+                </Tabs.Buttons>
+                <Tabs.Content value="about">Просто текст без ссылок</Tabs.Content>
+            </Tabs>,
+        );
+
+        expect(screen.getByRole('tabpanel')).not.toHaveAttribute('tabindex');
+    });
+
+    /*
+     * Замерено в Chromium 141: элемент с hidden="until-found" фокусируем сам
+     * по себе — внутрь не пускает content-visibility, а до блока Tab доходит.
+     * Поэтому безусловный tabindex="0" делал остановкой каждую закрытую панель.
+     */
+    it('закрытые панели тоже без tabindex', () => {
+        const {container} = render(<Sample/>);
+        const closed = [...container.querySelectorAll('[role="tabpanel"][hidden]')];
+
+        expect(closed).toHaveLength(2);
+        expect(closed.every(node => !node.hasAttribute('tabindex'))).toBe(true);
+    });
+
+    /* Там, где движок не поможет (прокручиваемая панель в Safari), решает автор. */
+    it('переданный снаружи tabIndex доходит до панели', () => {
+        render(
+            <Tabs defaultValue="about">
+                <Tabs.Buttons label="Раздел">
+                    <Tabs.Button value="about">Описание</Tabs.Button>
+                </Tabs.Buttons>
+                <Tabs.Content value="about" tabIndex={0}>Длинный текст</Tabs.Content>
+            </Tabs>,
+        );
+
+        expect(screen.getByRole('tabpanel')).toHaveAttribute('tabindex', '0');
+    });
+});
+
+describe('Tabs: lazy у панели', () => {
+    /*
+     * По умолчанию панели живут в разметке все — ради поиска по странице.
+     * lazy меняет размен: панель пустая, пока её не открыли, а открытая
+     * один раз больше не пустеет.
+     *
+     * Решение принимает сама панель: открытую вкладку Tabs ведёт сам,
+     * и снаружи для этого ничего держать не нужно.
+     */
+    function Lazy() {
+        return (
+            <Tabs defaultValue="about">
+                <Tabs.Buttons label="Раздел">
+                    <Tabs.Button value="about">Описание</Tabs.Button>
+                    <Tabs.Button value="reviews">Отзывы</Tabs.Button>
+                </Tabs.Buttons>
+
+                <Tabs.Content value="about" lazy><p>Текст описания</p></Tabs.Content>
+                <Tabs.Content value="reviews" lazy><p>Текст отзывов</p></Tabs.Content>
+            </Tabs>
+        );
+    }
+
+    it('без lazy в разметке сразу все панели', () => {
+        render(<Sample/>);
+
+        expect(screen.getByText('Текст описания')).toBeInTheDocument();
+        expect(screen.getByText('Текст отзывов')).toBeInTheDocument();
+    });
+
+    it('с lazy закрытая панель пустая, открытая — нет', () => {
+        render(<Lazy/>);
+
+        expect(screen.getByText('Текст описания')).toBeInTheDocument();
+        expect(screen.queryByText('Текст отзывов')).not.toBeInTheDocument();
+    });
+
+    it('открытая один раз панель больше не пустеет', async () => {
+        const user = userEvent.setup();
+
+        render(<Lazy/>);
+
+        await user.click(screen.getByRole('tab', {name: 'Отзывы'}));
+        expect(screen.getByText('Текст отзывов')).toBeInTheDocument();
+
+        await user.click(screen.getByRole('tab', {name: 'Описание'}));
+        /* Вернулись на первую, а вторая осталась в разметке — закрытой. */
+        expect(screen.getByText('Текст отзывов')).toBeInTheDocument();
+    });
+
+    /* Содержимое приходит тем же кадром, иначе панель мигнула бы пустой. */
+    it('содержимое появляется тем же кадром, что и открытие', () => {
+        const {container, rerender} = render(
+            <Tabs value="about" onChange={() => undefined}>
+                <Tabs.Buttons label="Раздел">
+                    <Tabs.Button value="about">Описание</Tabs.Button>
+                    <Tabs.Button value="reviews">Отзывы</Tabs.Button>
+                </Tabs.Buttons>
+                <Tabs.Content value="reviews" lazy><p>Текст отзывов</p></Tabs.Content>
+            </Tabs>,
+        );
+
+        expect(container.querySelector('p')).toBeNull();
+
+        rerender(
+            <Tabs value="reviews" onChange={() => undefined}>
+                <Tabs.Buttons label="Раздел">
+                    <Tabs.Button value="about">Описание</Tabs.Button>
+                    <Tabs.Button value="reviews">Отзывы</Tabs.Button>
+                </Tabs.Buttons>
+                <Tabs.Content value="reviews" lazy><p>Текст отзывов</p></Tabs.Content>
+            </Tabs>,
+        );
+
+        expect(container.querySelector('p')).not.toBeNull();
     });
 });

@@ -1,7 +1,7 @@
-import {act, render, screen} from '@testing-library/react';
+import {createRef, useState} from 'react';
 import userEvent from '@testing-library/user-event';
 import axe from 'axe-core';
-import {createRef, useState} from 'react';
+import {act, render, screen} from '@testing-library/react';
 import {describe, expect, it, vi} from 'vitest';
 import {Checkbox} from './Checkbox';
 import styles from '../Control/Control.module.css';

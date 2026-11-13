@@ -65,9 +65,11 @@ function ButtonGroup({
         [name, auto, value, defaultValue, onChange],
     );
 
+    const classes = [styles.field, className].filter(Boolean).join(' ');
+
     return (
         <GroupContext value={state}>
-            <fieldset {...props} className={[styles.field, className].filter(Boolean).join(' ')}>
+            <fieldset {...props} className={classes}>
                 {/* Подпись стоит над коробкой отдельной строкой: fieldset
                     здесь без фона, фон у вложенной оболочки. */}
                 <legend className={showLabel ? styles.legend : styles.hiddenLegend}>{label}</legend>
@@ -87,9 +89,10 @@ function ButtonGroupItem({value, children, className = '', onChange, ...props}: 
 
     const group = outer;
     const controlled = group.value !== undefined;
+    const classes = [styles.item, className].filter(Boolean).join(' ');
 
     return (
-        <label className={[styles.item, className].filter(Boolean).join(' ')}>
+        <label className={classes}>
             <input
                 {...props}
                 type="radio"

@@ -1,6 +1,6 @@
-import type {Meta, StoryObj} from '@storybook/react-vite';
 import {Button} from '../Button/Button';
 import {Tooltip} from './Tooltip';
+import type {Meta, StoryObj} from '@storybook/react-vite';
 
 const meta = {
     title: 'Слои/Tooltip',

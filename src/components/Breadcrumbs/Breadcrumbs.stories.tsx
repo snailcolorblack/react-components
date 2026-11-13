@@ -1,8 +1,8 @@
-import type {Meta, StoryObj} from '@storybook/react-vite';
 import {Breadcrumbs} from './Breadcrumbs';
+import type {Meta, StoryObj} from '@storybook/react-vite';
 import type {Crumb} from './Breadcrumbs.interface.ts';
 
-const ПУТЬ: Crumb[] = [
+const PATH: Crumb[] = [
     {label: 'Главная', href: '/'},
     {label: 'Банк', href: '/bank'},
     {label: 'Переводы', href: '/bank/transfers'},
@@ -12,7 +12,7 @@ const ПУТЬ: Crumb[] = [
     {label: 'Март 2026'},
 ];
 
-const домик = (
+const house = (
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
         <path d="M2 7 8 2l6 5v7H2z" strokeLinejoin="round"/>
     </svg>
@@ -76,43 +76,43 @@ type Story = StoryObj<typeof meta>;
 
 /** Короткий путь: сворачивать нечего. */
 export const Обычный: Story = {
-    args: {items: ПУТЬ.slice(0, 3)},
+    args: {items: PATH.slice(0, 3)},
 };
 
 /** Длинный путь, свёрнутый числом. Нажмите «…» — раскроется на месте. */
 export const Длинный: Story = {
-    args: {items: ПУТЬ, collapse: 4},
+    args: {items: PATH, collapse: 4},
 };
 
 /** Сколько звеньев оставлять по краям — своё. */
 export const СвоиКрая: Story = {
-    args: {items: ПУТЬ, collapse: 4, head: 2, tail: 1},
+    args: {items: PATH, collapse: 4, head: 2, tail: 1},
 };
 
 /** По умолчанию: на широком месте виден весь путь, каким бы длинным он ни был. */
 export const ПоШирине: Story = {
-    args: {items: ПУТЬ},
+    args: {items: PATH},
 };
 
 /** Числом: середина под «…» всегда, сколько бы места ни было. */
 export const ПоКоличеству: Story = {
-    args: {items: ПУТЬ, collapse: 4},
+    args: {items: PATH, collapse: 4},
 };
 
 /** Не сворачивать вовсе: на узком месте путь перенесётся на вторую строку. */
 export const БезСворачивания: Story = {
-    args: {items: ПУТЬ, collapse: false},
+    args: {items: PATH, collapse: false},
 };
 
 /** Свой разделитель. Он в разметке, поэтому копируется вместе с путём. */
 export const СвойРазделитель: Story = {
-    args: {items: ПУТЬ, separator: '›'},
+    args: {items: PATH, separator: '›'},
 };
 
 /** Значок у корня. Именем ссылки он не становится — для этого есть подпись. */
 export const СоЗначком: Story = {
     args: {
-        items: [{...ПУТЬ[0], icon: домик}, ...ПУТЬ.slice(1)],
+        items: [{...PATH[0], icon: house}, ...PATH.slice(1)],
         collapse: 4 as const,
     },
 };
@@ -134,15 +134,15 @@ export const БезАдреса: Story = {
  */
 export const СПотолкомШирины: Story = {
     args: {
-        items: ПУТЬ,
+        items: PATH,
         collapse: false,
-        style: {'--breadcrumbs-item-max': '10ch'} as React.CSSProperties,
+        style: {'--breadcrumbs-item-max': '10ch'},
     },
 };
 
 /** Узкое место: видны только корень и текущая страница. */
 export const НаУзком: Story = {
-    args: {items: ПУТЬ},
+    args: {items: PATH},
     decorators: [
         Story => (
             <div style={{inlineSize: 'min(20rem, 100%)'}}>

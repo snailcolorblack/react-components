@@ -103,6 +103,7 @@ function Pagination({
     const here = Math.min(Math.max(Math.round(page), 1), Math.max(total, 1));
     const items = build(here, total, siblings, boundaries);
     const text = typeof status === 'function' ? status(here, total) : words.status(here, total);
+    const classes = [styles.pagination, className].filter(Boolean).join(' ');
 
     /* Одна страница — навигации нет. Пустой <nav> остался бы в списке
        ориентиров и обещал переходы, которых не существует. */
@@ -115,7 +116,7 @@ function Pagination({
             /* Надпись «Страница 3 из 20» объявляется вместе с именем
                ориентира: перейдя к навигации, слышно сразу, где ты. */
             aria-describedby={status === false ? props['aria-describedby'] : statusId}
-            className={[styles.pagination, className].filter(Boolean).join(' ')}
+            className={classes}
         >
             {status !== false && <span id={statusId} className={styles.status}>{text}</span>}
 

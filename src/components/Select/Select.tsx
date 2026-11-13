@@ -10,9 +10,10 @@
 /*  просто у single выбранное всегда одно. Всё остальное тоже общее.          */
 /*                                                                            */
 /*  Нативного <select> здесь больше нет. Он умеет всё сам, но стилизуется     */
-/*  только через appearance: base-select, а его на ноябрь 2026 нет в Firefox; */
-/*  кроме того, раскрывающегося <select multiple> в платформе нет вовсе, и    */
-/*  чипсы остались бы своими. Цена отказа: клавиатуру и участие в форме       */
+/*  только через appearance: base-select, то есть пока лишь в Chromium;       */
+/*  ::selectedcontent не поддержан даже там, из-за чего выбранный пункт       */
+/*  в закрытом поле рисовался одним слипшимся текстом; и внутри обёртки       */
+/*  он рисует собственный контур. Цена отказа: клавиатуру и участие в форме   */
 /*  пишем сами, а родного пикера на телефоне не будет вовсе — там             */
 /*  открывается тот же самый список, отдельной мобильной ветки в коде нет.    */
 /* -------------------------------------------------------------------------- */
@@ -116,6 +117,14 @@ import styles from './Select.module.css';
  * а Enter не делал ничего. Мышь до них не добирается и так —
  * у выключенного пункта pointer-events: none.
  */
+/* Общие части поля и своя надстройка над ними: сочетания постоянные,
+   поэтому считаются один раз на модуль. Свой класс рядом с общим нужен
+   правилам ниже: хеш у модулей свой на каждый файл, и по одному только
+   field.row из Select.module.css не попасть. */
+const FIELD_CLASS = [field.field, styles.field].join(' ');
+const ROW_CLASS = [field.row, styles.row].join(' ');
+const CONTROL_CLASS = [field.control, styles.control].join(' ');
+
 const OPTION_SELECTOR = '[role="option"]:not([aria-disabled="true"])';
 /* Сколько живёт набранное. Столько же держит нативный <select>. */
 const TYPEAHEAD_LIFE = 1000;
@@ -174,25 +183,21 @@ function Select<T>({
     const multi = variant === 'multi';
     const selected = value === undefined ? own : toList(value);
     const chosen = items.filter((item, index) => selected.includes(key(item, index)));
+    const classes = [field.group, className].filter(Boolean).join(' ');
 
     return (
-        <div className={[field.group, className].filter(Boolean).join(' ')} style={style}>
+        <div className={classes} style={style}>
             <div
                 {...props}
                 data-variant={variant}
                 data-filled={selected.length > 0 || undefined}
                 data-invalid={validity.invalid || undefined}
-                className={[field.field, styles.field].join(' ')}
+                className={FIELD_CLASS}
                 style={{anchorName: anchor} as CSSProperties}
-                data-anchor-name={anchor}
             >
                 <span id={labelId} className={field.label}>{label}</span>
 
-                {/* Свой класс рядом с общим: правила ниже цепляются
-                    за него, а хеш у модулей свой на каждый файл —
-                    по одному только field.row из Select.module.css
-                    не попасть. */}
-                <div className={[field.row, styles.row].join(' ')}>
+                <div className={ROW_CLASS}>
                     {multi && chosen.map((item, index) => (
                         <button
                             key={key(item, index)}
@@ -221,7 +226,7 @@ function Select<T>({
                         aria-invalid={validity.invalid || undefined}
                         aria-required={required || undefined}
                         popoverTarget={disabled ? undefined : popupId}
-                        className={[field.control, styles.control].join(' ')}
+                        className={CONTROL_CLASS}
                     >
                         <span id={valueId} className={styles.value}>
                             {multi

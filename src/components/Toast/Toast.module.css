@@ -26,9 +26,6 @@
     display: grid;
     gap: var(--toast-gap);
     inline-size: min(calc(var(--toast-width) + var(--toast-inset) * 2), 100%);
-    /* Явно, а не fit-content из UA-стилей: у grid-контейнера Safari 18 раздувает
-       его до max-block-size, и плашка вытягивалась на весь экран (замерено: 668px). */
-    block-size: auto;
     max-block-size: 100dvb;
 
     /*
@@ -39,11 +36,6 @@
 }
 
 .toast {
-    /* Настройка: задаётся на самом компоненте, через style или свой класс. */
-    --toast-shadow: 0 4px 16px var(--contrast-alpha-20);
-    --toast-close-size: 1.5rem;
-    --toast-close-font-size: 1.25rem;
-
     pointer-events: auto;
 }
 
@@ -100,7 +92,7 @@
     inline-size: 100%;
     max-inline-size: var(--toast-width);
     padding: calc(var(--base-gap) * 3);
-    box-shadow: var(--toast-shadow);
+    box-shadow: 0 4px 16px var(--contrast-alpha-20);
 }
 
 .icon {
@@ -125,15 +117,15 @@
     display: grid;
     place-items: center;
     /* WCAG 2.5.8: цель нажатия не меньше 24×24. */
-    inline-size: var(--toast-close-size);
-    block-size: var(--toast-close-size);
+    inline-size: 1.5rem;
+    block-size: 1.5rem;
     margin-inline-start: calc(var(--base-gap) * -1);
 
     padding: 0;
     border: 0;
     border-radius: var(--base-gap);
     font: inherit;
-    font-size: var(--toast-close-font-size);
+    font-size: 1.25rem;
     line-height: 1;
     color: inherit;
     background-color: transparent;
@@ -147,8 +139,8 @@
 }
 
 .close:focus-visible {
-    outline: var(--ring-width, 2px) solid var(--alert-tint);
-    outline-offset: var(--ring-offset, 2px);
+    outline: 2px solid var(--alert-tint);
+    outline-offset: 2px;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -183,6 +175,34 @@
     display: none;
     opacity: 0;
     translate: 0 var(--toast-from, 0);
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Отсчёт жизни                                                              */
+/*                                                                            */
+/*  Анимация-таймер: ничего не меняет (оба кадра одинаковы) и нужна ради      */
+/*  двух вещей, которых нет у setTimeout, — animationend в конце и пауза      */
+/*  по :hover / :focus-within силами самого браузера. Остаток времени при     */
+/*  этом считает движок, а не наш код.                                        */
+/*                                                                            */
+/*  Нарочно НЕ отключается в блоке prefers-reduced-motion ниже: просьба       */
+/*  о покое — про движение, а не про то, чтобы сообщение висело вечно.        */
+/*  Двигается плашка переходами выше, их покой и выключает.                   */
+/* -------------------------------------------------------------------------- */
+
+@keyframes life {
+    from { opacity: 1 }
+    to { opacity: 1 }
+}
+
+/* Атрибута нет у плашки без срока (duration <= 0) и у уходящей. */
+.toast[data-life] {
+    animation: life var(--toast-life) linear forwards;
+}
+
+.toast[data-life]:hover,
+.toast[data-life]:focus-within {
+    animation-play-state: paused;
 }
 
 /* -------------------------------------------------------------------------- */

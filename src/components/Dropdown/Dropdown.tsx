@@ -149,6 +149,7 @@ function Dropdown({
         'aria-haspopup': 'menu',
         onClick: handleTriggerClick,
     } as const;
+    const classes = [styles.menu, className].filter(Boolean).join(' ');
 
     return (
         <>
@@ -164,7 +165,7 @@ function Dropdown({
                    группа. С presentation узел уходит, menu внутри остаётся. */
                 role="presentation"
                 placement={placement}
-                className={`${styles.menu} ${className}`.trim()}
+                className={classes}
                 onToggle={handleToggle}
             >
                 {/*

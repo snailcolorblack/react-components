@@ -1,6 +1,6 @@
-import type {Meta, StoryObj} from '@storybook/react-vite';
 import {Button} from '../Button/Button';
 import {Dropdown} from './Dropdown';
+import type {Meta, StoryObj} from '@storybook/react-vite';
 import type {DropdownItem} from './Dropdown.interface';
 
 const ITEMS: DropdownItem[] = [

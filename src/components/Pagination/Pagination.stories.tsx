@@ -1,6 +1,6 @@
 import {useState} from 'react';
-import type {Meta, StoryObj} from '@storybook/react-vite';
 import {Pagination} from './Pagination';
+import type {Meta, StoryObj} from '@storybook/react-vite';
 import type {PaginationProps} from './Pagination.interface.ts';
 
 const meta = {

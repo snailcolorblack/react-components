@@ -1,7 +1,7 @@
 import {useRef} from 'react';
-import type {Meta, StoryObj} from '@storybook/react-vite';
 import {Button} from '../Button/Button';
 import {Toast} from './Toast';
+import type {Meta, StoryObj} from '@storybook/react-vite';
 import type {ToastHandle} from './Toast.interface';
 
 const meta = {

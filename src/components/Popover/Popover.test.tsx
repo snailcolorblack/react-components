@@ -1,7 +1,7 @@
-import {render, screen} from '@testing-library/react';
+import {createRef, useEffect} from 'react';
 import userEvent from '@testing-library/user-event';
 import axe from 'axe-core';
-import {createRef, useEffect} from 'react';
+import {render, screen} from '@testing-library/react';
 import {describe, expect, it, vi} from 'vitest';
 import {Button} from '../Button/Button';
 import {Popover} from './Popover';

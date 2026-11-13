@@ -1,7 +1,7 @@
-import type {Meta, StoryObj} from '@storybook/react-vite';
 import {Button} from '../Button/Button';
 import {Typography} from '../Typography/Typography';
 import {Popover} from './Popover';
+import type {Meta, StoryObj} from '@storybook/react-vite';
 
 const meta = {
     title: 'Слои/Popover',

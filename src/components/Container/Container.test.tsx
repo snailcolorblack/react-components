@@ -1,5 +1,5 @@
-import {render, screen} from '@testing-library/react';
 import axe from 'axe-core';
+import {render, screen} from '@testing-library/react';
 import {describe, expect, it, vi} from 'vitest';
 import {Container} from './Container';
 
@@ -14,19 +14,19 @@ import {Container} from './Container';
  */
 
 describe('Container: размер', () => {
-    function классы(node: Element | null) {
+    function classesOf(node: Element | null) {
         return (node as HTMLElement).className.split(' ');
     }
 
     it('по умолчанию обычный разворот', () => {
         const {container} = render(<Container>Содержимое</Container>);
-        const обычный = render(<Container size="NORMAL">Содержимое</Container>);
+        const normal = render(<Container size="NORMAL">Содержимое</Container>);
 
-        expect(классы(container.firstElementChild)).toEqual(классы(обычный.container.firstElementChild));
+        expect(classesOf(container.firstElementChild)).toEqual(classesOf(normal.container.firstElementChild));
     });
 
     it('у каждого размера свой класс', () => {
-        const набор = (['WIDE', 'NORMAL', 'PHONE'] as const).map(size => {
+        const set = (['WIDE', 'NORMAL', 'PHONE'] as const).map(size => {
             const {container, unmount} = render(<Container size={size}>Содержимое</Container>);
             const className = (container.firstElementChild as HTMLElement).className;
             unmount();
@@ -34,18 +34,18 @@ describe('Container: размер', () => {
             return className;
         });
 
-        expect(new Set(набор).size).toBe(3);
+        expect(new Set(set).size).toBe(3);
     });
 
     it('общий класс остаётся у всех размеров: отступ и середина — не вариант', () => {
-        const широкий = render(<Container size="WIDE">A</Container>);
-        const узкий = render(<Container size="PHONE">Б</Container>);
+        const wide = render(<Container size="WIDE">A</Container>);
+        const narrow = render(<Container size="PHONE">Б</Container>);
 
-        const общие = классы(широкий.container.firstElementChild)
-            .filter(name => классы(узкий.container.firstElementChild).includes(name));
+        const common = classesOf(wide.container.firstElementChild)
+            .filter(name => classesOf(narrow.container.firstElementChild).includes(name));
 
         /* Общими обязаны быть класс обёртки, её PLAIN и сам контейнер. */
-        expect(общие.length).toBeGreaterThanOrEqual(3);
+        expect(common.length).toBeGreaterThanOrEqual(3);
     });
 });
 

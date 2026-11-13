@@ -150,14 +150,22 @@
 
 #root {
     display: flex;
-    align-items: center;
-    justify-content: center;
     min-block-size: 100svh;
     min-inline-size: 100vw;
     inline-size: 100%;
     block-size: 100%;
     color: var(--contrast-color);
     background-color: var(--base-color);
+
+    .content {
+        --container-max: 2000px;
+
+        position: relative;
+        display: flex;
+        align-items: start;
+        gap: 1rem;
+        padding-block: 32px;
+    }
 
     .section {
         display: flex;
@@ -166,27 +174,11 @@
         inline-size: 100%;
     }
 
-    .content {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-direction: column;
-        flex: 1;
-        gap: 3rem;
-        padding-inline: 16px;
-        padding-block: 32px;
-        block-size: 100%;
-        inline-size: 100%;
-        max-inline-size: 980px;
-    }
-
     .block {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
         inline-size: 100%;
         border-radius: 8px;
-        display: flex;
-        /* Перенос обязателен: без него ряд кнопок не помещался в 320px
-           и страница ехала вбок — замерено, 563px против 320 (WCAG 1.4.10). */
-        flex-wrap: wrap;
-        gap: 8px
     }
 }

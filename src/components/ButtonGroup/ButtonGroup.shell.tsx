@@ -59,12 +59,13 @@ function ButtonGroupShell<T extends ElementType = 'div'>({
     const attach = useWheel(ref as never);
 
     const Component = (as ?? 'div') as ElementType;
+    const classes = [styles.group, VARIANT_CLASS[variant], className].filter(Boolean).join(' ');
 
     return (
         <Component
             {...props}
             ref={attach}
-            className={[styles.group, VARIANT_CLASS[variant], className].filter(Boolean).join(' ')}
+            className={classes}
             style={{...style, '--group-pill': pill} as CSSProperties}
         >
             {/*
@@ -78,14 +79,5 @@ function ButtonGroupShell<T extends ElementType = 'div'>({
         </Component>
     );
 }
-
-/* -------------------------------------------------------------------------- */
-/*  Колесо                                                                    */
-/* -------------------------------------------------------------------------- */
-
-
-/** Колесо шлёт пиксели, строки или страницы — приводим к пикселям. */
-
-/** Проставить чужой ref, каким бы он ни пришёл. */
 
 export {ButtonGroupShell};

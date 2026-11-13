@@ -1,7 +1,7 @@
-import type {Meta, StoryObj} from '@storybook/react-vite';
 import {Typography} from '../Typography/Typography';
 import {Wrapper} from '../Wrapper/Wrapper';
 import {Container} from './Container';
+import type {Meta, StoryObj} from '@storybook/react-vite';
 
 const meta = {
     title: 'Раскладка/Container',
@@ -33,32 +33,32 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-const Полоса = ({children}: {children: string}) => (
-    <Wrapper><Typography>{children}</Typography></Wrapper>
-);
+function Band({children}: {children: string}) {
+    return <Wrapper><Typography>{children}</Typography></Wrapper>;
+}
 
 /** Во всю страницу: 1440px. */
 export const Широкий: Story = {
-    args: {size: 'WIDE', children: <Полоса>WIDE — 1440px</Полоса>},
+    args: {size: 'WIDE', children: <Band>WIDE — 1440px</Band>},
 };
 
 /** Обычный разворот: им набирается почти всё. */
 export const Обычный: Story = {
-    args: {size: 'NORMAL', children: <Полоса>NORMAL — 1064px</Полоса>},
+    args: {size: 'NORMAL', children: <Band>NORMAL — 1064px</Band>},
 };
 
 /** Смартфонный вид: колонка остаётся узкой и на большом экране. */
 export const Смартфонный: Story = {
-    args: {size: 'PHONE', children: <Полоса>PHONE — 480px</Полоса>},
+    args: {size: 'PHONE', children: <Band>PHONE — 480px</Band>},
 };
 
 /** Все три рядом — видно, как они вложены друг в друга по ширине. */
 export const Втроём: Story = {
     render: () => (
         <div style={{display: 'grid', gap: '1rem', paddingBlock: '1rem'}}>
-            <Container size="WIDE"><Полоса>WIDE — 1440px</Полоса></Container>
-            <Container size="NORMAL"><Полоса>NORMAL — 1064px</Полоса></Container>
-            <Container size="PHONE"><Полоса>PHONE — 480px</Полоса></Container>
+            <Container size="WIDE"><Band>WIDE — 1440px</Band></Container>
+            <Container size="NORMAL"><Band>NORMAL — 1064px</Band></Container>
+            <Container size="PHONE"><Band>PHONE — 480px</Band></Container>
         </div>
     ),
 };
@@ -88,7 +88,7 @@ export const Вложенность: Story = {
 /** Свой предел — переменной, без нового значения в списке размеров. */
 export const СвоимПределом: Story = {
     args: {
-        children: <Полоса>Предел задан переменной: 800px</Полоса>,
-        style: {'--container-max': '800px'} as React.CSSProperties,
+        children: <Band>Предел задан переменной: 800px</Band>,
+        style: {'--container-max': '800px'},
     },
 };

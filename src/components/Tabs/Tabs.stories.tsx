@@ -1,6 +1,6 @@
 import {useState} from 'react';
-import type {Meta, StoryObj} from '@storybook/react-vite';
 import {Tabs} from './Tabs';
+import type {Meta, StoryObj} from '@storybook/react-vite';
 
 const meta = {
     title: 'Навигация/Tabs',

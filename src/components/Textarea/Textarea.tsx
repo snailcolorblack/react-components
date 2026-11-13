@@ -29,6 +29,11 @@ import type {TextareaProps} from './Textarea.interface.ts';
 import field from '../Field/Field.module.css';
 import styles from './Textarea.module.css';
 
+/* Общие части поля и своя надстройка над ними: сочетания постоянные,
+   поэтому считаются один раз на модуль. */
+const FIELD_CLASS = [field.field, styles.field].join(' ');
+const CONTROL_CLASS = [field.control, styles.control].join(' ');
+
 function Textarea({
                       label,
                       name,
@@ -55,16 +60,17 @@ function Textarea({
     const view = value === undefined ? own : String(value);
     const described = [props['aria-describedby'], validity.invalid && errorId]
         .filter(Boolean).join(' ') || undefined;
+    const classes = [field.group, className].filter(Boolean).join(' ');
 
     return (
-        <span className={[field.group, className].filter(Boolean).join(' ')}>
+        <span className={classes}>
             {/* То же, что в Input: обработчик удерживает фокус на textarea
                 при клике по обёртке, label и так активирует поле кликом. */}
             {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
             <label
                 data-filled={view !== '' || undefined}
                 data-invalid={validity.invalid || undefined}
-                className={[field.field, styles.field].join(' ')}
+                className={FIELD_CLASS}
                 onMouseDown={event => holdFocus(event, field.control)}
             >
                 <span className={field.label}>{label}</span>
@@ -79,7 +85,7 @@ function Textarea({
                         data-grow={autoGrow || undefined}
                         aria-describedby={described}
                         aria-invalid={validity.invalid || undefined}
-                        className={[field.control, styles.control].join(' ')}
+                        className={CONTROL_CLASS}
                         onBlur={handleBlur}
                         onChange={handleChange}
                         onInvalid={handleInvalid}

@@ -92,6 +92,7 @@ function Steps({
         : undefined);
     const hit = clickable ?? onStepClick !== undefined;
     const total = steps.length;
+    const classes = [styles.steps, className].filter(Boolean).join(' ');
 
     if (total === 0) return null;
 
@@ -101,7 +102,7 @@ function Steps({
             aria-label={label}
             data-orientation={orientation}
             data-ident={ident === false ? 'bar' : 'mark'}
-            className={[styles.steps, className].filter(Boolean).join(' ')}
+            className={classes}
         >
             {steps.map((step, index) => {
                 const state = status(step, index);

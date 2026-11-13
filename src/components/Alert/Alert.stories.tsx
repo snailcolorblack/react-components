@@ -1,5 +1,5 @@
-import type {Meta, StoryObj} from '@storybook/react-vite';
 import {Alert} from './Alert';
+import type {Meta, StoryObj} from '@storybook/react-vite';
 
 const meta = {
     title: 'Сообщения/Alert',

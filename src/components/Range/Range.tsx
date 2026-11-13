@@ -140,9 +140,10 @@ function Range({
     /* Под шкалой подписаны и края: человеку нужно видеть, где она
        начинается и кончается, а не только промежуточные точки. */
     const scale = ticks.length === 0 ? [] : edges(ticks, min, max);
+    const classes = [field.group, className].filter(Boolean).join(' ');
 
     return (
-        <div className={[field.group, className].filter(Boolean).join(' ')} style={style}>
+        <div className={classes} style={style}>
             <span id={labelId} className={styles.label}>{label}</span>
 
             <div
@@ -269,7 +270,7 @@ function Range({
     }
 
     /*
-     * У пары предел — значение соседа, отодвинутое.
+     * Докуда этому шарику можно. У пары предел — значение соседа, отодвинутое
      * на minDifference; у одиночного это просто края шкалы.
      */
     function bounds(index: number) {

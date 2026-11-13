@@ -47,12 +47,13 @@ function Container<T extends ElementType = 'div'>(props: ContainerProps<T>) {
         className = '',
         ...rest
     } = props as ContainerProps<'div'>;
+    const classes = [styles.container, SIZE_CLASS[size], className].filter(Boolean).join(' ');
 
     return (
         <Wrapper
             {...rest}
             variant="PLAIN"
-            className={[styles.container, SIZE_CLASS[size], className].filter(Boolean).join(' ')}
+            className={classes}
         />
     );
 }

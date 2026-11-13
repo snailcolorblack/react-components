@@ -1,6 +1,6 @@
-import type {Meta, StoryObj} from '@storybook/react-vite';
 import {Typography} from '../Typography/Typography';
 import {Wrapper} from './Wrapper';
+import type {Meta, StoryObj} from '@storybook/react-vite';
 
 const meta = {
     title: 'Раскладка/Wrapper',
@@ -109,6 +109,6 @@ export const СвоиПеременные: Story = {
             '--wrapper-bg': 'var(--base-color-500)',
             '--wrapper-radius': '0.5rem',
             '--wrapper-padding': '2.5rem',
-        } as React.CSSProperties,
+        },
     },
 };

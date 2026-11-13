@@ -1,12 +1,12 @@
-import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {render, screen, waitFor} from '@testing-library/react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {Flow} from './Flow';
 import {useFlow} from './Flow.context';
 import type {FlowStep} from './Flow.interface.ts';
 
 /*
- * Процесс целиком разбирается в jsdom: и адрес, и история, и хранилище
+ * Процесс целиком разбирается в jsdom: и url, и история, и хранилище
  * там настоящие. Чего здесь нет — вида: Flow ничего не рисует сам,
  * кроме текущего шага.
  */
@@ -40,19 +40,19 @@ function page(title: string) {
     };
 }
 
-const ПЕРВЫЙ = page('Первый');
-const ВТОРОЙ = page('Второй');
-const ТРЕТИЙ = page('Третий');
+const FIRST = page('Первый');
+const SECOND = page('Второй');
+const THIRD = page('Третий');
 
-function шаги(extra: Partial<FlowStep<Data>> = {}): FlowStep<Data>[] {
+function steps(extra: Partial<FlowStep<Data>> = {}): FlowStep<Data>[] {
     return [
-        {name: 'one', component: ПЕРВЫЙ, ...extra},
-        {name: 'two', component: ВТОРОЙ},
-        {name: 'three', component: ТРЕТИЙ},
+        {name: 'one', component: FIRST, ...extra},
+        {name: 'two', component: SECOND},
+        {name: 'three', component: THIRD},
     ];
 }
 
-const адрес = () => new URLSearchParams(window.location.search).get('step');
+const url = () => new URLSearchParams(window.location.search).get('step');
 
 /* Заглушка до того, как промис отдаст своё resolve. */
 function noop() {}
@@ -67,21 +67,21 @@ afterEach(() => {
 });
 
 describe('Flow: порядок шагов', () => {
-    it('начинает с первого шага и кладёт его в адрес', () => {
-        render(<Flow steps={шаги()} initial={EMPTY}/>);
+    it('начинает с первого шага и кладёт его в url', () => {
+        render(<Flow steps={steps()} initial={EMPTY}/>);
 
         expect(screen.getByRole('heading', {name: 'Первый'})).toBeInTheDocument();
-        expect(адрес()).toBe('one');
+        expect(url()).toBe('one');
         expect(screen.getByTestId('счёт')).toHaveTextContent('1 из 3');
     });
 
     it('дальше и назад водят по шагам', async () => {
         const user = userEvent.setup();
-        render(<Flow steps={шаги()} initial={EMPTY}/>);
+        render(<Flow steps={steps()} initial={EMPTY}/>);
 
         await user.click(screen.getByRole('button', {name: 'дальше'}));
         expect(screen.getByRole('heading', {name: 'Второй'})).toBeInTheDocument();
-        expect(адрес()).toBe('two');
+        expect(url()).toBe('two');
 
         await user.click(screen.getByRole('button', {name: 'назад'}));
         await waitFor(() => expect(screen.getByRole('heading', {name: 'Первый'})).toBeInTheDocument());
@@ -89,7 +89,7 @@ describe('Flow: порядок шагов', () => {
 
     it('с первого шага назад не уводит', async () => {
         const user = userEvent.setup();
-        render(<Flow steps={шаги()} initial={EMPTY}/>);
+        render(<Flow steps={steps()} initial={EMPTY}/>);
 
         await user.click(screen.getByRole('button', {name: 'назад'}));
 
@@ -98,7 +98,7 @@ describe('Flow: порядок шагов', () => {
 
     it('«назад» у браузера возвращает на предыдущий шаг, а не со страницы', async () => {
         const user = userEvent.setup();
-        render(<Flow steps={шаги()} initial={EMPTY}/>);
+        render(<Flow steps={steps()} initial={EMPTY}/>);
 
         await user.click(screen.getByRole('button', {name: 'дальше'}));
         await user.click(screen.getByRole('button', {name: 'дальше'}));
@@ -108,7 +108,7 @@ describe('Flow: порядок шагов', () => {
            в историю, поэтому назад идём по шагам. */
         window.history.back();
         await waitFor(() => expect(screen.getByRole('heading', {name: 'Второй'})).toBeInTheDocument());
-        expect(адрес()).toBe('two');
+        expect(url()).toBe('two');
 
         window.history.back();
         await waitFor(() => expect(screen.getByRole('heading', {name: 'Первый'})).toBeInTheDocument());
@@ -116,7 +116,7 @@ describe('Flow: порядок шагов', () => {
 
     it('«вперёд» у браузера возвращает обратно по пройденному', async () => {
         const user = userEvent.setup();
-        render(<Flow steps={шаги()} initial={EMPTY}/>);
+        render(<Flow steps={steps()} initial={EMPTY}/>);
 
         await user.click(screen.getByRole('button', {name: 'дальше'}));
         window.history.back();
@@ -128,27 +128,27 @@ describe('Flow: порядок шагов', () => {
 });
 
 describe('Flow: пропуск шагов', () => {
-    const сУсловием: FlowStep<Data>[] = [
-        {name: 'one', component: ПЕРВЫЙ},
-        {name: 'two', component: ВТОРОЙ, when: data => data.resolved},
-        {name: 'three', component: ТРЕТИЙ},
+    const withCondition: FlowStep<Data>[] = [
+        {name: 'one', component: FIRST},
+        {name: 'two', component: SECOND, when: data => data.resolved},
+        {name: 'three', component: THIRD},
     ];
 
     it('невидимый шаг выпадает и из порядка, и из счётчика', async () => {
         const user = userEvent.setup();
-        render(<Flow steps={сУсловием} initial={{...EMPTY, resolved: false}}/>);
+        render(<Flow steps={withCondition} initial={{...EMPTY, resolved: false}}/>);
 
         expect(screen.getByTestId('счёт')).toHaveTextContent('1 из 2');
 
         await user.click(screen.getByRole('button', {name: 'дальше'}));
 
         expect(screen.getByRole('heading', {name: 'Третий'})).toBeInTheDocument();
-        expect(адрес()).toBe('three');
+        expect(url()).toBe('three');
     });
 
     it('видимый шаг проходится как обычно', async () => {
         const user = userEvent.setup();
-        render(<Flow steps={сУсловием} initial={EMPTY}/>);
+        render(<Flow steps={withCondition} initial={EMPTY}/>);
 
         expect(screen.getByTestId('счёт')).toHaveTextContent('1 из 3');
 
@@ -158,7 +158,7 @@ describe('Flow: пропуск шагов', () => {
 
     it('условие считается по свежим данным: ответ на шаге меняет порядок', async () => {
         const user = userEvent.setup();
-        render(<Flow steps={сУсловием} initial={EMPTY}/>);
+        render(<Flow steps={withCondition} initial={EMPTY}/>);
 
         /* На первом шаге отвечаем так, что второй шаг больше не нужен. */
         await user.click(screen.getByRole('button', {name: 'переключить'}));
@@ -172,7 +172,7 @@ describe('Flow: переход отдан наружу', () => {
     it('onLeave получает данные и пускает дальше', async () => {
         const onLeave = vi.fn();
         const user = userEvent.setup();
-        render(<Flow steps={шаги({onLeave})} initial={EMPTY}/>);
+        render(<Flow steps={steps({onLeave})} initial={EMPTY}/>);
 
         await user.click(screen.getByRole('button', {name: 'дальше'}));
 
@@ -182,18 +182,18 @@ describe('Flow: переход отдан наружу', () => {
 
     it('false останавливает переход и ошибкой не считается', async () => {
         const user = userEvent.setup();
-        render(<Flow steps={шаги({onLeave: () => false})} initial={EMPTY}/>);
+        render(<Flow steps={steps({onLeave: () => false})} initial={EMPTY}/>);
 
         await user.click(screen.getByRole('button', {name: 'дальше'}));
 
         expect(screen.getByRole('heading', {name: 'Первый'})).toBeInTheDocument();
-        expect(адрес()).toBe('one');
+        expect(url()).toBe('one');
         expect(screen.queryByTestId('ошибка')).toBeNull();
     });
 
     it('исключение останавливает переход и попадает в error', async () => {
         const user = userEvent.setup();
-        render(<Flow steps={шаги({onLeave: () => {
+        render(<Flow steps={steps({onLeave: () => {
             throw new Error('сервер не ответил');
         }})} initial={EMPTY}/>);
 
@@ -214,7 +214,7 @@ describe('Flow: переход отдан наружу', () => {
         }
 
         const onLeave = vi.fn(hold);
-        render(<Flow steps={шаги({onLeave})} initial={EMPTY}/>);
+        render(<Flow steps={steps({onLeave})} initial={EMPTY}/>);
 
         await user.click(screen.getByRole('button', {name: 'дальше'}));
         expect(screen.getByText('идёт')).toBeInTheDocument();
@@ -229,7 +229,7 @@ describe('Flow: переход отдан наружу', () => {
     it('onFinish зовётся на последнем шаге, а шаг не меняется', async () => {
         const onFinish = vi.fn();
         const user = userEvent.setup();
-        render(<Flow steps={шаги()} initial={EMPTY} onFinish={onFinish}/>);
+        render(<Flow steps={steps()} initial={EMPTY} onFinish={onFinish}/>);
 
         await user.click(screen.getByRole('button', {name: 'дальше'}));
         await user.click(screen.getByRole('button', {name: 'дальше'}));
@@ -255,33 +255,33 @@ describe('Flow: итоговый экран', () => {
         );
     }
 
-    const сИтогом: FlowStep<Data>[] = [...шаги(), {name: 'result', component: Result, result: true}];
+    const withResult: FlowStep<Data>[] = [...steps(), {name: 'result', component: Result, result: true}];
 
     it('итоговый шаг не входит ни в порядок, ни в счётчик', () => {
-        render(<Flow steps={сИтогом} initial={EMPTY}/>);
+        render(<Flow steps={withResult} initial={EMPTY}/>);
 
         expect(screen.getByTestId('счёт')).toHaveTextContent('1 из 3');
     });
 
     it('после удачного onFinish процесс уходит на итоговый экран', async () => {
         const user = userEvent.setup();
-        render(<Flow steps={сИтогом} initial={EMPTY} onFinish={() => {}}/>);
+        render(<Flow steps={withResult} initial={EMPTY} onFinish={() => {}}/>);
 
         await user.click(screen.getByRole('button', {name: 'дальше'}));
         await user.click(screen.getByRole('button', {name: 'дальше'}));
         await user.click(screen.getByRole('button', {name: 'дальше'}));
 
         expect(screen.getByRole('heading', {name: 'Готово'})).toBeInTheDocument();
-        expect(адрес()).toBe('result');
+        expect(url()).toBe('result');
     });
 
     it('окончательная неудача из onLeave уводит туда же, но с причиной', async () => {
         const user = userEvent.setup();
-        const шагиСПросрочкой: FlowStep<Data>[] = [
-            {name: 'one', component: ПЕРВЫЙ, onLeave: (_data, flow) => flow.finish(false, 'заявка просрочена')},
-            ...сИтогом.slice(1),
+        const expiredSteps: FlowStep<Data>[] = [
+            {name: 'one', component: FIRST, onLeave: (_data, flow) => flow.finish(false, 'заявка просрочена')},
+            ...withResult.slice(1),
         ];
-        render(<Flow steps={шагиСПросрочкой} initial={EMPTY}/>);
+        render(<Flow steps={expiredSteps} initial={EMPTY}/>);
 
         await user.click(screen.getByRole('button', {name: 'дальше'}));
 
@@ -291,11 +291,11 @@ describe('Flow: итоговый экран', () => {
 
     it('после finish() процесс дальше не идёт', async () => {
         const user = userEvent.setup();
-        const шагиСПросрочкой: FlowStep<Data>[] = [
-            {name: 'one', component: ПЕРВЫЙ, onLeave: (_data, flow) => flow.finish(false, 'всё')},
-            ...сИтогом.slice(1),
+        const expiredSteps: FlowStep<Data>[] = [
+            {name: 'one', component: FIRST, onLeave: (_data, flow) => flow.finish(false, 'всё')},
+            ...withResult.slice(1),
         ];
-        render(<Flow steps={шагиСПросрочкой} initial={EMPTY}/>);
+        render(<Flow steps={expiredSteps} initial={EMPTY}/>);
 
         await user.click(screen.getByRole('button', {name: 'дальше'}));
 
@@ -304,11 +304,11 @@ describe('Flow: итоговый экран', () => {
 
     it('итог убирает черновик: возвращаться некуда', async () => {
         const user = userEvent.setup();
-        const шагиСПросрочкой: FlowStep<Data>[] = [
-            {name: 'one', component: ПЕРВЫЙ, onLeave: (_data, flow) => flow.finish(false, 'просрочено')},
-            ...сИтогом.slice(1),
+        const expiredSteps: FlowStep<Data>[] = [
+            {name: 'one', component: FIRST, onLeave: (_data, flow) => flow.finish(false, 'просрочено')},
+            ...withResult.slice(1),
         ];
-        render(<Flow steps={шагиСПросрочкой} initial={EMPTY} draft="черновик"/>);
+        render(<Flow steps={expiredSteps} initial={EMPTY} draft="черновик"/>);
 
         await user.click(screen.getByRole('button', {name: 'дальше'}));
         expect(localStorage.getItem('черновик')).toBeNull();
@@ -325,7 +325,7 @@ describe('Flow: итоговый экран', () => {
     it('без итогового шага всё как прежде: onFinish отработал, шаг не сменился', async () => {
         const onFinish = vi.fn();
         const user = userEvent.setup();
-        render(<Flow steps={шаги()} initial={EMPTY} onFinish={onFinish}/>);
+        render(<Flow steps={steps()} initial={EMPTY} onFinish={onFinish}/>);
 
         await user.click(screen.getByRole('button', {name: 'дальше'}));
         await user.click(screen.getByRole('button', {name: 'дальше'}));
@@ -376,7 +376,7 @@ describe('Flow: общая рамка', () => {
         const user = userEvent.setup();
         render(
             <Flow
-                steps={[{name: 'one', component: ПЕРВЫЙ}, {name: 'two', component: ВТОРОЙ}]}
+                steps={[{name: 'one', component: FIRST}, {name: 'two', component: SECOND}]}
                 initial={EMPTY} layout={Frame}
             />,
         );
@@ -414,7 +414,7 @@ describe('Flow: общая рамка', () => {
 describe('Flow: черновик', () => {
     it('без ключа не пишется вовсе', async () => {
         const user = userEvent.setup();
-        render(<Flow steps={шаги()} initial={EMPTY}/>);
+        render(<Flow steps={steps()} initial={EMPTY}/>);
 
         await user.click(screen.getByRole('button', {name: 'дальше'}));
 
@@ -423,14 +423,14 @@ describe('Flow: черновик', () => {
 
     it('с ключом переживает перезагрузку: и данные, и шаг', async () => {
         const user = userEvent.setup();
-        const {unmount} = render(<Flow steps={шаги()} initial={EMPTY} draft="черновик"/>);
+        const {unmount} = render(<Flow steps={steps()} initial={EMPTY} draft="черновик"/>);
 
         await user.click(screen.getByRole('button', {name: 'переключить'}));
         await user.click(screen.getByRole('button', {name: 'дальше'}));
         await waitFor(() => expect(localStorage.getItem('черновик')).not.toBeNull());
 
         unmount();
-        render(<Flow steps={шаги()} initial={EMPTY} draft="черновик"/>);
+        render(<Flow steps={steps()} initial={EMPTY} draft="черновик"/>);
 
         expect(screen.getByRole('heading', {name: 'Второй'})).toBeInTheDocument();
         expect(screen.getByTestId('данные')).toHaveTextContent('"resolved":false');
@@ -438,7 +438,7 @@ describe('Flow: черновик', () => {
 
     it('после завершения черновик убирается', async () => {
         const user = userEvent.setup();
-        render(<Flow steps={шаги()} initial={EMPTY} draft="черновик" onFinish={() => {}}/>);
+        render(<Flow steps={steps()} initial={EMPTY} draft="черновик" onFinish={() => {}}/>);
 
         await user.click(screen.getByRole('button', {name: 'дальше'}));
         await user.click(screen.getByRole('button', {name: 'дальше'}));
@@ -449,61 +449,61 @@ describe('Flow: черновик', () => {
 
     it('испорченный черновик не ломает процесс', () => {
         localStorage.setItem('черновик', 'не json');
-        render(<Flow steps={шаги()} initial={EMPTY} draft="черновик"/>);
+        render(<Flow steps={steps()} initial={EMPTY} draft="черновик"/>);
 
         expect(screen.getByRole('heading', {name: 'Первый'})).toBeInTheDocument();
     });
 });
 
 describe('Flow: ссылка на шаг', () => {
-    it('на непройденный шаг не пускает и поправляет адрес', () => {
+    it('на непройденный шаг не пускает и поправляет url', () => {
         window.history.replaceState(null, '', '/?step=three');
-        render(<Flow steps={шаги()} initial={EMPTY}/>);
+        render(<Flow steps={steps()} initial={EMPTY}/>);
 
         expect(screen.getByRole('heading', {name: 'Первый'})).toBeInTheDocument();
-        expect(адрес()).toBe('one');
+        expect(url()).toBe('one');
     });
 
     it('на пройденный — пускает: путь помнит черновик', async () => {
         const user = userEvent.setup();
-        const {unmount} = render(<Flow steps={шаги()} initial={EMPTY} draft="черновик"/>);
+        const {unmount} = render(<Flow steps={steps()} initial={EMPTY} draft="черновик"/>);
 
         await user.click(screen.getByRole('button', {name: 'дальше'}));
         await waitFor(() => expect(localStorage.getItem('черновик')).not.toBeNull());
         unmount();
 
         window.history.replaceState(null, '', '/?step=two');
-        render(<Flow steps={шаги()} initial={EMPTY} draft="черновик"/>);
+        render(<Flow steps={steps()} initial={EMPTY} draft="черновик"/>);
 
         expect(screen.getByRole('heading', {name: 'Второй'})).toBeInTheDocument();
     });
 
-    it('чужое имя в адресе не ломает процесс', () => {
+    it('чужое имя в urlе не ломает процесс', () => {
         window.history.replaceState(null, '', '/?step=такого-нет');
-        render(<Flow steps={шаги()} initial={EMPTY}/>);
+        render(<Flow steps={steps()} initial={EMPTY}/>);
 
         expect(screen.getByRole('heading', {name: 'Первый'})).toBeInTheDocument();
-        expect(адрес()).toBe('one');
+        expect(url()).toBe('one');
     });
 
-    it('чужие параметры адреса не трогаются', async () => {
+    it('чужие параметры urlа не трогаются', async () => {
         const user = userEvent.setup();
         window.history.replaceState(null, '', '/?utm=письмо');
-        render(<Flow steps={шаги()} initial={EMPTY}/>);
+        render(<Flow steps={steps()} initial={EMPTY}/>);
 
         await user.click(screen.getByRole('button', {name: 'дальше'}));
 
         expect(new URLSearchParams(window.location.search).get('utm')).toBe('письмо');
-        expect(адрес()).toBe('two');
+        expect(url()).toBe('two');
     });
 });
 
 describe('Flow: хук', () => {
     it('вне процесса бросает понятную ошибку', () => {
-        const Сам = page('Сам по себе');
+        const Alone = page('Сам по себе');
         const error = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-        expect(() => render(<Сам/>)).toThrow(/только внутри/);
+        expect(() => render(<Alone/>)).toThrow(/только внутри/);
 
         error.mockRestore();
     });

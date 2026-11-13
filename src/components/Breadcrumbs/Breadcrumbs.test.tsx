@@ -1,6 +1,6 @@
-import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import axe from 'axe-core';
+import {render, screen} from '@testing-library/react';
 import {describe, expect, it, vi} from 'vitest';
 import {Breadcrumbs} from './Breadcrumbs';
 import type {Crumb} from './Breadcrumbs.interface.ts';
@@ -21,7 +21,7 @@ import type {Crumb} from './Breadcrumbs.interface.ts';
  * ниже 22rem — с data-far, и кнопка появляется на их месте.
  */
 
-const ПУТЬ: Crumb[] = [
+const PATH: Crumb[] = [
     {label: 'Главная', href: '/'},
     {label: 'Банк', href: '/bank'},
     {label: 'Переводы', href: '/bank/transfers'},
@@ -41,18 +41,18 @@ function shape(container: HTMLElement) {
     return [...container.querySelectorAll('li')].map(item => {
         /* Разделитель в подпись не входит: он отдельный кусок разметки. */
         const text = item.firstElementChild?.textContent ?? '';
-        const знак = item.dataset.cut !== undefined ? '×'
+        const mark = item.dataset.cut !== undefined ? '×'
             : item.dataset.mid !== undefined || item.dataset.when === 'mid' ? '~'
                 : item.dataset.far !== undefined || item.dataset.when === 'narrow' ? '?'
                     : '';
 
-        return `${text}${знак}`;
+        return `${text}${mark}`;
     }).join(' ');
 }
 
 describe('Breadcrumbs: разметка', () => {
     it('это навигация со списком', () => {
-        const {container} = render(<Breadcrumbs items={ПУТЬ}/>);
+        const {container} = render(<Breadcrumbs items={PATH}/>);
 
         expect(screen.getByRole('navigation', {name: 'Хлебные крошки'})).toBeInTheDocument();
         expect(container.querySelector('ol')).not.toBeNull();
@@ -60,13 +60,13 @@ describe('Breadcrumbs: разметка', () => {
     });
 
     it('имя навигации меняется: двух одинаковых ориентиров быть не должно', () => {
-        render(<Breadcrumbs items={ПУТЬ} label="Где вы находитесь"/>);
+        render(<Breadcrumbs items={PATH} label="Где вы находитесь"/>);
 
         expect(screen.getByRole('navigation', {name: 'Где вы находитесь'})).toBeInTheDocument();
     });
 
     it('текущая страница — не ссылка, а текст с aria-current', () => {
-        const {container} = render(<Breadcrumbs items={ПУТЬ}/>);
+        const {container} = render(<Breadcrumbs items={PATH}/>);
         const current = container.querySelector('[aria-current="page"]')!;
 
         expect(current.textContent).toBe('Март 2026');
@@ -92,18 +92,18 @@ describe('Breadcrumbs: разметка', () => {
     });
 
     it('разделители спрятаны от скринридера и не входят в имя ссылки', () => {
-        const {container} = render(<Breadcrumbs items={ПУТЬ} collapse={false}/>);
+        const {container} = render(<Breadcrumbs items={PATH} collapse={false}/>);
         /* После каждого звена, кроме текущего, и после кнопки «…» —
            она тоже стоит в ряду и тоже отделена от соседа. */
-        const знаки = [...container.querySelectorAll('[aria-hidden="true"]')]
+        const marks = [...container.querySelectorAll('[aria-hidden="true"]')]
             .filter(node => node.textContent === '/');
 
-        expect(знаки).toHaveLength(container.querySelectorAll('li').length - 1);
+        expect(marks).toHaveLength(container.querySelectorAll('li').length - 1);
         expect(screen.getByRole('link', {name: 'Банк'})).toBeInTheDocument();
     });
 
     it('разделитель заменяется своим', () => {
-        const {container} = render(<Breadcrumbs items={ПУТЬ} separator="›" collapse={false}/>);
+        const {container} = render(<Breadcrumbs items={PATH} separator="›" collapse={false}/>);
 
         expect(container.textContent).toContain('›');
         expect(container.textContent).not.toContain('/');
@@ -123,7 +123,7 @@ describe('Breadcrumbs: разметка', () => {
     });
 
     it('свой класс не вытесняет собственный', () => {
-        const {container} = render(<Breadcrumbs items={ПУТЬ} className="мой"/>);
+        const {container} = render(<Breadcrumbs items={PATH} className="мой"/>);
         const node = container.firstElementChild as HTMLElement;
 
         expect(node.className).toContain('мой');
@@ -138,20 +138,20 @@ describe('Breadcrumbs: когда сворачивать', () => {
          * сколько бы в нём ни было звеньев. Спрятанного «всегда» нет —
          * есть только пометки порогов.
          */
-        const {container} = render(<Breadcrumbs items={ПУТЬ}/>);
+        const {container} = render(<Breadcrumbs items={PATH}/>);
 
         expect(container.querySelector('[data-cut]')).toBeNull();
         expect(shape(container)).toBe('Главная …~ Банк~ Переводы~ Счета~ Выписки? Март 2026');
     });
 
     it('число прячет середину независимо от ширины', () => {
-        const {container} = render(<Breadcrumbs items={ПУТЬ} collapse={4}/>);
+        const {container} = render(<Breadcrumbs items={PATH} collapse={4}/>);
 
         expect(shape(container)).toBe('Главная … Банк× Переводы× Счета× Выписки? Март 2026');
     });
 
     it('путь короче числа не сворачивается по количеству', () => {
-        const {container} = render(<Breadcrumbs items={ПУТЬ.slice(0, 4)} collapse={4}/>);
+        const {container} = render(<Breadcrumbs items={PATH.slice(0, 4)} collapse={4}/>);
 
         /* Ни одного спрятанного «всегда»: остаётся только узкий порог,
            и кнопка помечена им же. */
@@ -160,7 +160,7 @@ describe('Breadcrumbs: когда сворачивать', () => {
     });
 
     it('сколько оставлять с краёв — пропами', () => {
-        const {container} = render(<Breadcrumbs items={ПУТЬ} collapse={4} head={2} tail={1}/>);
+        const {container} = render(<Breadcrumbs items={PATH} collapse={4} head={2} tail={1}/>);
 
         /* «?» у Банка — это узкое место: там остаются только первое
            звено и текущее, сколько бы ни просили оставить по краям. */
@@ -168,7 +168,7 @@ describe('Breadcrumbs: когда сворачивать', () => {
     });
 
     it('collapse={false} не прячет ничего и ни при какой ширине', () => {
-        const {container} = render(<Breadcrumbs items={ПУТЬ} collapse={false}/>);
+        const {container} = render(<Breadcrumbs items={PATH} collapse={false}/>);
 
         expect(container.querySelector('[data-cut]')).toBeNull();
         expect(container.querySelector('[data-mid]')).toBeNull();
@@ -181,7 +181,7 @@ describe('Breadcrumbs: когда сворачивать', () => {
          * «…» на месте единственного звена занимает ровно столько же
          * места и не выигрывает ничего, зато отнимает подпись.
          */
-        const {container} = render(<Breadcrumbs items={ПУТЬ.slice(0, 5)} collapse={4} head={1} tail={3}/>);
+        const {container} = render(<Breadcrumbs items={PATH.slice(0, 5)} collapse={4} head={1} tail={3}/>);
 
         expect(container.querySelector('[data-cut]')).toBeNull();
     });
@@ -190,7 +190,7 @@ describe('Breadcrumbs: когда сворачивать', () => {
 describe('Breadcrumbs: кнопка «…»', () => {
     it('свёрнутый путь раскрывается и сворачивается обратно', async () => {
         const user = userEvent.setup();
-        const {container} = render(<Breadcrumbs items={ПУТЬ} collapse={4}/>);
+        const {container} = render(<Breadcrumbs items={PATH} collapse={4}/>);
         const more = screen.getByRole('button', {name: 'Показать путь целиком'});
 
         expect(more).toHaveAttribute('aria-expanded', 'false');
@@ -208,7 +208,7 @@ describe('Breadcrumbs: кнопка «…»', () => {
 
     it('раскрытие не уводит фокус: кнопка остаётся на месте', async () => {
         const user = userEvent.setup();
-        render(<Breadcrumbs items={ПУТЬ} collapse={4}/>);
+        render(<Breadcrumbs items={PATH} collapse={4}/>);
 
         await user.click(screen.getByRole('button', {name: 'Показать путь целиком'}));
 
@@ -219,7 +219,7 @@ describe('Breadcrumbs: кнопка «…»', () => {
 
     it('работает с клавиатуры: это обычная кнопка', async () => {
         const user = userEvent.setup();
-        render(<Breadcrumbs items={ПУТЬ} collapse={4}/>);
+        render(<Breadcrumbs items={PATH} collapse={4}/>);
 
         screen.getByRole('button').focus();
         await user.keyboard('{Enter}');
@@ -237,24 +237,24 @@ describe('Breadcrumbs: кнопка «…»', () => {
          * по ширине: @container здесь не вычисляется, а сами стили
          * применяются — кнопка с пометкой скрыта, как и задумано.
          */
-        const короткий = render(<Breadcrumbs items={ПУТЬ.slice(0, 3)}/>);
-        expect(короткий.container.querySelector('[data-when="narrow"]')).not.toBeNull();
-        expect(shape(короткий.container)).toBe('Главная …? Банк? Переводы');
-        короткий.unmount();
+        const short = render(<Breadcrumbs items={PATH.slice(0, 3)}/>);
+        expect(short.container.querySelector('[data-when="narrow"]')).not.toBeNull();
+        expect(shape(short.container)).toBe('Главная …? Банк? Переводы');
+        short.unmount();
 
-        const длинный = render(<Breadcrumbs items={ПУТЬ}/>);
-        expect(длинный.container.querySelector('[data-when="mid"]')).not.toBeNull();
+        const long = render(<Breadcrumbs items={PATH}/>);
+        expect(long.container.querySelector('[data-when="mid"]')).not.toBeNull();
     });
 
     it('прятать нечего — кнопки нет вовсе', () => {
-        const {container} = render(<Breadcrumbs items={ПУТЬ.slice(0, 2)}/>);
+        const {container} = render(<Breadcrumbs items={PATH.slice(0, 2)}/>);
 
         expect(screen.queryByRole('button')).toBeNull();
         expect(shape(container)).toBe('Главная Банк');
     });
 
     it('подписи кнопки меняются', () => {
-        render(<Breadcrumbs items={ПУТЬ} collapse={4} labels={{expand: 'Show full path'}}/>);
+        render(<Breadcrumbs items={PATH} collapse={4} labels={{expand: 'Show full path'}}/>);
 
         expect(screen.getByRole('button', {name: 'Show full path'})).toBeInTheDocument();
     });
@@ -264,17 +264,17 @@ describe('Breadcrumbs: переходы', () => {
     it('onNavigate приходит со звеном и его местом в пути', async () => {
         const user = userEvent.setup();
         const onNavigate = vi.fn((_item, _index, event: React.MouseEvent) => event.preventDefault());
-        render(<Breadcrumbs items={ПУТЬ} collapse={false} onNavigate={onNavigate}/>);
+        render(<Breadcrumbs items={PATH} collapse={false} onNavigate={onNavigate}/>);
 
         await user.click(screen.getByRole('link', {name: 'Счета'}));
 
         expect(onNavigate).toHaveBeenCalledTimes(1);
-        expect(onNavigate.mock.calls[0][0]).toEqual(ПУТЬ[3]);
+        expect(onNavigate.mock.calls[0][0]).toEqual(PATH[3]);
         expect(onNavigate.mock.calls[0][1]).toBe(3);
     });
 
     it('адрес остаётся в разметке: ссылку можно открыть в соседней вкладке', () => {
-        render(<Breadcrumbs items={ПУТЬ} collapse={false}/>);
+        render(<Breadcrumbs items={PATH} collapse={false}/>);
 
         expect(screen.getByRole('link', {name: 'Банк'})).toHaveAttribute('href', '/bank');
     });
@@ -300,7 +300,7 @@ describe('Breadcrumbs: доступность', () => {
 
     it('проходит axe и свёрнутым, и раскрытым', async () => {
         const user = userEvent.setup();
-        const {container} = render(<Breadcrumbs items={ПУТЬ} collapse={4}/>);
+        const {container} = render(<Breadcrumbs items={PATH} collapse={4}/>);
 
         expect((await axe.run(container, {rules: {'color-contrast': {enabled: false}}})).violations).toEqual([]);
 
@@ -311,7 +311,7 @@ describe('Breadcrumbs: доступность', () => {
 
     it('не шумит предупреждениями React', () => {
         const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-        render(<Breadcrumbs items={ПУТЬ}/>);
+        render(<Breadcrumbs items={PATH}/>);
 
         expect(error).not.toHaveBeenCalled();
         error.mockRestore();

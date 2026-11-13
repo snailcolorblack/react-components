@@ -1,6 +1,6 @@
 import {useState} from 'react';
-import type {Meta, StoryObj} from '@storybook/react-vite';
 import {Select} from './Select';
+import type {Meta, StoryObj} from '@storybook/react-vite';
 
 type Deposit = {value: number, name: string, visibleName: string, closed?: boolean};
 

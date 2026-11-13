@@ -1,6 +1,6 @@
-import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import axe from 'axe-core';
+import {render, screen} from '@testing-library/react';
 import {describe, expect, it, vi} from 'vitest';
 import {Pagination} from './Pagination';
 
@@ -32,7 +32,7 @@ describe('Pagination: какие номера показаны', () => {
      * Знак вопроса — то, что видно только на широком месте: номер
      * за узким окном или многоточие, которое его заменит.
      */
-    function набор(page: number, total: number) {
+    function pages(page: number, total: number) {
         const {container, unmount} = render(<Pagination page={page} total={total} arrows={false} edges={false}/>);
         const result = shape(container);
         unmount();
@@ -47,24 +47,24 @@ describe('Pagination: какие номера показаны', () => {
          * места столько же, — но тогда узкий набор, прячущий пятую,
          * оставил бы дыру без всякого признака пропуска.
          */
-        expect(набор(3, 7)).toBe('1 2 3 4 5? … 7');
+        expect(pages(3, 7)).toBe('1 2 3 4 5? … 7');
     });
 
     it('середина длинного списка: края, многоточия и окно', () => {
-        expect(набор(10, 20)).toBe('1 … 8? 9 10 11 12? … 20');
+        expect(pages(10, 20)).toBe('1 … 8? 9 10 11 12? … 20');
     });
 
     it('начало: многоточие только справа', () => {
-        expect(набор(1, 20)).toBe('1 2 3? … 20');
+        expect(pages(1, 20)).toBe('1 2 3? … 20');
     });
 
     it('конец: многоточие только слева', () => {
-        expect(набор(20, 20)).toBe('1 … 18? 19 20');
+        expect(pages(20, 20)).toBe('1 … 18? 19 20');
     });
 
     it('у края многоточие появляется, только когда есть что скрывать', () => {
         /* 1 2 3 4 5 — между краем и окном пусто, разрыва нет. */
-        expect(набор(3, 20)).toBe('1 2 3 4 5? … 20');
+        expect(pages(3, 20)).toBe('1 2 3 4 5? … 20');
     });
 
     it('отложенное многоточие: разрыв появится только после сокращения', () => {
@@ -73,11 +73,11 @@ describe('Pagination: какие номера показаны', () => {
          * прячет 4, и между 3 и 5 образуется дыра: многоточие для неё
          * отрисовано заранее и помечено.
          */
-        expect(набор(6, 9)).toBe('1 … 4? 5 6 7 8? …? 9');
+        expect(pages(6, 9)).toBe('1 … 4? 5 6 7 8? …? 9');
     });
 
     it('две страницы — обе на месте', () => {
-        expect(набор(1, 2)).toBe('1 2');
+        expect(pages(1, 2)).toBe('1 2');
     });
 
     it('одна страница — навигации нет вовсе', () => {

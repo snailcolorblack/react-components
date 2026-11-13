@@ -61,6 +61,10 @@ import {Button} from '../Button/Button.tsx';
 import type {BreadcrumbsLabels, BreadcrumbsProps, Crumb} from './Breadcrumbs.interface.ts';
 import styles from './Breadcrumbs.module.css';
 
+/* Постоянные сочетания: считаются один раз на модуль. */
+const MORE_CLASS = [styles.link, styles.more].join(' ');
+const CURRENT_CLASS = [styles.text, styles.current].join(' ');
+
 const LABELS: BreadcrumbsLabels = {
     expand: 'Показать путь целиком',
     collapse: 'Свернуть путь',
@@ -103,6 +107,7 @@ function Breadcrumbs({
         && !mid(index) && index !== 0 && index !== total - 1;
     /* Кнопка стоит там, где начинается спрятанное. */
     const gap = cut ? from : items.findIndex((_, index) => far(index));
+    const classes = [styles.breadcrumbs, className].filter(Boolean).join(' ');
 
     if (total === 0) return null;
 
@@ -113,7 +118,7 @@ function Breadcrumbs({
             /* Раскрытие — на коробке, а не на каждом звене: правилу CSS
                так достаточно одного признака, а звенья остаются теми же. */
             data-open={open ? '' : undefined}
-            className={[styles.breadcrumbs, className].filter(Boolean).join(' ')}
+            className={classes}
         >
             <ol className={styles.list}>
                 {items.map((item, index) => (
@@ -133,7 +138,7 @@ function Breadcrumbs({
                             >
                                 <Button
                                     variant="INLINE"
-                                    className={[styles.link, styles.more].join(' ')}
+                                    className={MORE_CLASS}
                                     aria-expanded={open}
                                     aria-label={open ? words.collapse : words.expand}
                                     onClick={() => setOpen(was => !was)}
@@ -181,7 +186,7 @@ function Breadcrumbs({
         if (index === total - 1) {
             return (
                 <span
-                    className={[styles.text, styles.current].join(' ')}
+                    className={CURRENT_CLASS}
                     aria-label={item['aria-label']}
                     aria-current="page"
                 >

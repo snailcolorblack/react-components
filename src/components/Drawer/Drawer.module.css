@@ -1,0 +1,339 @@
+/* -------------------------------------------------------------------------- */
+/*  Выезжающая панель                                                         */
+/*                                                                            */
+/*  Это <dialog> в модальном режиме, поэтому слой, затемнение и ловушка       */
+/*  фокуса здесь не рисуются — они приходят от браузера. Остаётся край,       */
+/*  к которому панель прижата, её размер и выезд.                             */
+/* -------------------------------------------------------------------------- */
+
+.drawer {
+    --drawer-size: auto;
+    --drawer-max: 90dvh;
+    --drawer-duration: 0.3s;
+    --drawer-radius: calc(var(--base-gap) * 4);
+    --drawer-bg: var(--base-color-200);
+    /* Сдвиг под пальцем. Ставится в обработчике и снимается на отпускании. */
+    --drawer-drag: 0px;
+    /*
+     * Ход панели: её собственный размер. По умолчанию равен ступени —
+     * тогда панель ровно такая, какую видно. Со ступенями компонент
+     * ставит сюда САМУЮ БОЛЬШУЮ из них, а текущую выражает отступом
+     * покоя (--drawer-rest). Зачем — в разборе ниже.
+     */
+    --drawer-full: var(--drawer-size);
+    --drawer-rest: 0px;
+
+    position: fixed;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    max-inline-size: none;
+    max-block-size: none;
+
+    color: inherit;
+    background-color: var(--drawer-bg);
+
+    /*
+     * Выезд и уход целиком на CSS. @starting-style даёт кадр до показа,
+     * а allow-discrete у display и overlay держит окно в слое, пока
+     * оно уезжает: без них закрытие было бы рывком — окно выпадает
+     * из top layer в тот же кадр.
+     */
+    transition:
+        translate var(--drawer-duration) var(--ease-out),
+        display var(--drawer-duration) allow-discrete,
+        overlay var(--drawer-duration) allow-discrete;
+}
+
+/* Пока палец на экране, панель идёт за ним без задержки. */
+.drawer[data-dragging] {
+    transition: none;
+    user-select: none;
+    touch-action: none;
+}
+
+.drawer::backdrop {
+    background-color: color-mix(in oklab, black 55%, transparent);
+    opacity: 0;
+
+    transition:
+        opacity var(--drawer-duration) var(--ease-out),
+        display var(--drawer-duration) allow-discrete,
+        overlay var(--drawer-duration) allow-discrete;
+}
+
+.drawer[open]::backdrop {
+    opacity: 1;
+}
+
+@starting-style {
+    .drawer[open]::backdrop {
+        opacity: 0;
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Края                                                                      */
+/*                                                                            */
+/*  Размер вдоль движения задаёт ступень (--drawer-size), поперёк панель      */
+/*  занимает всё. Закрытое положение — сдвиг на собственный размер,           */
+/*  поэтому панель уезжает ровно за край, сколько бы её ни было.              */
+/* -------------------------------------------------------------------------- */
+
+/* -------------------------------------------------------------------------- */
+/*  Ступень — это сдвиг, а не размер                                          */
+/*                                                                            */
+/*  Раньше панель была ростом в текущую ступень, а жест двигал её целиком.    */
+/*  Отсюда три беды, все видны на записи: содержимого в панели было только    */
+/*  на одну ступень; потянув, её отрывало от края экрана; на отпускании       */
+/*  менялся block-size, и панель прыгала на новое место, разом показывая      */
+/*  остальной список.                                                         */
+/*                                                                            */
+/*  Теперь панель сразу во весь ход (--drawer-full — самая большая ступень),  */
+/*  а текущая ступень это отступ покоя: панель опущена за край ровно на       */
+/*  разницу. Содержимое разложено на полный рост с первого кадра, жест        */
+/*  вытягивает уже готовое, край не отрывается, а на отпускании меняется      */
+/*  только сдвиг — он и анимируется переходом translate.                      */
+/* -------------------------------------------------------------------------- */
+
+.drawer[data-side="bottom"],
+.drawer[data-side="top"] {
+    inset-inline: 0;
+    inline-size: 100%;
+    block-size: var(--drawer-full);
+    max-block-size: var(--drawer-max);
+}
+
+.drawer[data-side="bottom"] {
+    translate: 0 calc(var(--drawer-rest) + var(--drawer-drag));
+}
+
+.drawer[data-side="top"] {
+    translate: 0 calc(var(--drawer-rest) * -1 + var(--drawer-drag));
+}
+
+/*
+ * Край задаётся обоими краями сразу: у <dialog> в стилях браузера
+ * стоит inset: 0, и одного inset-block-end мало — панель с заданной
+ * высотой прилипала к верху. Замерено: верх 0 вместо 480 при высоте
+ * 320 и окне 800.
+ */
+.drawer[data-side="bottom"] {
+    inset-block-start: auto;
+    inset-block-end: 0;
+    border-start-start-radius: var(--drawer-radius);
+    border-start-end-radius: var(--drawer-radius);
+}
+
+.drawer[data-side="top"] {
+    inset-block-start: 0;
+    inset-block-end: auto;
+    border-end-start-radius: var(--drawer-radius);
+    border-end-end-radius: var(--drawer-radius);
+}
+
+.drawer[data-side="start"],
+.drawer[data-side="end"] {
+    inset-block: 0;
+    block-size: 100%;
+    inline-size: var(--drawer-full);
+    max-inline-size: var(--drawer-max);
+}
+
+.drawer[data-side="end"] {
+    translate: calc(var(--drawer-rest) + var(--drawer-drag)) 0;
+}
+
+.drawer[data-side="start"] {
+    translate: calc(var(--drawer-rest) * -1 + var(--drawer-drag)) 0;
+}
+
+.drawer[data-side="start"] {
+    inset-inline-start: 0;
+    inset-inline-end: auto;
+    border-start-end-radius: var(--drawer-radius);
+    border-end-end-radius: var(--drawer-radius);
+}
+
+.drawer[data-side="end"] {
+    inset-inline-start: auto;
+    inset-inline-end: 0;
+    border-start-start-radius: var(--drawer-radius);
+    border-end-start-radius: var(--drawer-radius);
+}
+
+/* Закрытое положение и кадр до показа — одно и то же: панель за краем. */
+.drawer[data-side="bottom"]:not([open]) { translate: 0 100%; }
+.drawer[data-side="top"]:not([open]) { translate: 0 -100%; }
+.drawer[data-side="start"]:not([open]) { translate: -100% 0; }
+.drawer[data-side="end"]:not([open]) { translate: 100% 0; }
+
+@starting-style {
+    .drawer[open][data-side="bottom"] { translate: 0 100%; }
+    .drawer[open][data-side="top"] { translate: 0 -100%; }
+    .drawer[open][data-side="start"] { translate: -100% 0; }
+    .drawer[open][data-side="end"] { translate: 100% 0; }
+}
+
+/*
+ * У боковых панелей сдвиг идёт в логической оси: в правописьменной
+ * раскладке start — это правый край, и уезжать панель обязана вправо.
+ * Поэтому знак переворачивается здесь, а не в обработчике.
+ */
+[dir="rtl"] .drawer[data-side="start"]:not([open]) { translate: 100% 0; }
+[dir="rtl"] .drawer[data-side="end"]:not([open]) { translate: -100% 0; }
+
+@starting-style {
+    [dir="rtl"] .drawer[open][data-side="start"] { translate: 100% 0; }
+    [dir="rtl"] .drawer[open][data-side="end"] { translate: -100% 0; }
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Содержимое                                                                */
+/*                                                                            */
+/*  Панель — сетка из ручки и тела: ручка остаётся на месте, прокручивается   */
+/*  только тело. Иначе на длинном списке ручка уезжала бы вместе с ним,       */
+/*  и взяться за панель было бы не за что.                                    */
+/* -------------------------------------------------------------------------- */
+
+.drawer[data-side="bottom"],
+.drawer[data-side="top"],
+.drawer[data-side="start"],
+.drawer[data-side="end"] {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+}
+
+.drawer[data-side="top"] {
+    grid-template-rows: minmax(0, 1fr) auto;
+}
+
+.drawer[data-variant="PLAIN"] {
+    grid-template-rows: minmax(0, 1fr);
+}
+
+/*
+ * На неполной ступени список не листается: часть панели ниже края
+ * экрана, и прокрутка увела бы содержимое в невидимое. Жест с тела
+ * при этом работает всегда — scrollTop нулевой, значит, по мнению
+ * atEdge, список у края. Так и должно быть: сначала панель вытягивают,
+ * потом листают.
+ */
+.drawer[data-partial] .body {
+    overflow: hidden;
+}
+
+.body {
+    min-block-size: 0;
+    padding: var(--base-size);
+    overflow: auto;
+    overscroll-behavior: contain;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Ручка                                                                     */
+/*                                                                            */
+/*  Это кнопка, а не полоска-украшение: её видно табуляции, по ней можно      */
+/*  нажать, а стрелки меняют ступень. Жест — приятная добавка, но не          */
+/*  единственный способ.                                                      */
+/* -------------------------------------------------------------------------- */
+
+.handle {
+    display: grid;
+    place-items: center;
+    inline-size: 100%;
+    /* WCAG 2.5.8: цель нажатия не меньше 24px, у полоски своя высота мала. */
+    min-block-size: 1.75rem;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    appearance: none;
+    background-color: transparent;
+    cursor: grab;
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.handle:active {
+    cursor: grabbing;
+}
+
+/*
+ * Кольцо фокуса рисуется вокруг полоски, а не вокруг кнопки.
+ *
+ * Кнопка во всю ширину панели нарочно: по ней тянут пальцем, и цель
+ * нажатия должна быть крупной (WCAG 2.5.8). Но кольцо на ней выходило
+ * рамкой во всю ширину — замерено в Chromium 141, окно 980px: контур
+ * solid 2px вокруг кнопки шириной 965px. Панель переставала читаться
+ * заливкой и выглядела пустой обведённой полосой над списком.
+ *
+ * Сам обход табуляцией при этом не меняется: фокус по-прежнему
+ * на кнопке, видно его по полоске — то есть по тому самому, за что
+ * и тянут.
+ */
+.handle:focus-visible {
+    outline: none;
+}
+
+.handle:focus-visible .bar {
+    outline: 2px solid var(--accent-color-soft);
+    outline-offset: 4px;
+}
+
+.bar {
+    inline-size: 2.5rem;
+    block-size: 0.25rem;
+    border-radius: 999px;
+    background-color: var(--contrast-alpha-40);
+}
+
+/* У боковых панелей ручка стоит столбиком вдоль края. */
+.drawer[data-side="start"],
+.drawer[data-side="end"] {
+    grid-template-rows: none;
+    grid-template-columns: auto minmax(0, 1fr);
+}
+
+.drawer[data-side="start"] {
+    grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.drawer[data-side="start"] .handle,
+.drawer[data-side="end"] .handle {
+    inline-size: 1.75rem;
+    block-size: 100%;
+    min-block-size: 0;
+}
+
+.drawer[data-side="start"] .bar,
+.drawer[data-side="end"] .bar {
+    inline-size: 0.25rem;
+    block-size: 2.5rem;
+}
+
+.drawer[data-side="start"][data-variant="PLAIN"],
+.drawer[data-side="end"][data-variant="PLAIN"] {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Высокий контраст и уменьшенное движение                                   */
+/* -------------------------------------------------------------------------- */
+
+@media (forced-colors: active) {
+    .drawer {
+        border: 1px solid CanvasText;
+    }
+
+    .bar {
+        background-color: CanvasText;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .drawer,
+    .drawer::backdrop {
+        transition-duration: 0.01s;
+    }
+}

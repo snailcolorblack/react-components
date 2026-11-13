@@ -1,5 +1,4 @@
 import {useState} from 'react';
-import type {Meta, StoryObj} from '@storybook/react-vite';
 import {Alert} from '../Alert/Alert';
 import {Button} from '../Button/Button';
 import {Input} from '../Input/Input';
@@ -7,16 +6,17 @@ import {Progress} from '../Progress/Progress';
 import {Select} from '../Select/Select';
 import {Flow} from './Flow';
 import {useFlow} from './Flow.context';
+import type {Meta, StoryObj} from '@storybook/react-vite';
 import type {FlowStep, FlowTools} from './Flow.interface.ts';
 
-interface Заявка {
-    город: string;
-    сумма: string;
-    комментарий: string;
-    нуженЗвонок: boolean;
+interface Application {
+    city: string;
+    sum: string;
+    comment: string;
+    needCall: boolean;
 }
 
-const ПУСТО: Заявка = {город: '', сумма: '', комментарий: '', нуженЗвонок: true};
+const EMPTY: Application = {city: '', sum: '', comment: '', needCall: true};
 
 const meta = {
     title: 'Процессы/Flow',
@@ -54,7 +54,7 @@ type Story = StoryObj<typeof meta>;
 
 /** Общая обвязка шага: заголовок, полоса хода дела и кнопки. */
 function Frame({title, children}: {title: string, children?: React.ReactNode}) {
-    const {currentStepIndex, stepsLength, isFirst, isLast, goPrevStep, goNextStep, pending, error} = useFlow<Заявка>();
+    const {currentStepIndex, stepsLength, isFirst, isLast, goPrevStep, goNextStep, pending, error} = useFlow<Application>();
 
     return (
         <section style={{display: 'grid', gap: '1rem'}}>
@@ -75,46 +75,46 @@ function Frame({title, children}: {title: string, children?: React.ReactNode}) {
 }
 
 function City() {
-    const {data, setData} = useFlow<Заявка>();
+    const {data, setData} = useFlow<Application>();
 
     return (
         <Frame title="Откуда вы?">
             <Select
-                label="City" items={['Душанбе', 'Худжанд', 'Бохтар']} defaultValue={data.город}
-                onChange={value => setData(was => ({...was, город: value ?? ''}))}
+                label="City" items={['Душанбе', 'Худжанд', 'Бохтар']} defaultValue={data.city}
+                onChange={value => setData(was => ({...was, city: value ?? ''}))}
             />
         </Frame>
     );
 }
 
 function Sum() {
-    const {data, setData} = useFlow<Заявка>();
+    const {data, setData} = useFlow<Application>();
 
     return (
         <Frame title="Сколько нужно?">
             <Input
-                label="Sum" inputMode="numeric" value={data.сумма}
-                onChange={value => setData(was => ({...was, сумма: value}))}
+                label="Sum" inputMode="numeric" value={data.sum}
+                onChange={value => setData(was => ({...was, sum: value}))}
             />
         </Frame>
     );
 }
 
 function Note() {
-    const {data, setData} = useFlow<Заявка>();
+    const {data, setData} = useFlow<Application>();
 
     return (
         <Frame title="Что уточнить при звонке?">
             <Input
-                label="Note" value={data.комментарий}
-                onChange={value => setData(was => ({...was, комментарий: value}))}
+                label="Note" value={data.comment}
+                onChange={value => setData(was => ({...was, comment: value}))}
             />
         </Frame>
     );
 }
 
 function Done() {
-    const {data} = useFlow<Заявка>();
+    const {data} = useFlow<Application>();
 
     return (
         <Frame title="Проверьте заявку">
@@ -123,16 +123,16 @@ function Done() {
     );
 }
 
-const ШАГИ: FlowStep<Заявка>[] = [
+const STEPS: FlowStep<Application>[] = [
     {name: 'city', component: City},
     {name: 'sum', component: Sum},
-    {name: 'comment', component: Note, when: data => data.нуженЗвонок},
+    {name: 'comment', component: Note, when: data => data.needCall},
     {name: 'done', component: Done},
 ];
 
 /** Четыре шага, данные общие, ход дела виден полосой. */
 export const Процесс: Story = {
-    args: {steps: ШАГИ as never, initial: ПУСТО as never},
+    args: {steps: STEPS as never, initial: EMPTY as never},
     render: args => <Flow {...args} onFinish={data => window.alert(JSON.stringify(data))}/>,
 };
 
@@ -141,36 +141,36 @@ export const Процесс: Story = {
  * показать, решает сам шаг. City обязателен: не выбрав, дальше не пустят.
  */
 export const СПроверкой: Story = {
-    args: {steps: ШАГИ as never, initial: ПУСТО as never},
+    args: {steps: STEPS as never, initial: EMPTY as never},
     render: args => <CheckDemo {...args}/>,
 };
 
 function CheckDemo(args: React.ComponentProps<typeof Flow>) {
-    const [сказано, сказать] = useState('');
+    const [said, say] = useState('');
 
-    const шаги: FlowStep<Заявка>[] = [
+    const steps: FlowStep<Application>[] = [
         {
             name: 'city',
             component: City,
             onLeave: data => {
-                if (data.город === '') {
-                    сказать('Выберите город — без него заявку не принять.');
+                if (data.city === '') {
+                    say('Выберите город — без него заявку не принять.');
 
                     return false;
                 }
 
-                сказать('');
+                say('');
 
                 return true;
             },
         },
-        ...ШАГИ.slice(1),
+        ...STEPS.slice(1),
     ];
 
     return (
         <>
-            {сказано !== '' && <p style={{color: 'var(--danger-color-soft)'}}>{сказано}</p>}
-            <Flow {...args} steps={шаги as never} initial={ПУСТО as never}/>
+            {said !== '' && <p style={{color: 'var(--danger-color-soft)'}}>{said}</p>}
+            <Flow {...args} steps={steps as never} initial={EMPTY as never}/>
         </>
     );
 }
@@ -181,7 +181,7 @@ function CheckDemo(args: React.ComponentProps<typeof Flow>) {
  * не делает. Исключение попадает в `error`.
  */
 export const СОтправкой: Story = {
-    args: {steps: ШАГИ as never, initial: ПУСТО as never},
+    args: {steps: STEPS as never, initial: EMPTY as never},
     render: args => (
         <Flow
             {...args}
@@ -195,7 +195,7 @@ export const СОтправкой: Story = {
                         throw new Error('Сервер не ответил. Попробуйте ещё раз.');
                     },
                 },
-                ...ШАГИ.slice(1),
+                ...STEPS.slice(1),
             ] as never}
         />
     ),
@@ -203,12 +203,12 @@ export const СОтправкой: Story = {
 
 /** Экран «готово / не вышло»: решает по status, а не по отдельному шагу. */
 function Result() {
-    const {status} = useFlow<Заявка>();
+    const {status} = useFlow<Application>();
 
     return (
         <div style={{display: 'grid', gap: '1rem'}}>
             {status?.ok === true
-                ? <Alert variant="SUCCESS" withIcon>Заявка принята.</Alert>
+                ? <Alert variant="SUCCESS" withIcon>Application принята.</Alert>
                 : <Alert variant="ERROR" withIcon>{String(status?.reason ?? 'Что-то пошло не так.')}</Alert>}
         </div>
     );
@@ -223,7 +223,7 @@ function Result() {
  * В порядок и счётчик такой шаг не входит: это не часть пути, а его конец.
  */
 export const СИтогом: Story = {
-    args: {steps: ШАГИ as never, initial: ПУСТО as never},
+    args: {steps: STEPS as never, initial: EMPTY as never},
     render: args => (
         <Flow
             {...args}
@@ -232,10 +232,10 @@ export const СИтогом: Story = {
                 {
                     name: 'city',
                     component: City,
-                    onLeave: (data: Заявка, flow: FlowTools<Заявка>) =>
-                        (data.город === 'Бохтар' ? flow.finish(false, 'Срок заявки истёк.') : undefined),
+                    onLeave: (data: Application, flow: FlowTools<Application>) =>
+                        (data.city === 'Бохтар' ? flow.finish(false, 'Срок заявки истёк.') : undefined),
                 },
-                ...ШАГИ.slice(1),
+                ...STEPS.slice(1),
                 {name: 'result', component: Result, result: true},
             ] as never}
         />
@@ -247,5 +247,5 @@ export const СИтогом: Story = {
  * перезагрузку. Пройдите пару шагов и обновите страницу.
  */
 export const СЧерновиком: Story = {
-    args: {steps: ШАГИ as never, initial: ПУСТО as never, draft: 'демо-заявка'},
+    args: {steps: STEPS as never, initial: EMPTY as never, draft: 'демо-заявка'},
 };

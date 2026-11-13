@@ -1,7 +1,7 @@
-import {act, render, screen} from '@testing-library/react';
+import {createRef, type FormEvent, type MouseEvent, type ReactNode} from 'react';
 import userEvent from '@testing-library/user-event';
 import axe from 'axe-core';
-import {createRef, type FormEvent, type MouseEvent, type ReactNode} from 'react';
+import {act, render, screen} from '@testing-library/react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {Button} from './Button';
 import styles from './Button.module.css';

@@ -1,5 +1,5 @@
-import type {Meta, StoryObj} from '@storybook/react-vite';
 import {Accordion} from './Accordion';
+import type {Meta, StoryObj} from '@storybook/react-vite';
 
 const meta = {
     title: 'Раскрытие/Accordion',

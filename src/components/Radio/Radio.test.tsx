@@ -1,7 +1,7 @@
-import {act, render, screen} from '@testing-library/react';
+import {createRef} from 'react';
 import userEvent from '@testing-library/user-event';
 import axe from 'axe-core';
-import {createRef} from 'react';
+import {act, render, screen} from '@testing-library/react';
 import {describe, expect, it, vi} from 'vitest';
 import {Radio} from './Radio';
 import styles from '../Control/Control.module.css';

@@ -7,6 +7,7 @@
 /*  без React: их можно проверять и читать сами по себе.                      */
 /* -------------------------------------------------------------------------- */
 
+import {FOCUSABLE, isFocusable} from '../focusable.ts';
 import type {FormValue, FormValues} from './Form.interface.ts';
 
 /**
@@ -52,7 +53,7 @@ function collect(form: HTMLFormElement): FormValues {
 function reach(form: HTMLFormElement, name: string): HTMLElement | undefined {
     const named = form.querySelector<HTMLElement>(`[name="${CSS.escape(name)}"]`);
 
-    if (named !== null && focusable(named)) return named;
+    if (named !== null && isFocusable(named)) return named;
 
     if (named !== null) {
         /* Группа поля: ближайший общий предок подписи, ввода и ошибки.
@@ -63,29 +64,7 @@ function reach(form: HTMLFormElement, name: string): HTMLElement | undefined {
         if (inside != null) return inside;
     }
 
-    return [...form.querySelectorAll<HTMLElement>('[aria-invalid="true"]')].find(focusable);
-}
-
-const FOCUSABLE = [
-    'a[href]',
-    'button:not([disabled])',
-    'input:not([disabled]):not([type="hidden"])',
-    'select:not([disabled])',
-    'textarea:not([disabled])',
-    '[tabindex]:not([tabindex^="-"])',
-].join(', ');
-
-function focusable(node: HTMLElement) {
-    if (node.matches('[type="hidden"], [hidden], [disabled]')) return false;
-
-    /*
-     * Скрытый элемент фокус не принимает, и попытка его увести оставила
-     * бы фокус на body, то есть в начале страницы. Спрашиваем у движка:
-     * checkVisibility учитывает и display: none у предков, и content-
-     * visibility. Где его нет (в jsdom раскладки нет вовсе), считаем
-     * элемент видимым — хуже, чем не увести фокус совсем, не будет.
-     */
-    return node.checkVisibility?.() ?? true;
+    return [...form.querySelectorAll<HTMLElement>('[aria-invalid="true"]')].find(isFocusable);
 }
 
 export {collect, reach};

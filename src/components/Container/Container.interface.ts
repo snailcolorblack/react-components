@@ -1,6 +1,5 @@
 // Container.interface.ts
-import type {ElementType} from 'react';
-import type {WrapperProps} from '../Wrapper/Wrapper.interface.ts';
+import type {ComponentPropsWithRef, ElementType} from 'react';
 
 /**
  * Насколько широко содержимое.
@@ -14,6 +13,23 @@ import type {WrapperProps} from '../Wrapper/Wrapper.interface.ts';
  * делается без нового значения в этом списке.
  */
 export type ContainerSize = 'WIDE' | 'NORMAL' | 'PHONE';
+
+/*
+ * Пропсы собираются от тега напрямую, а не как Omit от пропсов Wrapper.
+ * Omit поверх обобщённого типа подсказке не по зубам: пока T не выбран,
+ * перечислить его поля нельзя, и редактор молчит. Замерено тем же
+ * tsserver, которым пользуется IDE: у Wrapper в этом месте 281 подсказка
+ * (className, style, id на месте), у Container с Omit — ровно две,
+ * key и size.
+ */
+interface ContainerOwnProps<T extends ElementType> {
+    /**
+     * Каким тегом отрисоваться. По умолчанию `div`. Пропсы наследуются
+     * от выбранного тега, как и у `Wrapper`.
+     */
+    as?: T
+    size?: ContainerSize
+}
 
 /**
  * Ограничитель ширины: держит содержимое по середине страницы и
@@ -48,5 +64,5 @@ export type ContainerSize = 'WIDE' | 'NORMAL' | 'PHONE';
  * задают явно: в приложении это `#root` с `min-inline-size: 100vw`.
  */
 export type ContainerProps<T extends ElementType = 'div'> =
-    Omit<WrapperProps<T>, 'variant'>
-    & {size?: ContainerSize};
+    ContainerOwnProps<T>
+    & Omit<ComponentPropsWithRef<T>, 'as' | 'size' | 'variant'>;

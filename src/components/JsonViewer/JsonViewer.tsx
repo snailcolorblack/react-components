@@ -56,15 +56,15 @@ const LABELS: JsonViewerLabels = {
 function amount(length: number, kind: 'object' | 'array') {
     if (kind === 'array') return `${length} шт.`;
 
-    const десятки = length % 100;
-    const единицы = length % 10;
+    const tens = length % 100;
+    const ones = length % 10;
     /* Второй десяток — исключение целиком: 11…14 всегда «полей». */
-    const слово = десятки >= 11 && десятки <= 14 ? 'полей'
-        : единицы === 1 ? 'поле'
-            : единицы >= 2 && единицы <= 4 ? 'поля'
+    const word = tens >= 11 && tens <= 14 ? 'полей'
+        : ones === 1 ? 'поле'
+            : ones >= 2 && ones <= 4 ? 'поля'
                 : 'полей';
 
-    return `${length} ${слово}`;
+    return `${length} ${word}`;
 }
 
 function JsonViewer({
@@ -91,9 +91,10 @@ function JsonViewer({
     const id = useId();
 
     const words = {...LABELS, ...labels};
+    const classes = [styles.viewer, className].filter(Boolean).join(' ');
 
     return (
-        <div {...props} className={[styles.viewer, className].filter(Boolean).join(' ')}>
+        <div {...props} className={classes}>
             {toolbar && (
                 <div className={styles.toolbar}>
                     <button type="button" className={styles.action} onClick={() => reset(Infinity)}>
@@ -203,8 +204,18 @@ function Node({name, value, depth, open, openTo, last, lazy, count}: NodeProps) 
     return (
         <details
             className={styles.node}
-            open={shown}
-            onToggle={event => setShown(event.currentTarget.open)}
+            /*
+             * open передаётся один раз и больше не меняется: дальше
+             * раскрытием распоряжается сам <details>, а React в это
+             * не вмешивается — проп не меняется, значит и атрибут
+             * он не переписывает.
+             *
+             * onToggle нужен только ленивому режиму, которому важно
+             * знать, пора ли рисовать содержимое. Без lazy состояние
+             * не заводится вовсе, и перерисовки на раскрытие нет.
+             */
+            open={open}
+            onToggle={lazy ? (event => setShown(event.currentTarget.open)) : undefined}
         >
             <summary className={styles.row}>
                 {name !== undefined && <span className={styles.name}>"{name}"</span>}

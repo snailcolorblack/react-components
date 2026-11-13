@@ -1,6 +1,6 @@
-import {render, screen} from '@testing-library/react';
-import axe from 'axe-core';
 import {createRef} from 'react';
+import axe from 'axe-core';
+import {render, screen} from '@testing-library/react';
 import {describe, expect, it, vi} from 'vitest';
 import {Typography} from './Typography';
 import styles from './Typography.module.css';

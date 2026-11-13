@@ -1,5 +1,5 @@
-import type {Meta, StoryObj} from '@storybook/react-vite';
 import {Scroll} from './Scroll';
+import type {Meta, StoryObj} from '@storybook/react-vite';
 
 const CARDS = Array.from({length: 14}, (_, index) => `Карточка ${index + 1}`);
 

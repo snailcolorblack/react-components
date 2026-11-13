@@ -1,6 +1,6 @@
-import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {createRef, useState} from 'react';
+import userEvent from '@testing-library/user-event';
+import {render, screen} from '@testing-library/react';
 import {describe, expect, it, vi} from 'vitest';
 import {Dialog} from './Dialog';
 
@@ -94,5 +94,53 @@ describe('Dialog', () => {
         render(<Dialog open onClick={onClick}>Контент</Dialog>);
         await userEvent.click(screen.getByRole('dialog'));
         expect(onClick).toHaveBeenCalled();
+    });
+});
+
+describe('Dialog: содержимое закрытого окна', () => {
+    /*
+     * Закрытое окно содержимое в разметке не держит. Замерено в Chromium 141:
+     * два закрытых накладных по 400 строк — 2419 узлов, 38 мс первой отрисовки
+     * и 2 мс на пересчёт раскладки; без них — 17 узлов, 20.4 мс и 0.1 мс.
+     * display: none поддерево бесплатным не делает.
+     *
+     * Снимается оно не сразу, а по конце ухода — иначе уезжала бы пустая
+     * коробка. Конца ждём у движка (getAnimations), и в jsdom, где анимаций
+     * нет вовсе, список пуст и содержимое снимается тем же кадром.
+     */
+    it('закрытое окно пустое, открытое — с содержимым', async () => {
+        const user = userEvent.setup();
+
+        render(<Controlled/>);
+
+        expect(screen.queryByText('Содержимое')).not.toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', {name: 'Открыть'}));
+
+        expect(screen.getByText('Содержимое')).toBeInTheDocument();
+    });
+
+    it('содержимое появляется тем же кадром, что и открытие', () => {
+        const {rerender, container} = render(
+            <Dialog open={false} label="Окно"><p>Содержимое</p></Dialog>,
+        );
+
+        expect(container.querySelector('p')).toBeNull();
+
+        rerender(<Dialog open label="Окно"><p>Содержимое</p></Dialog>);
+
+        /* Не «на следующем кадре», а прямо здесь: иначе панель выехала бы пустой. */
+        expect(container.querySelector('p')).not.toBeNull();
+    });
+
+    /*
+     * Неуправляемым окном распоряжается разметка (commandfor) или ref,
+     * и про открытие React не знает вовсе. Там содержимое рисуется всегда —
+     * иначе кнопка открыла бы пустое окно.
+     */
+    it('без пропа open содержимое в разметке всегда', () => {
+        render(<Dialog id="без-пропа" label="Окно"><p>Содержимое</p></Dialog>);
+
+        expect(screen.getByText('Содержимое')).toBeInTheDocument();
     });
 });

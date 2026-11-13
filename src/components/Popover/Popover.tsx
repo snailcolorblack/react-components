@@ -40,8 +40,8 @@
  *  открывают и Dialog (show-modal, close), так что разметка у обоих
  *  компонентов получается одинаковая — ради этого вариант и существует.
  *
- *  Команды новее popovertarget (Chrome 135, Firefox 144, Safari 26.2).
- *  В движках старше их исполняет Button, голый <button> там ничего не сделает.
+ *  Команды новее popovertarget, поддержка между движками неравномерная:
+ *  там, где их нет, кнопка молча ничего не делает.
  *
  *  React про эти атрибуты ещё не знает — типы в src/types/invoker.d.ts.
  */
@@ -83,8 +83,8 @@
  *               для списка. Учтите, что role="menu" обязывает наполнять
  *               его role="menuitem".
  *  placement  — только предпочтение: не хватит места, браузер перевернёт
- *               окно сам, а если сбоку не помещается минимальная ширина,
- *               откажется от стороны. То есть inline-end на телефоне скорее
+ *               окно сам, а на экране уже 48rem вовсе откажется от стороны
+ *               в пользу ширины. То есть inline-end на телефоне скорее
  *               всего превратится в раскладку над кнопкой — это ожидаемо.
  */
 /* -------------------------------------------------------------------------- */
@@ -92,7 +92,6 @@
 import type {CSSProperties} from "react";
 import type {PopoverPlacement, PopoverProps} from "./Popover.interfave.ts";
 import styles from './Popover.module.css'
-import './Popover.fallback.ts';
 
 /*
  * area   — куда встать относительно триггера;
@@ -152,6 +151,7 @@ function Popover({
      * принимает имя и при этом не притворяется ни диалогом, ни ориентиром.
      */
     const kind = role ?? (label !== undefined ? 'group' : undefined);
+    const classes = [styles.popover, className].filter(Boolean).join(' ');
 
     return (
         <div
@@ -160,7 +160,7 @@ function Popover({
             popover={popover}
             role={kind}
             aria-label={label}
-            className={`${styles.popover} ${className}`.trim()}
+            className={classes}
             style={placementStyle}
         />
     );

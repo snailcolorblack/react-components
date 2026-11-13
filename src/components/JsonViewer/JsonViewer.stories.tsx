@@ -1,26 +1,26 @@
-import type {Meta, StoryObj} from '@storybook/react-vite';
 import {JsonViewer} from './JsonViewer';
+import type {Meta, StoryObj} from '@storybook/react-vite';
 
-const ОТВЕТ = {
-    имя: 'Рубль',
-    код: 643,
-    активна: true,
-    списана: null,
-    курс: {покупка: 1.1, продажа: 1.2, история: [1.05, 1.08, 1.1]},
-    страны: ['RU', 'KZ'],
-    пусто: {},
-    тожеПусто: [],
+const ANSWER = {
+    name: 'Рубль',
+    code: 643,
+    active: true,
+    closedAt: null,
+    rate: {buy: 1.1, sell: 1.2, history: [1.05, 1.08, 1.1]},
+    countries: ['RU', 'KZ'],
+    empty: {},
+    alsoEmpty: [],
 };
 
 /** Сотни узлов: тот размер, под который компонент и делался. */
-const БОЛЬШОЙ = {
-    счета: Array.from({length: 60}, (_, index) => ({
+const BIG = {
+    accounts: Array.from({length: 60}, (_, index) => ({
         id: index,
-        номер: `KZ${String(index).padStart(16, '0')}`,
-        валюта: index % 2 === 0 ? 'KZT' : 'USD',
-        остаток: index * 1234.5,
-        закрыт: index % 7 === 0,
-        владелец: {фамилия: 'Иванов', имя: 'Иван', документ: {тип: 'паспорт', номер: index}},
+        number: `KZ${String(index).padStart(16, '0')}`,
+        currency: index % 2 === 0 ? 'KZT' : 'USD',
+        balance: index * 1234.5,
+        closed: index % 7 === 0,
+        owner: {lastName: 'Иванов', name: 'Иван', document: {kind: 'паспорт', number: index}},
     })),
 };
 
@@ -65,27 +65,27 @@ type Story = StoryObj<typeof meta>;
 
 /** По умолчанию раскрыт корень и его прямые дети. */
 export const Ответ: Story = {
-    args: {value: ОТВЕТ},
+    args: {value: ANSWER},
 };
 
 /** Всё свёрнуто: видно только, сколько внутри. */
 export const Свёрнуто: Story = {
-    args: {value: ОТВЕТ, defaultDepth: 0},
+    args: {value: ANSWER, defaultDepth: 0},
 };
 
 /** Всё раскрыто сразу. */
 export const Раскрыто: Story = {
-    args: {value: ОТВЕТ, defaultDepth: Infinity},
+    args: {value: ANSWER, defaultDepth: Infinity},
 };
 
 /** Без кнопок: действия над деревом сделаете свои. */
 export const БезКнопок: Story = {
-    args: {value: ОТВЕТ, toolbar: false},
+    args: {value: ANSWER, toolbar: false},
 };
 
 /** Большой ответ. Раскройте всё и посмотрите, как держится. */
 export const Большой: Story = {
-    args: {value: БОЛЬШОЙ, defaultDepth: 1},
+    args: {value: BIG, defaultDepth: 1},
 };
 
 /**
@@ -94,13 +94,13 @@ export const Большой: Story = {
  * когда он есть в разметке.
  */
 export const ДляПоиска: Story = {
-    args: {value: БОЛЬШОЙ, defaultDepth: 0, lazy: false},
+    args: {value: BIG, defaultDepth: 0, lazy: false},
 };
 
 /** Счётчик и подписи кнопок — свои. */
 export const СвоиПодписи: Story = {
     args: {
-        value: ОТВЕТ,
+        value: ANSWER,
         defaultDepth: 0,
         count: (length, kind) => `${length} ${kind === 'array' ? 'items' : 'keys'}`,
         labels: {expand: 'Expand all', collapse: 'Collapse all', copy: 'Copy', copied: 'Copied'},

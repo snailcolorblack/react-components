@@ -113,6 +113,7 @@ function Tabs({
     /* Открытое значение берём из того же объекта, что уходит в контекст:
        два источника правды разошлись бы при первой же правке. */
     const active = state.active;
+    const classes = [styles.tabs, className].filter(Boolean).join(' ');
 
     return (
         <TabsContext value={state}>
@@ -121,7 +122,7 @@ function Tabs({
                 data-orientation={orientation}
                 data-variant={variant}
                 data-motion={motion}
-                className={[styles.tabs, className].filter(Boolean).join(' ')}
+                className={classes}
             />
         </TabsContext>
     );
@@ -199,6 +200,7 @@ function TabsButton({value, disabled = false, className = '', onClick, ...props}
     const {base, active, select} = useTabs('Tabs.Button');
     const selected = active === value;
     const key = slug(value);
+    const classes = [group.item, className].filter(Boolean).join(' ');
 
     return (
         <button
@@ -215,7 +217,7 @@ function TabsButton({value, disabled = false, className = '', onClick, ...props}
              * одна остановка, внутри которой ходят стрелками.
              */
             tabIndex={selected ? 0 : -1}
-            className={[group.item, className].filter(Boolean).join(' ')}
+            className={classes}
             onClick={handleClick}
         />
     );
@@ -231,12 +233,63 @@ function TabsButton({value, disabled = false, className = '', onClick, ...props}
 /*  Панель                                                                    */
 /* -------------------------------------------------------------------------- */
 
-function TabsContent({value, className = '', ...props}: TabsContentProps) {
+/* -------------------------------------------------------------------------- */
+/*  Панель и обход табуляцией: решает браузер                                 */
+/*                                                                            */
+/*  Паттерн tabs из APG говорит про tabindex="0" у панели условно: его ставят */
+/*  «когда панель не содержит ничего фокусируемого или первый элемент         */
+/*  с содержимым не фокусируем». Иначе Tab из полосы обязан вести сразу       */
+/*  на первую ссылку или кнопку внутри.                                       */
+/*                                                                            */
+/*  Ровно это условие движок уже умеет сам — keyboard-focusable scrollers.    */
+/*  Замерено в Chromium 141, НИ У ОДНОГО блока нет tabindex:                  */
+/*                                                                            */
+/*      прокручиваемый, один текст        → остановка Tab на самом блоке      */
+/*      прокручиваемый, внутри ссылка     → блок пропущен, Tab на ссылку      */
+/*      непрокручиваемый, один текст      → не остановка (достигать нечего)   */
+/*      hidden="until-found"              → не остановка                      */
+/*                                                                            */
+/*  Обход от кнопки: «start → блок с текстом → ссылка → end». То есть         */
+/*  порядок по APG получается даром.                                          */
+/*                                                                            */
+/*  Что было, когда tabindex="0" стоял безусловно (замерено там же):          */
+/*  лишняя остановка на самой панели, а следом — остановка на ЗАКРЫТОЙ,       */
+/*  пустой панели. Элемент с hidden="until-found" фокусируем сам по себе:     */
+/*  внутрь не пускает content-visibility, а до блока Tab доходит. Без своего  */
+/*  tabindex обе остановки исчезают.                                          */
+/*                                                                            */
+/*  Чего это стоит. Фокус прокручиваемым областям дают Chromium 130+ (и Edge  */
+/*  на нём же) и Firefox; WebKit пока нет — bug 277290 на 27.07.2026 в NEW.   */
+/*  То есть в Safari панель, которая сама прокручивается и внутри которой     */
+/*  нет ни ссылок, ни кнопок, с клавиатуры недостижима. Два выхода, оба       */
+/*  без кода в самих вкладках:                                                */
+/*                                                                            */
+/*      <Tabs.Content tabIndex={0}>   — автор знает своё содержимое;          */
+/*      <Scroll> внутри панели        — лента это уже решает: смотрит,        */
+/*                                      есть ли внутри фокусируемое.         */
+/*                                                                            */
+/*  Чем это лучше вычисления в JS: чтобы повторить условие APG самим,         */
+/*  нужен не только querySelector по списку фокусируемого, но и наблюдатель   */
+/*  за поддеревом — содержимое панели приезжает позже неё (ленивый чанк),     */
+/*  а пропсы самой панели при этом не меняются. Это два десятка строк,        */
+/*  повторяющих то, что движок делает точнее и бесплатно.                     */
+/* -------------------------------------------------------------------------- */
+
+function TabsContent({value, className = '', children, tabIndex, lazy = false, ...props}: TabsContentProps) {
     const {base, active, motion, select} = useTabs('Tabs.Content');
     const panelRef = useRef<HTMLDivElement>(null);
+    const [opened, setOpened] = useState(active === value);
 
     const selected = active === value;
     const key = slug(value);
+    const classes = [styles.content, className].filter(Boolean).join(' ');
+
+    /*
+     * Открытие обязано попасть в этот же кадр: иначе панель показалась бы
+     * пустой, а содержимое приехало бы кадром позже — рывком. Это та самая
+     * «подстройка состояния под изменившийся проп», а не эффект.
+     */
+    if (lazy && selected && !opened) setOpened(true);
 
     /*
      * Два дела до показа кадра, и оба обязаны успеть до него.
@@ -298,11 +351,14 @@ function TabsContent({value, className = '', ...props}: TabsContentProps) {
             role="tabpanel"
             aria-labelledby={`${base}-${key}-tab`}
             hidden={!selected || undefined}
-            /* Панель фокусируема: иначе до текста без ссылок и кнопок
-               с клавиатуры не добраться. */
-            tabIndex={0}
-            className={[styles.content, className].filter(Boolean).join(' ')}
-        />
+            /* -------------------------------------------------------- */
+            /*  Своего tabindex у панели нет — см. длинный разбор ниже.  */
+            /* -------------------------------------------------------- */
+            tabIndex={tabIndex}
+            className={classes}
+        >
+            {lazy && !opened ? null : children}
+        </div>
     );
 }
 

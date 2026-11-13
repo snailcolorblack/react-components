@@ -68,6 +68,11 @@ function text(node: ReactNode) {
 /* Типы, у которых есть выделение и, значит, управляемая каретка. */
 const SELECTABLE = new Set(['text', 'search', 'tel', 'url', 'password']);
 
+/* Общие части поля и своя надстройка над ними: сочетания постоянные,
+   поэтому считаются один раз на модуль. */
+const FIELD_CLASS = [field.field, styles.field].join(' ');
+const CONTROL_CLASS = [field.control, styles.control].join(' ');
+
 function Input({
                    label,
                    name,
@@ -119,9 +124,10 @@ function Input({
         props['aria-describedby'],
         validity.invalid && errorId,
     ].filter(Boolean).join(' ') || undefined;
+    const classes = [field.group, className].filter(Boolean).join(' ');
 
     return (
-        <span className={[field.group, className].filter(Boolean).join(' ')} style={style}>
+        <span className={classes} style={style}>
             {/* onMouseDown держит фокус на поле при клике по обёртке — label
                 и так активирует input кликом нативно, обработчик только
                 удерживает фокус, когда клик приходится мимо самого input.
@@ -136,7 +142,7 @@ function Input({
                  */
                 data-filled={view !== '' || prefix !== undefined || undefined}
                 data-invalid={validity.invalid || undefined}
-                className={[field.field, styles.field].join(' ')}
+                className={FIELD_CLASS}
                 onMouseDown={event => holdFocus(event, field.control)}
             >
                 <span className={field.label}>{label}</span>
@@ -156,7 +162,7 @@ function Input({
                         value={view}
                         aria-describedby={described}
                         aria-invalid={validity.invalid || undefined}
-                        className={[field.control, styles.control].join(' ')}
+                        className={CONTROL_CLASS}
                         onBlur={handleBlur}
                         onChange={handleChange}
                         onInvalid={handleInvalid}

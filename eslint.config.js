@@ -45,13 +45,59 @@ export default defineConfig([
         {
           type: 'natural',
           newlinesBetween: 'ignore',
+          /*
+           * Побочные импорты стилей тоже переносим вниз, иначе
+           * `import './App.css'` остаётся там, где его положили, да ещё
+           * и делит шапку надвое: через неотсортированный импорт
+           * правило ничего не переставляет.
+           */
+          sortSideEffects: true,
+          /*
+           * Порядок задан не местом файла, а его ролью в модуле — так
+           * шапка читается сверху вниз как рассказ: на чём построено,
+           * из чего собрано, чем типизировано, чем подпёрто, чем покрашено.
+           *
+           * Группы разбираются в порядке объявления, поэтому стили стоят
+           * первыми: `import styles from './X.module.css'` — тоже импорт
+           * по умолчанию, и без этого он попал бы к остальным умолчаниям.
+           */
+          customGroups: [
+            // Стили — всегда последними, но разобрать их нужно первыми.
+            {groupName: 'styles', selector: 'style', type: 'unsorted'},
+            {groupName: 'styles', selector: 'side-effect-style', type: 'unsorted'},
+            // React и его типы — впереди всего: на нём построено остальное.
+            {
+              groupName: 'react',
+              selector: 'external',
+              modifiers: ['value'],
+              elementNamePattern: '^react(/.*)?$|^react-dom(/.*)?$',
+            },
+            {
+              groupName: 'react-type',
+              selector: 'external',
+              modifiers: ['type'],
+              elementNamePattern: '^react(/.*)?$|^react-dom(/.*)?$',
+            },
+            // Хуки и утилиты — подпорки, а не части сборки.
+            {
+              groupName: 'tools',
+              modifiers: ['value'],
+              elementNamePattern: '(^|/)hooks?/|(^|/)utils?/|(^|/)helpers?/',
+            },
+            // Импорт по умолчанию: обычно это целый кусок страницы.
+            {groupName: 'defaults', modifiers: ['default', 'value']},
+          ],
           groups: [
+            'react',
+            'react-type',
+            'defaults',
             ['value-builtin', 'value-external'],
-            ['type-builtin', 'type-external'],
             ['value-internal', 'value-parent', 'value-sibling', 'value-index'],
+            ['type-builtin', 'type-external'],
             ['type-internal', 'type-parent', 'type-sibling', 'type-index'],
-            'style',
+            'tools',
             'unknown',
+            'styles',
           ],
         },
       ],

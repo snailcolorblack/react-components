@@ -1,7 +1,7 @@
-import type {Meta, StoryObj} from '@storybook/react-vite';
 import {Checkbox} from '../Checkbox/Checkbox';
 import {Radio} from '../Radio/Radio';
 import {Fieldset} from './Fieldset';
+import type {Meta, StoryObj} from '@storybook/react-vite';
 
 const meta = {
     title: 'Формы/Fieldset',
